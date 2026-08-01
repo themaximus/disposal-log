@@ -60,7 +60,16 @@ document.addEventListener('DOMContentLoaded', () => {
     async function checkOwnerStatus() {
         const urlParams = new URLSearchParams(window.location.search);
         const sessionToken = urlParams.get('session');
+        const authError = urlParams.get('auth_error');
+
+        if (authError) {
+            console.error('[Auth Error]', authError);
+            alert('Ошибка авторизации: ' + authError);
+            history.replaceState(null, '', window.location.pathname);
+        }
+
         if (sessionToken) {
+            console.log('[Auth] Received new session token from URL:', sessionToken);
             localStorage.setItem('session_token', sessionToken);
             history.replaceState(null, '', window.location.pathname);
         }
@@ -69,11 +78,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await authFetch('/api/auth/me');
             if (res.ok) {
                 const data = await res.json();
+                console.log('[Auth] Current Session User:', data.user);
                 updateUserUI(data.user);
             } else {
+                console.warn('[Auth] Session invalid or expired');
                 updateUserUI(null);
             }
         } catch(e) {
+            console.error('[Auth] Fetch /api/auth/me failed:', e);
             updateUserUI(null);
         }
     }
@@ -658,9 +670,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Initial fetch
-    fetchTags();
-    fetchTasks();
+    // Initial startup with session verification
+    async function initApp() {
+        console.log('[App Init] Checking user session status...');
+        await checkOwnerStatus();
+        fetchTags();
+        fetchTasks();
+    }
+    initApp();
 
     // Modal Events
     btnAddModal.addEventListener('click', () => {
