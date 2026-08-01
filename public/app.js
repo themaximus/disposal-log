@@ -1,9 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Owner Authentication State
+    let selectedTags = [];
     let isOwnerLoggedIn = false;
     window.isOwnerLoggedIn = false;
 
+    // Owner Authentication State
     function getAdminToken() {
         return localStorage.getItem('disposal_admin_token') || '';
     }
@@ -255,7 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTasks = [];
     let currentExistingImages = [];
     let allTags = [];
-    let selectedTags = []; // Array of tag objects
 
     // Native Drag & Drop State
     window.draggedTaskEl = null;
