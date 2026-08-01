@@ -29,8 +29,9 @@
                 <button class="btn-view" data-view="2" title="2 колонки">2</button>
                 <button class="btn-view" data-view="3" title="3 колонки">3</button>
             </div>
-            <button id="btn-settings" class="btn btn-secondary" title="Настройки TG">⚙️</button>
-            <button id="btn-add-task" class="btn btn-primary">＋ Добавить механику</button>
+            <button id="btn-auth" class="btn btn-secondary" title="Вход владельца">🔑 Вход</button>
+            <button id="btn-settings" class="btn btn-secondary owner-only" title="Настройки TG">⚙️</button>
+            <button id="btn-add-task" class="btn btn-primary owner-only">＋ Добавить механику</button>
         </div>
     </header>
 
@@ -73,6 +74,29 @@
         </section>
     </main>
 
+    <!-- Модальное окно: Вход Владельца -->
+    <div class="modal-overlay" id="modal-auth">
+        <div class="modal" style="max-width: 380px;">
+            <div class="modal-header">
+                <h2 style="font-size: 1.3rem; font-weight: 600;">🔑 Вход для Владельца</h2>
+                <button class="btn-close" id="btn-close-auth">✕</button>
+            </div>
+            <form id="form-auth">
+                <div class="form-group">
+                    <label for="auth-password">Пароль владельца</label>
+                    <input type="password" id="auth-password" required placeholder="Введите пароль..." style="width: 100%; padding: 0.65rem; background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 6px; color: white;">
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.2rem; line-height: 1.4;">
+                    💡 В режиме гостя доступен просмотр доски. Для создания, изменения и перемещения задач войдите под паролем владельца.
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-auth">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Войти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Модальное окно просмотра задачи (GitHub Dark Dialog) -->
     <div class="modal-overlay" id="modal-view">
         <div class="modal modal-fullscreen">
@@ -95,7 +119,7 @@
             <div style="background: rgba(255,255,255,0.03); padding: 1.2rem; border-radius: 6px; border: 1px solid #30363d;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <h3 style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">Подзадачи (Дерево)</h3>
-                    <button class="btn btn-primary btn-small" id="btn-add-subtask">+ Добавить подзадачу</button>
+                    <button class="btn btn-primary btn-small owner-only" id="btn-add-subtask">+ Добавить подзадачу</button>
                 </div>
                 <div id="view-subtasks-list" class="task-list" style="display: flex; flex-direction: column; gap: 0.5rem; min-height: 50px;">
                     <!-- subtasks rendered here -->
@@ -191,7 +215,7 @@
                 </div>
             </form>
         </div>
-    </header>
+    </div>
 
     <script src="app.js"></script>
 </body>

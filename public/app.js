@@ -1,4 +1,129 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+    // Owner Authentication State
+    let isOwnerLoggedIn = false;
+    window.isOwnerLoggedIn = false;
+
+    function getAdminToken() {
+        return localStorage.getItem('disposal_admin_token') || '';
+    }
+
+    async function authFetch(url, options = {}) {
+        options.headers = options.headers || {};
+        const token = getAdminToken();
+        if (token) {
+            if (options.headers instanceof Headers) {
+                options.headers.set('x-admin-key', token);
+            } else {
+                options.headers['x-admin-key'] = token;
+            }
+        }
+        const response = await fetch(url, options);
+        if (response.status === 401) {
+            localStorage.removeItem('disposal_admin_token');
+            updateOwnerUI(false);
+            openAuthModal('Требуется пароль владельца.');
+        }
+        return response;
+    }
+
+    const btnAuth = document.getElementById('btn-auth');
+    const modalAuthOverlay = document.getElementById('modal-auth');
+    const btnCloseAuth = document.getElementById('btn-close-auth');
+    const btnCancelAuth = document.getElementById('btn-cancel-auth');
+    const formAuth = document.getElementById('form-auth');
+    const authPasswordInput = document.getElementById('auth-password');
+
+    function openAuthModal(msg) {
+        if (modalAuthOverlay) {
+            if (authPasswordInput) authPasswordInput.value = '';
+            modalAuthOverlay.classList.add('active');
+        }
+    }
+
+    function closeAuthModal() {
+        if (modalAuthOverlay) modalAuthOverlay.classList.remove('active');
+    }
+
+    if (btnAuth) {
+        btnAuth.addEventListener('click', () => {
+            if (isOwnerLoggedIn) {
+                if (confirm('Выйти из режима владельца?')) {
+                    localStorage.removeItem('disposal_admin_token');
+                    updateOwnerUI(false);
+                }
+            } else {
+                openAuthModal();
+            }
+        });
+    }
+
+    if (btnCloseAuth) btnCloseAuth.addEventListener('click', closeAuthModal);
+    if (btnCancelAuth) btnCancelAuth.addEventListener('click', closeAuthModal);
+
+    if (formAuth) {
+        formAuth.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = authPasswordInput.value;
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    localStorage.setItem('disposal_admin_token', data.token);
+                    closeAuthModal();
+                    updateOwnerUI(true);
+                } else {
+                    alert(data.error || 'Неверный пароль!');
+                }
+            } catch(err) {
+                alert('Ошибка сети при авторизации');
+            }
+        });
+    }
+
+    async function checkOwnerStatus() {
+        const token = getAdminToken();
+        if (!token) {
+            updateOwnerUI(false);
+            return;
+        }
+        try {
+            const res = await fetch('/api/auth/check', {
+                headers: { 'x-admin-key': token }
+            });
+            const data = await res.json();
+            updateOwnerUI(!!data.isOwner);
+        } catch(e) {
+            updateOwnerUI(false);
+        }
+    }
+
+    function updateOwnerUI(isOwner) {
+        isOwnerLoggedIn = isOwner;
+        window.isOwnerLoggedIn = isOwner;
+        if (btnAuth) {
+            if (isOwner) {
+                btnAuth.textContent = '🔒 Владелец (Выйти)';
+                btnAuth.classList.remove('btn-secondary');
+                btnAuth.classList.add('btn-primary');
+            } else {
+                btnAuth.textContent = '🔑 Вход';
+                btnAuth.classList.remove('btn-primary');
+                btnAuth.classList.add('btn-secondary');
+            }
+        }
+        document.querySelectorAll('.owner-only').forEach(el => {
+            el.style.display = isOwner ? '' : 'none';
+        });
+        if (currentTasks && currentTasks.length > 0) {
+            renderTasks(currentTasks);
+        }
+    }
+
     const btnAddModal = document.getElementById('btn-add-task');
     const btnCloseModal = document.getElementById('btn-close-modal');
     const btnCancel = document.getElementById('btn-cancel');
@@ -64,8 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnSubmit.disabled = true;
                 btnSubmit.textContent = 'Сохранение...';
 
-                const res = await fetch('/api/settings', {
-                    method: 'PUT',
+                const res = await authFetch('/api/settings', { method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ botToken, channelId, telegramTemplate })
                 });
@@ -197,14 +321,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (dragMode === 'single' && sourceStack) {
                     const draggedId = draggedEl.dataset.id;
                     restyleStack(sourceStack);
-                    await fetch(`/api/tasks/${draggedId}/unlink`, { method: 'PUT' });
+                    await authFetch(`/api/tasks/${draggedId}/unlink`, { method: 'PUT' });
                 }
                 
                 await updatePositions(list);
                 if (sourceList && sourceList !== list) {
                     await updatePositions(sourceList);
                 }
-                fetchTasks();
+                checkOwnerStatus();
+    fetchTasks();
             }
             clearHoverState();
         });
@@ -275,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCounters();
 
         try {
-            await fetch('/api/tasks/positions', {
+            await authFetch('/api/tasks/positions', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ updates })
@@ -465,8 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!name) return;
 
         try {
-            const res = await fetch('/api/tags', {
-                method: 'POST',
+            const res = await authFetch('/api/tags', { method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, color })
             });
@@ -527,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSubmit.disabled = true;
             btnSubmit.textContent = 'Сохранение...';
 
-            const response = await fetch(url, { method, body: formData });
+            const response = await authFetch(url, { method, body: formData });
 
             if (response.ok) {
                 closeModal();
@@ -754,10 +878,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         card.innerHTML = `
-            <div class="card-actions">
+            ${isOwnerLoggedIn ? `<div class="card-actions">
                 <button class="btn-icon edit" data-id="${task.id}" title="Редактировать">✏️</button>
                 <button class="btn-icon delete" data-id="${task.id}" title="Удалить">🗑️</button>
-            </div>
+            </div>` : ''}
             ${imageHtml}
             <div class="card-content">
                 ${tagsHtml}
@@ -772,10 +896,15 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        card.setAttribute('draggable', 'true');
+        card.setAttribute('draggable', isOwnerLoggedIn ? 'true' : 'false');
 
         // Drag start
         card.addEventListener('dragstart', (e) => {
+            if (!isOwnerLoggedIn) {
+                e.preventDefault();
+                openAuthModal('Перемещение карточек доступно только владельцу.');
+                return false;
+            }
             const container = card.parentNode;
             const isStack = container && container.classList.contains('stack-container');
             
@@ -985,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const draggedId = draggedEl.dataset.id;
                 draggedEl.classList.remove('sortable-ghost');
                 restyleStack(sourceStack);
-                await fetch(`/api/tasks/${draggedId}/unlink`, { method: 'PUT' });
+                await authFetch(`/api/tasks/${draggedId}/unlink`, { method: 'PUT' });
             }
 
             await updatePositions(list);

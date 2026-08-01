@@ -1,12 +1,21 @@
 {
-  "name": "public_bot",
+  "name": "disposal-log",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Game Dev Mechanics Task Manager",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "gamedev",
+    "task-manager",
+    "kanban",
+    "railway"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

@@ -1,12 +1,19 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
-const dbPath = path.resolve(__dirname, 'database.sqlite');
+// Persistent data directory support for Railway volume or local fallback
+const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || process.env.DATA_DIR || __dirname;
+if (!fs.existsSync(dataDir)) {
+    try { fs.mkdirSync(dataDir, { recursive: true }); } catch (e) {}
+}
+
+const dbPath = path.resolve(dataDir, 'database.sqlite');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-        console.error('Error opening database', err.message);
+        console.error('Error opening database at ' + dbPath, err.message);
     } else {
-        console.log('Connected to the SQLite database.');
+        console.log('Connected to SQLite database at:', dbPath);
         db.run(`CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
@@ -27,7 +34,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
             if (err) {
                 console.error('Error creating table', err.message);
             } else {
-                // Try adding the columns if they don't exist
                 db.run(`ALTER TABLE tasks ADD COLUMN telegram_message_id INTEGER`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN images_json TEXT`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN telegram_message_ids_json TEXT`, () => {});

@@ -10,7 +10,26 @@ const { Telegraf } = require('telegraf');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Set up Telegram Bot
+// Railway Volume / Data Directory Support
+const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || process.env.DATA_DIR || __dirname;
+const uploadsDir = path.resolve(dataDir, 'uploads');
+const backupsDir = path.resolve(dataDir, 'backups');
+
+if (!fs.existsSync(uploadsDir)) { try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch(e){} }
+if (!fs.existsSync(backupsDir)) { try { fs.mkdirSync(backupsDir, { recursive: true }); } catch(e){} }
+
+// Admin Master Password for Owner Protection
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+function authMiddleware(req, res, next) {
+    const key = req.headers['x-admin-key'] || req.headers['authorization'];
+    if (key === ADMIN_PASSWORD || key === `Bearer ${ADMIN_PASSWORD}`) {
+        return next();
+    }
+    return res.status(401).json({ error: 'Доступ запрещен. Требуется пароль владельца.' });
+}
+
+// Telegram Bot setup
 let botToken = process.env.BOT_TOKEN;
 let channelId = process.env.CHANNEL_ID;
 let bot = null;
@@ -57,14 +76,12 @@ initBot();
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadsDir));
 
 // Multer setup
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const dir = './uploads';
-        if (!fs.existsSync(dir)){ fs.mkdirSync(dir); }
-        cb(null, dir);
+        cb(null, uploadsDir);
     },
     filename: (req, file, cb) => {
         cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
@@ -74,7 +91,21 @@ const upload = multer({ storage: storage });
 
 // API Endpoints
 
-// Get settings
+// Authentication API
+app.post('/api/auth/login', (req, res) => {
+    const { password } = req.body;
+    if (password === ADMIN_PASSWORD) {
+        return res.json({ success: true, token: ADMIN_PASSWORD });
+    }
+    return res.status(401).json({ success: false, error: 'Неверный пароль владельца' });
+});
+
+app.get('/api/auth/check', (req, res) => {
+    const key = req.headers['x-admin-key'];
+    res.json({ isOwner: key === ADMIN_PASSWORD });
+});
+
+// Get settings (Public)
 app.get('/api/settings', (req, res) => {
     initBot();
     const templatePath = path.join(__dirname, 'telegram_template.txt');
@@ -83,14 +114,14 @@ app.get('/api/settings', (req, res) => {
         try { template = fs.readFileSync(templatePath, 'utf8'); } catch(e){}
     }
     res.json({
-        botToken: botToken || '',
+        botToken: botToken ? botToken.substring(0, 8) + '...' : '',
         channelId: channelId || '',
         telegramTemplate: template
     });
 });
 
-// Update settings
-app.put('/api/settings', (req, res) => {
+// Update settings (Owner Protected)
+app.put('/api/settings', authMiddleware, (req, res) => {
     const { botToken: newToken, channelId: newChannelId, telegramTemplate: newTemplate } = req.body;
     const envPath = path.join(__dirname, '.env');
     let envContent = '';
@@ -133,7 +164,7 @@ app.put('/api/settings', (req, res) => {
     }
 });
 
-// Get all tags
+// Get all tags (Public)
 app.get('/api/tags', (req, res) => {
     db.all("SELECT * FROM tags", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -141,8 +172,8 @@ app.get('/api/tags', (req, res) => {
     });
 });
 
-// Create tag
-app.post('/api/tags', (req, res) => {
+// Create tag (Owner Protected)
+app.post('/api/tags', authMiddleware, (req, res) => {
     const { name, color } = req.body;
     db.run("INSERT INTO tags (name, color) VALUES (?, ?)", [name, color || '#3b82f6'], function(err) {
         if (err) return res.status(500).json({ error: err.message });
@@ -150,7 +181,7 @@ app.post('/api/tags', (req, res) => {
     });
 });
 
-// Get all tasks
+// Get all tasks (Public)
 app.get('/api/tasks', (req, res) => {
     db.all("SELECT * FROM tasks ORDER BY status DESC, position ASC, created_at DESC", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -166,15 +197,15 @@ app.get('/api/tasks', (req, res) => {
     });
 });
 
-// Create task
-app.post('/api/tasks', upload.array('images', 5), (req, res) => {
+// Create task (Owner Protected)
+app.post('/api/tasks', authMiddleware, upload.array('images', 5), (req, res) => {
     const { title, description, difficulty, tags, parent_id } = req.body;
     let images = [];
     if (req.files && req.files.length > 0) {
         images = req.files.map(f => `/uploads/${f.filename}`);
     }
     const imagesJson = JSON.stringify(images);
-    const tagsJson = tags || '[]'; // should be JSON string from frontend
+    const tagsJson = tags || '[]';
     
     const initialStatus = parent_id ? 'locked' : 'todo';
     const query = `INSERT INTO tasks (title, description, images_json, difficulty, tags_json, status, position, parent_id) VALUES (?, ?, ?, ?, ?, ?, 9999, ?)`;
@@ -184,11 +215,9 @@ app.post('/api/tasks', upload.array('images', 5), (req, res) => {
     });
 });
 
-// Bulk update positions and status
-app.put('/api/tasks/positions', (req, res) => {
-    const { updates } = req.body; // array of { id, position, status }
-    
-    // Получаем старые статусы перед обновлением
+// Bulk update positions and status (Owner Protected)
+app.put('/api/tasks/positions', authMiddleware, (req, res) => {
+    const { updates } = req.body;
     const ids = updates.map(u => u.id);
     if (ids.length === 0) return res.json({ success: true });
 
@@ -216,7 +245,6 @@ app.put('/api/tasks/positions', (req, res) => {
             db.run("COMMIT", (err) => {
                 if (err) return res.status(500).json({ error: err.message });
                 
-                // Telegram logic
                 if (bot && channelId) {
                     updates.forEach(u => {
                         const oldStatus = oldStatuses[u.id];
@@ -238,8 +266,8 @@ app.put('/api/tasks/positions', (req, res) => {
     });
 });
 
-// Update task status only (and handle TG)
-app.put('/api/tasks/:id/status', (req, res) => {
+// Update task status only (Owner Protected)
+app.put('/api/tasks/:id/status', authMiddleware, (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     
@@ -258,7 +286,6 @@ app.put('/api/tasks/:id/status', (req, res) => {
         db.run(query, params, async function(err) {
             if (err) return res.status(500).json({ error: err.message });
             
-            // Telegram and Unlock logic
             db.get("SELECT * FROM tasks WHERE id = ?", [id], async (err, updatedTask) => {
                 if (!err && updatedTask && bot && channelId) {
                     if (status === 'done' && oldStatus !== 'done') {
@@ -273,10 +300,10 @@ app.put('/api/tasks/:id/status', (req, res) => {
     });
 });
 
-// Link task into a stack
-app.put('/api/tasks/:id/link', (req, res) => {
+// Link task into a stack (Owner Protected)
+app.put('/api/tasks/:id/link', authMiddleware, (req, res) => {
     const { id } = req.params;
-    const { parent_id: target_id } = req.body; // frontend still sends parent_id for now
+    const { parent_id: target_id } = req.body;
     
     if (!target_id) return res.status(400).json({ error: 'target_id is required' });
     
@@ -300,8 +327,8 @@ app.put('/api/tasks/:id/link', (req, res) => {
     });
 });
 
-// Unlink task from group
-app.put('/api/tasks/:id/unlink', (req, res) => {
+// Unlink task from group (Owner Protected)
+app.put('/api/tasks/:id/unlink', authMiddleware, (req, res) => {
     const { id } = req.params;
     
     db.get("SELECT group_id FROM tasks WHERE id = ?", [id], (err, row) => {
@@ -323,8 +350,8 @@ app.put('/api/tasks/:id/unlink', (req, res) => {
     });
 });
 
-// Delete a task
-app.delete('/api/tasks/:id', (req, res) => {
+// Delete a task (Owner Protected)
+app.delete('/api/tasks/:id', authMiddleware, (req, res) => {
     const { id } = req.params;
     db.get("SELECT * FROM tasks WHERE id = ?", [id], async (err, task) => {
         if (err || !task) return res.status(404).json({ error: 'Task not found' });
@@ -340,8 +367,8 @@ app.delete('/api/tasks/:id', (req, res) => {
     });
 });
 
-// Edit a task
-app.put('/api/tasks/:id', upload.array('images', 5), (req, res) => {
+// Edit a task (Owner Protected)
+app.put('/api/tasks/:id', authMiddleware, upload.array('images', 5), (req, res) => {
     const { id } = req.params;
     const { title, description, difficulty, tags } = req.body;
     
@@ -471,7 +498,8 @@ async function sendTelegramNotification(task) {
             const sent = await bot.telegram.sendMessage(channelId, caption, { parse_mode: 'HTML' });
             if (sent) msgIds.push(sent.message_id);
         } else if (images.length === 1) {
-            const imagePath = path.join(__dirname, images[0]);
+            const imageRelPath = images[0].replace(/^\/uploads\//, '');
+            const imagePath = path.join(uploadsDir, imageRelPath);
             if (fs.existsSync(imagePath)) {
                 let sent;
                 if (isVideo(images[0])) {
@@ -487,7 +515,8 @@ async function sendTelegramNotification(task) {
         } else {
             const media = [];
             for (let i = 0; i < images.length; i++) {
-                const imagePath = path.join(__dirname, images[i]);
+                const imageRelPath = images[i].replace(/^\/uploads\//, '');
+                const imagePath = path.join(uploadsDir, imageRelPath);
                 if (fs.existsSync(imagePath)) {
                     let m = { type: isVideo(images[i]) ? 'video' : 'photo', media: { source: imagePath } };
                     if (i === 0) { m.caption = caption; m.parse_mode = 'HTML'; }
@@ -511,32 +540,29 @@ async function sendTelegramNotification(task) {
 
 // Backups
 function backupDatabase() {
-    const backupDir = path.join(__dirname, 'backups');
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir);
-
-    const dbPath = path.join(__dirname, 'database.sqlite');
+    const dbPath = path.resolve(dataDir, 'database.sqlite');
     if (fs.existsSync(dbPath)) {
         const date = new Date();
         const timestamp = date.toISOString().replace(/[:.]/g, '-');
-        const backupPath = path.join(backupDir, `database_backup_${timestamp}.sqlite`);
+        const backupPath = path.join(backupsDir, `database_backup_${timestamp}.sqlite`);
         
         fs.copyFile(dbPath, backupPath, (err) => {
             if (!err) {
                 console.log(`Успешный бекап базы данных: ${backupPath}`);
-                cleanOldBackups(backupDir);
+                cleanOldBackups(backupsDir);
             }
         });
     }
 }
 
-function cleanOldBackups(backupDir) {
-    fs.readdir(backupDir, (err, files) => {
+function cleanOldBackups(dir) {
+    fs.readdir(dir, (err, files) => {
         if (err) return;
         const backups = files.filter(f => f.startsWith('database_backup_') && f.endsWith('.sqlite'));
         if (backups.length > 7) {
             backups.sort();
             const toDelete = backups.slice(0, backups.length - 7);
-            toDelete.forEach(file => fs.unlink(path.join(backupDir, file), () => {}));
+            toDelete.forEach(file => fs.unlink(path.join(dir, file), () => {}));
         }
     });
 }
