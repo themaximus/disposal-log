@@ -99,6 +99,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return canvas.toDataURL();
     }
 
+    const mobileSidebarUser = document.getElementById('mobile-sidebar-user');
+    const mobileUserAvatar = document.getElementById('mobile-user-avatar');
+    const mobileUserName = document.getElementById('mobile-user-name');
+    const mobileUserProvider = document.getElementById('mobile-user-provider');
+    const mobileBtnLogin = document.getElementById('mobile-btn-login');
+    const mobileBtnLogout = document.getElementById('mobile-btn-logout');
+
+    if (mobileBtnLogin) mobileBtnLogin.addEventListener('click', () => {
+        if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
+        openOAuthModal();
+    });
+
+    if (mobileBtnLogout) mobileBtnLogout.addEventListener('click', async () => {
+        if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
+        try {
+            await authFetch('/api/auth/logout', { method: 'POST' });
+        } catch(e) {}
+        localStorage.removeItem('session_token');
+        updateUserUI(null);
+        fetchTasks();
+    });
+
     function updateUserUI(user) {
         currentUser = user;
         const isLoggedIn = !!user;
@@ -109,18 +131,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userProfileWidget) userProfileWidget.style.display = isLoggedIn ? 'flex' : 'none';
         if (btnLoginModal) btnLoginModal.style.display = isLoggedIn ? 'none' : 'inline-flex';
 
+        if (mobileSidebarUser) mobileSidebarUser.style.display = isLoggedIn ? 'block' : 'none';
+        if (mobileBtnLogin) mobileBtnLogin.style.display = isLoggedIn ? 'none' : 'block';
+
         if (isLoggedIn && user) {
             const displayName = user.name || user.email || 'Пользователь';
-            if (userAvatar) {
-                userAvatar.src = (user.avatar_url && user.avatar_url.trim().length > 0) 
-                    ? user.avatar_url 
-                    : createLetterAvatar(displayName);
-            }
+            const avatarSrc = (user.avatar_url && user.avatar_url.trim().length > 0) 
+                ? user.avatar_url 
+                : createLetterAvatar(displayName);
+
+            if (userAvatar) userAvatar.src = avatarSrc;
             if (userName) userName.textContent = displayName;
+
+            if (mobileUserAvatar) mobileUserAvatar.src = avatarSrc;
+            if (mobileUserName) mobileUserName.textContent = displayName;
+
+            const providerName = user.provider === 'github' ? '🐙 GitHub' : '🌐 Google';
             const userProviderText = document.getElementById('user-provider-text');
-            if (userProviderText) {
-                userProviderText.textContent = user.provider === 'github' ? '🐙 GitHub' : '🌐 Google';
-            }
+            if (userProviderText) userProviderText.textContent = providerName;
+            if (mobileUserProvider) mobileUserProvider.textContent = providerName;
         }
 
         document.querySelectorAll('.owner-only').forEach(el => {

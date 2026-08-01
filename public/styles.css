@@ -878,11 +878,35 @@ body.is-owner button.owner-only.btn-block {
     .mobile-menu-trigger { display: inline-flex; align-items: center; justify-content: center; }
     .mobile-tab-bar { display: flex; }
     
-    .header { padding: 0.75rem 1rem; }
-    .logo-text-group h1 { font-size: 1.25rem; }
+    .header { padding: 0.75rem 0.85rem; }
+    .header-controls { gap: 0.4rem; }
+    .logo-text-group h1 { font-size: 1.1rem; }
     .system-status { display: none; }
     .view-modes { display: none; }
-    .header-controls .btn { display: none; }
+    .header-controls #btn-settings,
+    .header-controls #btn-add-task { display: none !important; }
+    
+    #btn-login-modal {
+        display: inline-flex !important;
+        padding: 0.3rem 0.65rem;
+        font-size: 0.78rem;
+    }
+    
+    .user-profile-widget {
+        padding: 0.2rem 0.45rem 0.2rem 0.3rem;
+        gap: 0.35rem;
+    }
+    .user-name-text {
+        max-width: 75px;
+        font-size: 0.76rem;
+    }
+    .user-provider-badge {
+        display: none;
+    }
+    .user-avatar-wrapper {
+        width: 24px;
+        height: 24px;
+    }
     
     .board {
         padding: 0.75rem;
