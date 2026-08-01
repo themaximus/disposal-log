@@ -567,8 +567,13 @@ function cleanOldBackups(dir) {
     });
 }
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+// Health check endpoint for Railway / Cloud proxies
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running at http://0.0.0.0:${port}`);
     backupDatabase();
     setInterval(backupDatabase, 24 * 60 * 60 * 1000);
 });
