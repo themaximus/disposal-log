@@ -435,6 +435,34 @@ app.post('/api/tags', sessionMiddleware, requireUser, (req, res) => {
     });
 });
 
+// Public Read-Only Board API (For Shared Guest View)
+app.get('/api/public/board/:userId', (req, res) => {
+    const targetUserId = req.params.userId;
+    db.get("SELECT id, name, email, avatar_url, provider FROM users WHERE id = ?", [targetUserId], (err, user) => {
+        if (err || !user) return res.status(404).json({ error: 'Пользователь или доска не найдена' });
+        
+        db.all("SELECT * FROM tasks WHERE user_id = ? ORDER BY status DESC, position ASC, created_at DESC", [targetUserId], (tErr, rows) => {
+            if (tErr) return res.status(500).json({ error: tErr.message });
+            rows.forEach(r => {
+                if (r.images_json) { try { r.images = JSON.parse(r.images_json); } catch(e) { r.images = []; } }
+                else if (r.image_url) { r.images = [r.image_url]; }
+                else { r.images = []; }
+                
+                if (r.tags_json) { try { r.tags = JSON.parse(r.tags_json); } catch(e) { r.tags = []; } }
+                else { r.tags = []; }
+            });
+            
+            db.all("SELECT * FROM tags WHERE user_id = ?", [targetUserId], (tagErr, tagRows) => {
+                res.json({
+                    user: { id: user.id, name: user.name, avatar_url: user.avatar_url, provider: user.provider },
+                    tasks: rows,
+                    tags: tagRows || []
+                });
+            });
+        });
+    });
+});
+
 // Tasks API
 app.get('/api/tasks', sessionMiddleware, (req, res) => {
     let query = "SELECT * FROM tasks WHERE user_id = 1 OR user_id IS NULL ORDER BY status DESC, position ASC, created_at DESC";

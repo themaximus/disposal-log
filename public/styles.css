@@ -1188,3 +1188,47 @@ body:not(.is-owner) #mobile-sidebar-user {
     .modal-view-body { flex-direction: column; gap: 1rem; overflow-y: auto; }
     .view-main-content, .view-sidebar-content { flex: none; width: 100%; }
 }
+
+/* Guest Read-Only Share Banner Styles */
+.guest-share-banner {
+    max-width: 1200px;
+    margin: 1rem auto 0 auto;
+    padding: 0.75rem 1.25rem;
+    background: rgba(56, 139, 253, 0.12);
+    border: 1px solid rgba(56, 139, 253, 0.35);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--text-main);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.guest-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.guest-banner-icon {
+    font-size: 1.1rem;
+}
+
+/* Guest View Mode Restrictions */
+body.is-guest-view .owner-only,
+body.is-guest-view #btn-add-task,
+body.is-guest-view #btn-settings,
+body.is-guest-view #btn-mob-add-task,
+body.is-guest-view #btn-mob-settings,
+body.is-guest-view .btn-edit,
+body.is-guest-view .btn-delete,
+body.is-guest-view .task-checkbox {
+    display: none !important;
+}
+
+body.is-guest-view .task-card {
+    cursor: default !important;
+}

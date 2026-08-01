@@ -171,6 +171,15 @@
         </div>
     </section>
 
+    <!-- Guest Shared Board Read-Only Banner -->
+    <div id="guest-share-banner" class="guest-share-banner" style="display: none;">
+        <div class="guest-banner-content">
+            <span class="guest-banner-icon">👁️</span>
+            <span id="guest-banner-text">Режим просмотра доски пользователя (Только чтение)</span>
+        </div>
+        <button id="btn-guest-login-modal" class="btn btn-primary btn-sm">Войти и создать свою доску 🚀</button>
+    </div>
+
     <!-- Main Kanban Board -->
     <main class="board" id="kanban-board-section">
         <!-- Колонка 1: Предстоящие -->
@@ -413,6 +422,14 @@
                             <div style="font-size: 0.72rem; color: var(--text-muted);">Готово</div>
                         </div>
                     </div>
+                </div>
+
+                <div style="background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 12px; padding: 0.85rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">Гостевой доступ</span>
+                        <span style="font-size: 0.74rem; color: var(--text-muted);">Поделитесь вашей доской для чтения</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-share-board" style="border-color: rgba(56,139,253,0.4); color: #58a6ff;">🔗 Скопировать ссылку</button>
                 </div>
 
                 <div class="modal-actions" style="justify-content: space-between; gap: 0.75rem;">

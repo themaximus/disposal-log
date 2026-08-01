@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentUser = null;
     let isOwnerLoggedIn = false;
     window.isOwnerLoggedIn = false;
+    let isGuestView = false;
+    let shareOwnerId = null;
 
     function getSessionToken() {
         return localStorage.getItem('session_token') || '';
@@ -59,23 +61,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function handleWorkspaceNav() {
+        if (currentUser || isGuestView) {
+            setAppMode('workspace');
+        } else {
+            openOAuthModal();
+        }
+    }
+
     const tabNavMain = document.getElementById('tab-nav-main');
     const tabNavWorkspace = document.getElementById('tab-nav-workspace');
     const mobNavMain = document.getElementById('mob-nav-main');
     const mobNavWorkspace = document.getElementById('mob-nav-workspace');
 
     if (tabNavMain) tabNavMain.addEventListener('click', () => setAppMode('landing'));
-    if (tabNavWorkspace) tabNavWorkspace.addEventListener('click', () => setAppMode('workspace'));
+    if (tabNavWorkspace) tabNavWorkspace.addEventListener('click', handleWorkspaceNav);
     if (mobNavMain) mobNavMain.addEventListener('click', () => { if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); setAppMode('landing'); });
-    if (mobNavWorkspace) mobNavWorkspace.addEventListener('click', () => { if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); setAppMode('workspace'); });
+    if (mobNavWorkspace) mobNavWorkspace.addEventListener('click', () => { if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); handleWorkspaceNav(); });
 
     const btnHeroBoard = document.getElementById('btn-hero-board');
     const btnHeroLogin = document.getElementById('btn-hero-login');
 
     if (btnHeroBoard) {
-        btnHeroBoard.addEventListener('click', () => {
-            setAppMode('workspace');
-        });
+        btnHeroBoard.addEventListener('click', handleWorkspaceNav);
     }
 
     if (btnHeroLogin) {
@@ -106,10 +114,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    async function fetchPublicBoard(userId) {
+        try {
+            const res = await fetch(`/api/public/board/${userId}`);
+            if (res.ok) {
+                const data = await res.json();
+                console.log('[Guest View] Loaded public board for user:', data.user);
+                
+                const bannerEl = document.getElementById('guest-share-banner');
+                const bannerText = document.getElementById('guest-banner-text');
+                const ownerName = (data.user && (data.user.name || data.user.email)) ? (data.user.name || data.user.email) : 'Пользователь';
+                
+                if (bannerText) bannerText.textContent = `👁️ Доска пользователя: ${ownerName} (Только чтение)`;
+                if (bannerEl) bannerEl.style.display = 'flex';
+
+                renderTasks(data.tasks);
+                if (data.tags) renderTags(data.tags);
+            } else {
+                console.warn('[Guest View] Failed to load public board');
+            }
+        } catch(e) {
+            console.error('[Guest View] Error loading public board:', e);
+        }
+    }
+
     async function checkOwnerStatus() {
         const urlParams = new URLSearchParams(window.location.search);
         const sessionToken = urlParams.get('session');
         const authError = urlParams.get('auth_error');
+        const shareParam = urlParams.get('share');
 
         if (authError) {
             console.error('[Auth Error]', authError);
@@ -121,6 +154,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('[Auth] Received new session token from URL:', sessionToken);
             localStorage.setItem('session_token', sessionToken);
             history.replaceState(null, '', window.location.pathname);
+        }
+
+        if (shareParam) {
+            shareOwnerId = shareParam;
+            isGuestView = true;
+            document.body.classList.add('is-guest-view');
+            fetchPublicBoard(shareParam);
         }
 
         try {
@@ -258,6 +298,30 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('session_token');
             updateUserUI(null);
             fetchTasks();
+        });
+    }
+
+    const btnShareBoard = document.getElementById('btn-share-board');
+    if (btnShareBoard) {
+        btnShareBoard.addEventListener('click', () => {
+            if (!currentUser) return;
+            const shareUrl = `${window.location.origin}/?share=${currentUser.id}`;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert(`🔗 Ссылка на вашу доску скопирована!\n\n${shareUrl}\n\nГости смогут просматривать ваши задачи без права редактирования.`);
+                }).catch(() => {
+                    prompt('Скопируйте ссылку на вашу доску:', shareUrl);
+                });
+            } else {
+                prompt('Скопируйте ссылку на вашу доску:', shareUrl);
+            }
+        });
+    }
+
+    const btnGuestLoginModal = document.getElementById('btn-guest-login-modal');
+    if (btnGuestLoginModal) {
+        btnGuestLoginModal.addEventListener('click', () => {
+            openOAuthModal();
         });
     }
 
