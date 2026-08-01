@@ -313,6 +313,51 @@
         </div>
     </div>
 
+    <!-- Модальное окно: Профиль пользователя -->
+    <div class="modal-overlay" id="modal-profile">
+        <div class="modal profile-modal" style="max-width: 440px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--github-border); padding-bottom: 0.85rem; justify-content: space-between;">
+                <h2 style="font-size: 1.3rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>👤 Профиль пользователя</span>
+                </h2>
+                <button class="btn-close" id="btn-close-profile">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 1.25rem 0 0.5rem 0;">
+                <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 1.5rem;">
+                    <div class="profile-avatar-container" style="position: relative; margin-bottom: 0.85rem;">
+                        <img id="profile-modal-avatar" src="images/disposal_log_logo.png" alt="Avatar" referrerpolicy="no-referrer" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--github-blue); box-shadow: 0 0 16px rgba(56, 139, 253, 0.35);">
+                        <span id="profile-modal-provider-badge" style="position: absolute; bottom: 0; right: 0; background: var(--github-surface); border: 1px solid var(--github-border); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">🌐</span>
+                    </div>
+                    <h3 id="profile-modal-name" style="font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">Имя Пользователя</h3>
+                    <span id="profile-modal-email" style="font-size: 0.88rem; color: var(--text-muted); font-family: monospace;">user@example.com</span>
+                </div>
+
+                <div style="background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 0.75rem;">Статистика ваших задач</div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
+                        <div style="background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25); border-radius: 8px; padding: 0.6rem 0.4rem;">
+                            <div id="stat-todo-count" style="font-size: 1.25rem; font-weight: 700; color: #f85149;">0</div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">Предстоящие</div>
+                        </div>
+                        <div style="background: rgba(210, 153, 34, 0.1); border: 1px solid rgba(210, 153, 34, 0.25); border-radius: 8px; padding: 0.6rem 0.4rem;">
+                            <div id="stat-progress-count" style="font-size: 1.25rem; font-weight: 700; color: #d29922;">0</div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">В работе</div>
+                        </div>
+                        <div style="background: rgba(46, 160, 67, 0.1); border: 1px solid rgba(46, 160, 67, 0.25); border-radius: 8px; padding: 0.6rem 0.4rem;">
+                            <div id="stat-done-count" style="font-size: 1.25rem; font-weight: 700; color: #2ea043;">0</div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">Готово</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="justify-content: space-between; gap: 0.75rem;">
+                    <button type="button" class="btn btn-secondary" id="btn-profile-logout" style="border-color: #f85149; color: #f85149;">Выйти из аккаунта 🚪</button>
+                    <button type="button" class="btn btn-primary" id="btn-close-profile-ok">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>

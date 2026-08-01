@@ -121,6 +121,85 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchTasks();
     });
 
+    const modalProfileOverlay = document.getElementById('modal-profile');
+    const btnCloseProfile = document.getElementById('btn-close-profile');
+    const btnCloseProfileOk = document.getElementById('btn-close-profile-ok');
+    const btnProfileLogout = document.getElementById('btn-profile-logout');
+
+    function openProfileModal() {
+        if (!currentUser || !modalProfileOverlay) return;
+
+        const profileAvatar = document.getElementById('profile-modal-avatar');
+        const profileName = document.getElementById('profile-modal-name');
+        const profileEmail = document.getElementById('profile-modal-email');
+        const profileBadge = document.getElementById('profile-modal-provider-badge');
+
+        const displayName = currentUser.name || currentUser.email || 'Пользователь';
+        const avatarSrc = (currentUser.avatar_url && currentUser.avatar_url.trim().length > 0)
+            ? currentUser.avatar_url
+            : createLetterAvatar(displayName);
+
+        if (profileAvatar) profileAvatar.src = avatarSrc;
+        if (profileName) profileName.textContent = displayName;
+        if (profileEmail) profileEmail.textContent = currentUser.email || 'Нет email';
+        if (profileBadge) profileBadge.textContent = currentUser.provider === 'github' ? '🐙' : '🌐';
+
+        // Calculate Stats
+        let todo = 0, progress = 0, done = 0;
+        if (Array.isArray(currentTasks)) {
+            currentTasks.forEach(t => {
+                if (t.status === 'todo' || t.status === 'locked') todo++;
+                else if (t.status === 'in_progress') progress++;
+                else if (t.status === 'done') done++;
+            });
+        }
+        const statTodo = document.getElementById('stat-todo-count');
+        const statProgress = document.getElementById('stat-progress-count');
+        const statDone = document.getElementById('stat-done-count');
+        if (statTodo) statTodo.textContent = todo;
+        if (statProgress) statProgress.textContent = progress;
+        if (statDone) statDone.textContent = done;
+
+        modalProfileOverlay.classList.add('active');
+    }
+
+    function closeProfileModal() {
+        if (modalProfileOverlay) modalProfileOverlay.classList.remove('active');
+    }
+
+    if (userProfileWidget) {
+        userProfileWidget.style.cursor = 'pointer';
+        userProfileWidget.addEventListener('click', (e) => {
+            if (e.target.closest('#btn-logout')) return;
+            openProfileModal();
+        });
+    }
+
+    const mobileSidebarUserWidget = document.getElementById('mobile-sidebar-user');
+    if (mobileSidebarUserWidget) {
+        mobileSidebarUserWidget.style.cursor = 'pointer';
+        mobileSidebarUserWidget.addEventListener('click', (e) => {
+            if (e.target.closest('#mobile-btn-logout')) return;
+            if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
+            openProfileModal();
+        });
+    }
+
+    if (btnCloseProfile) btnCloseProfile.addEventListener('click', closeProfileModal);
+    if (btnCloseProfileOk) btnCloseProfileOk.addEventListener('click', closeProfileModal);
+
+    if (btnProfileLogout) {
+        btnProfileLogout.addEventListener('click', async () => {
+            closeProfileModal();
+            try {
+                await authFetch('/api/auth/logout', { method: 'POST' });
+            } catch(e) {}
+            localStorage.removeItem('session_token');
+            updateUserUI(null);
+            fetchTasks();
+        });
+    }
+
     function updateUserUI(user) {
         currentUser = user;
         const isLoggedIn = !!user;
