@@ -768,16 +768,19 @@ body.is-owner button.owner-only.btn-block {
 .btn-logout-icon {
     background: none;
     border: none;
-    color: var(--text-muted);
-    font-size: 0.95rem;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: 0.15rem;
     border-radius: 50%;
     transition: all 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-left: 0.2rem;
+}
+
+.btn-logout-icon:hover {
+    transform: scale(1.12);
+    opacity: 0.9;
 }
 
 /* Hero Landing Section Styles */
