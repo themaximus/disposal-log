@@ -106,8 +106,51 @@
         <button class="tab-item" data-col="done">🟢 Готово (<span id="tab-count-done">0</span>)</button>
     </nav>
 
+    <!-- Hero / Landing Section for PULSE DEV -->
+    <section id="landing-hero" class="hero-section">
+        <div class="hero-container">
+            <div class="hero-badge">
+                <span class="hero-pulse-dot"></span>
+                <span>PULSE DEV 2.0 // GAME DEV & TASK CONTROL</span>
+            </div>
+            <h1 class="hero-headline">Держите руку на <span class="hero-gradient-text">пульсе вашей разработки</span></h1>
+            <p class="hero-subheadline">
+                Персональный Канбан-менеджер нового поколения для геймдева и инди-студий. Поддержка автовоспроизведения видео-механик, 3D стопки задач, отчёты в Telegram и авторизация в 1 клик.
+            </p>
+            
+            <div class="hero-actions">
+                <button id="btn-hero-board" class="btn btn-hero-primary">🚀 Открыть Канбан-доску</button>
+                <button id="btn-hero-login" class="btn btn-hero-secondary">🌐 Войти в аккаунт</button>
+            </div>
+
+            <!-- Feature Cards Grid -->
+            <div class="hero-features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎮</div>
+                    <h3 class="feature-title">Видео-механики</h3>
+                    <p class="feature-desc">Автовоспроизведение MP4/WebM геймплея прямо на обложках карточек.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📦</div>
+                    <h3 class="feature-title">3D Стопки задач</h3>
+                    <p class="feature-desc">Группируйте подзадачи и связанные механики в объемные 3D стопки.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3 class="feature-title">Своя доска и OAuth 2.0</h3>
+                    <p class="feature-desc">Персональная изоляция. Каждая учётная запись имеет свой личный бэклог.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3 class="feature-title">Telegram Отчёты</h3>
+                    <p class="feature-desc">Мгновенная отправка отчетов и логов прямо в Telegram-канал проекта.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Main Kanban Board -->
-    <main class="board">
+    <main class="board" id="kanban-board-section">
         <!-- Колонка 1: Предстоящие -->
         <section class="column" id="column-todo">
             <div class="column-header column-red">

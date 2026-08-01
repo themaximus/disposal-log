@@ -39,6 +39,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalOAuthOverlay) modalOAuthOverlay.classList.add('active');
     }
 
+    const btnHeroBoard = document.getElementById('btn-hero-board');
+    const btnHeroLogin = document.getElementById('btn-hero-login');
+
+    if (btnHeroBoard) {
+        btnHeroBoard.addEventListener('click', () => {
+            const boardEl = document.getElementById('kanban-board-section');
+            if (boardEl) {
+                boardEl.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
+
+    if (btnHeroLogin) {
+        btnHeroLogin.addEventListener('click', () => {
+            if (currentUser) {
+                openProfileModal();
+            } else {
+                openOAuthModal();
+            }
+        });
+    }
+
     function closeOAuthModal() {
         if (modalOAuthOverlay) modalOAuthOverlay.classList.remove('active');
     }
