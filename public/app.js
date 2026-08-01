@@ -724,14 +724,102 @@ document.addEventListener('DOMContentLoaded', () => {
         const cInProg = listInProgress.querySelectorAll('.task-card').length;
         const cDone = listDone.querySelectorAll('.task-card').length;
         
-        countTodo.textContent = cTodo;
-        countInProgress.textContent = cInProg;
-        countDone.textContent = cDone;
+        if (countTodo) countTodo.textContent = cTodo;
+        if (countInProgress) countInProgress.textContent = cInProg;
+        if (countDone) countDone.textContent = cDone;
+        
+        // Update Mobile counters
+        const setElText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        setElText('tab-count-todo', cTodo);
+        setElText('tab-count-in-progress', cInProg);
+        setElText('tab-count-done', cDone);
+        setElText('mob-count-todo', cTodo);
+        setElText('mob-count-in-progress', cInProg);
+        setElText('mob-count-done', cDone);
         
         if (window.updatePokedexState) {
             window.updatePokedexState(cDone);
         }
     }
+
+    // Mobile Navigation & Sidebar Controls
+    const btnMobileMenu = document.getElementById('btn-mobile-menu');
+    const mobileSidebar = document.getElementById('mobile-sidebar');
+    const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+    const btnCloseSidebar = document.getElementById('btn-close-sidebar');
+    const btnMobAddTask = document.getElementById('btn-mob-add-task');
+    const btnMobSettings = document.getElementById('btn-mob-settings');
+
+    function openMobileSidebar() {
+        if (mobileSidebar) mobileSidebar.classList.add('active');
+        if (mobileSidebarOverlay) mobileSidebarOverlay.classList.add('active');
+    }
+
+    function closeMobileSidebar() {
+        if (mobileSidebar) mobileSidebar.classList.remove('active');
+        if (mobileSidebarOverlay) mobileSidebarOverlay.classList.remove('active');
+    }
+
+    if (btnMobileMenu) btnMobileMenu.addEventListener('click', openMobileSidebar);
+    if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', closeMobileSidebar);
+    if (mobileSidebarOverlay) mobileSidebarOverlay.addEventListener('click', closeMobileSidebar);
+
+    if (btnMobAddTask) {
+        btnMobAddTask.addEventListener('click', () => {
+            closeMobileSidebar();
+            if (btnAddModal) btnAddModal.click();
+        });
+    }
+
+    if (btnMobSettings) {
+        btnMobSettings.addEventListener('click', () => {
+            closeMobileSidebar();
+            if (btnSettings) btnSettings.click();
+        });
+    }
+
+    // Mobile Column Tabs Filtering / Switching
+    const colTodo = document.getElementById('column-todo');
+    const colInProgress = document.getElementById('column-in-progress');
+    const colDone = document.getElementById('column-done');
+
+    function selectMobileColumn(targetCol) {
+        document.querySelectorAll('.tab-item, .mobile-tab-btn').forEach(btn => {
+            if (btn.dataset.col === targetCol) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        if (window.innerWidth <= 768) {
+            if (targetCol === 'all') {
+                if (colTodo) colTodo.style.display = '';
+                if (colInProgress) colInProgress.style.display = '';
+                if (colDone) colDone.style.display = '';
+            } else {
+                if (colTodo) colTodo.style.display = targetCol === 'todo' ? '' : 'none';
+                if (colInProgress) colInProgress.style.display = targetCol === 'in_progress' ? '' : 'none';
+                if (colDone) colDone.style.display = targetCol === 'done' ? '' : 'none';
+            }
+        } else {
+            let targetEl = null;
+            if (targetCol === 'todo') targetEl = colTodo;
+            if (targetCol === 'in_progress') targetEl = colInProgress;
+            if (targetCol === 'done') targetEl = colDone;
+            if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }
+
+    document.querySelectorAll('.tab-item, .mobile-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const col = btn.dataset.col;
+            if (col) {
+                selectMobileColumn(col);
+                closeMobileSidebar();
+            }
+        });
+    });
 
     function estimateCardHeight(task, groupTasks = null) {
         if (groupTasks && groupTasks.length > 1) {

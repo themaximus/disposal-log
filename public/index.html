@@ -31,8 +31,55 @@
             </div>
             <button id="btn-settings" class="btn btn-secondary owner-only" title="Настройки TG">⚙️</button>
             <button id="btn-add-task" class="btn btn-primary owner-only">＋ Добавить механику</button>
+            <button id="btn-mobile-menu" class="btn-icon mobile-menu-trigger" aria-label="Меню">☰</button>
         </div>
     </header>
+
+    <!-- Mobile Sidebar Drawer -->
+    <div id="mobile-sidebar-overlay" class="mobile-sidebar-overlay"></div>
+    <aside id="mobile-sidebar" class="mobile-sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <img src="images/disposal_log_logo.png" alt="Logo" class="sidebar-logo-img">
+                <span class="sidebar-title">DISPOSAL LOG</span>
+            </div>
+            <button id="btn-close-sidebar" class="btn-icon close-sidebar-btn">✕</button>
+        </div>
+        <div class="sidebar-body">
+            <div class="sidebar-section">
+                <h3 class="sidebar-section-title">Колонки доски</h3>
+                <div class="mobile-column-tabs">
+                    <button class="mobile-tab-btn active" data-col="all">Все колонки</button>
+                    <button class="mobile-tab-btn" data-col="todo">Предстоящие (<span id="mob-count-todo">0</span>)</button>
+                    <button class="mobile-tab-btn" data-col="in_progress">В работе (<span id="mob-count-in-progress">0</span>)</button>
+                    <button class="mobile-tab-btn" data-col="done">Готово (<span id="mob-count-done">0</span>)</button>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3 class="sidebar-section-title">Режим сетки</h3>
+                <div class="sidebar-view-modes">
+                    <button class="btn-view active" data-view="1">1 колонка</button>
+                    <button class="btn-view" data-view="2">2 колонки</button>
+                    <button class="btn-view" data-view="3">3 колонки</button>
+                </div>
+            </div>
+
+            <div class="sidebar-section owner-only">
+                <h3 class="sidebar-section-title">Управление владельца</h3>
+                <button id="btn-mob-add-task" class="btn btn-primary btn-block">＋ Добавить механику</button>
+                <button id="btn-mob-settings" class="btn btn-secondary btn-block" style="margin-top: 10px;">⚙️ Настройки Telegram</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile Sticky Tab Bar -->
+    <nav class="mobile-tab-bar">
+        <button class="tab-item active" data-col="all">Все</button>
+        <button class="tab-item" data-col="todo">🔴 До списков (<span id="tab-count-todo">0</span>)</button>
+        <button class="tab-item" data-col="in_progress">🟡 В работе (<span id="tab-count-in-progress">0</span>)</button>
+        <button class="tab-item" data-col="done">🟢 Готово (<span id="tab-count-done">0</span>)</button>
+    </nav>
 
     <!-- Main Kanban Board -->
     <main class="board">

@@ -633,3 +633,138 @@ body.is-dragging .task-card::after {
 .tag-selectable:hover { opacity: 0.85; }
 .tag-selectable.selected { opacity: 1; transform: scale(1.05); border-color: #e2e8f0 !important; box-shadow: 0 0 8px rgba(226, 232, 240, 0.3); }
 .card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.4rem; }
+
+/* Mobile Navigation & Sidebar Styles */
+.mobile-menu-trigger {
+    display: none;
+    font-size: 1.3rem;
+    padding: 0.4rem 0.75rem;
+}
+
+.mobile-tab-bar {
+    display: none;
+    gap: 0.5rem;
+    padding: 0.55rem 1rem;
+    background: var(--github-surface);
+    border-bottom: 1px solid var(--github-border);
+    overflow-x: auto;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-tab-bar .tab-item {
+    background: var(--github-canvas);
+    border: 1px solid var(--github-border);
+    color: var(--text-muted);
+    padding: 0.4rem 0.85rem;
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.mobile-tab-bar .tab-item.active {
+    background: var(--github-blue);
+    color: white;
+    border-color: var(--github-blue);
+    font-weight: 600;
+}
+
+/* Mobile Sidebar Drawer */
+.mobile-sidebar-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(1, 4, 9, 0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 998;
+}
+.mobile-sidebar-overlay.active { opacity: 1; pointer-events: all; }
+
+.mobile-sidebar {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 300px; max-width: 85vw;
+    background: var(--github-surface);
+    border-left: 1px solid var(--github-border);
+    z-index: 999;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; flex-direction: column;
+    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.5);
+}
+.mobile-sidebar.active { transform: translateX(0); }
+
+.sidebar-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.25rem 1.25rem 1rem 1.25rem;
+    border-bottom: 1px solid var(--github-border);
+}
+.sidebar-logo { display: flex; align-items: center; gap: 0.65rem; }
+.sidebar-logo-img { width: 32px; height: 32px; border-radius: 50%; }
+.sidebar-title { font-weight: 700; font-size: 1rem; color: var(--text-main); }
+.close-sidebar-btn { font-size: 1.2rem; }
+
+.sidebar-body { padding: 1.25rem; overflow-y: auto; flex: 1; }
+.sidebar-section { margin-bottom: 1.75rem; }
+.sidebar-section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.75rem; font-weight: 600; }
+
+.mobile-column-tabs { display: flex; flex-direction: column; gap: 0.4rem; }
+.mobile-tab-btn {
+    background: var(--github-canvas);
+    border: 1px solid var(--github-border);
+    color: var(--text-main);
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    text-align: left;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+.mobile-tab-btn.active {
+    background: var(--github-blue);
+    color: white;
+    border-color: var(--github-blue);
+}
+
+.sidebar-view-modes { display: flex; gap: 0.5rem; }
+.btn-block { width: 100%; display: block; text-align: center; }
+
+/* Responsive Phone Media Queries (max-width: 768px) */
+@media (max-width: 768px) {
+    .mobile-menu-trigger { display: inline-flex; align-items: center; justify-content: center; }
+    .mobile-tab-bar { display: flex; }
+    
+    .header { padding: 0.75rem 1rem; }
+    .logo-text-group h1 { font-size: 1.25rem; }
+    .system-status { display: none; }
+    .view-modes { display: none; }
+    .header-controls .btn { display: none; }
+    
+    .board {
+        padding: 0.75rem;
+        gap: 1rem;
+    }
+    
+    .column { min-width: 100% !important; max-width: 100% !important; margin-bottom: 0; }
+    
+    /* Mobile Modal Optimizations */
+    .modal {
+        width: 95%; max-width: 95%; padding: 1.25rem;
+        border-radius: 16px;
+    }
+    
+    .modal-fullscreen {
+        width: 100%; height: 95vh; max-width: 100%;
+        border-radius: 16px 16px 0 0;
+        position: fixed; bottom: 0; margin-top: auto;
+    }
+    
+    .modal-view-body { flex-direction: column; gap: 1rem; overflow-y: auto; }
+    .view-main-content, .view-sidebar-content { flex: none; width: 100%; }
+}
