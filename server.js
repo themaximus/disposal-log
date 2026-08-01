@@ -192,11 +192,33 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+function getEnvVar(key) {
+    if (process.env[key]) return process.env[key];
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+        try {
+            const envContent = fs.readFileSync(envPath, 'utf8');
+            const lines = envContent.split(/\r?\n/);
+            for (let line of lines) {
+                const match = line.match(/^\s*([\w.\-]+)\s*=\s*(.*)?\s*$/);
+                if (match && match[1] === key) {
+                    let val = match[2] || '';
+                    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                        val = val.slice(1, -1);
+                    }
+                    return val.trim();
+                }
+            }
+        } catch(e) {}
+    }
+    return null;
+}
+
 // OAuth Endpoints
 
 // 1. GitHub OAuth
 app.get('/api/auth/github', (req, res) => {
-    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientId = getEnvVar('GITHUB_CLIENT_ID');
     if (!clientId) return res.status(500).send('GITHUB_CLIENT_ID не настроен в вашей панели Railway.');
     const redirectUri = `${getAppUrl(req)}/api/auth/github/callback`;
     const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
@@ -208,8 +230,8 @@ app.get('/api/auth/github/callback', async (req, res) => {
     if (!code) return res.redirect('/?auth_error=code_missing');
 
     try {
-        const clientId = process.env.GITHUB_CLIENT_ID;
-        const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+        const clientId = getEnvVar('GITHUB_CLIENT_ID');
+        const clientSecret = getEnvVar('GITHUB_CLIENT_SECRET');
         const redirectUri = `${getAppUrl(req)}/api/auth/github/callback`;
 
         const tokenRes = await fetchJson('https://github.com/login/oauth/access_token', {
@@ -262,7 +284,7 @@ app.get('/api/auth/github/callback', async (req, res) => {
 
 // 2. Google OAuth
 app.get('/api/auth/google', (req, res) => {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientId = getEnvVar('GOOGLE_CLIENT_ID');
     if (!clientId) return res.status(500).send('GOOGLE_CLIENT_ID не настроен в вашей панели Railway.');
     const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
     const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email`;
@@ -274,8 +296,8 @@ app.get('/api/auth/google/callback', async (req, res) => {
     if (!code) return res.redirect('/?auth_error=code_missing');
 
     try {
-        const clientId = process.env.GOOGLE_CLIENT_ID;
-        const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+        const clientId = getEnvVar('GOOGLE_CLIENT_ID');
+        const clientSecret = getEnvVar('GOOGLE_CLIENT_SECRET');
         const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
 
         const postBody = new URLSearchParams({
