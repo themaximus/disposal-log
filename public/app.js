@@ -142,17 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateOwnerUI(isOwner) {
         isOwnerLoggedIn = isOwner;
         window.isOwnerLoggedIn = isOwner;
-        if (btnAuth) {
-            if (isOwner) {
-                btnAuth.textContent = '🔒 Владелец (Выйти)';
-                btnAuth.classList.remove('btn-secondary');
-                btnAuth.classList.add('btn-primary');
-            } else {
-                btnAuth.textContent = '🔑 Вход';
-                btnAuth.classList.remove('btn-primary');
-                btnAuth.classList.add('btn-secondary');
-            }
-        }
+        document.body.classList.toggle('is-owner', !!isOwner);
+
         document.querySelectorAll('.owner-only').forEach(el => {
             el.style.display = isOwner ? '' : 'none';
         });

@@ -634,6 +634,22 @@ body.is-dragging .task-card::after {
 .tag-selectable.selected { opacity: 1; transform: scale(1.05); border-color: #e2e8f0 !important; box-shadow: 0 0 8px rgba(226, 232, 240, 0.3); }
 .card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.4rem; }
 
+/* Owner Only Controls - Strictly Hidden by Default */
+.owner-only {
+    display: none !important;
+}
+body.is-owner .owner-only {
+    display: inline-flex !important;
+}
+body.is-owner div.owner-only,
+body.is-owner section.owner-only,
+body.is-owner .sidebar-section.owner-only {
+    display: block !important;
+}
+body.is-owner button.owner-only.btn-block {
+    display: block !important;
+}
+
 /* Mobile Navigation & Sidebar Styles */
 .mobile-menu-trigger {
     display: none;
