@@ -5,4 +5,4 @@ nixPkgs = ["nodejs_18", "python3", "gcc", "gnumake"]
 cmds = ["npm install"]
 
 [start]
-cmd = "npm start"
+cmd = "node server.js"
