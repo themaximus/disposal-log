@@ -105,6 +105,30 @@ app.get('/api/auth/check', (req, res) => {
     res.json({ isOwner: key === ADMIN_PASSWORD });
 });
 
+// Admin Migration / Restore Endpoints
+app.post('/api/admin/restore-db', authMiddleware, upload.single('database'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No database file provided' });
+    const targetDbPath = path.resolve(dataDir, 'database.sqlite');
+    try {
+        fs.copyFileSync(req.file.path, targetDbPath);
+        try { fs.unlinkSync(req.file.path); } catch(e){}
+        res.json({ success: true, message: 'Database successfully restored!' });
+    } catch(e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+const syncStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadsDir),
+    filename: (req, file, cb) => cb(null, file.originalname)
+});
+const uploadSyncMedia = multer({ storage: syncStorage });
+
+app.post('/api/admin/upload-file', authMiddleware, uploadSyncMedia.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    res.json({ success: true, filename: req.file.filename });
+});
+
 // Get settings (Public)
 app.get('/api/settings', (req, res) => {
     initBot();
