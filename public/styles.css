@@ -772,6 +772,17 @@ body.is-owner button.owner-only.btn-block {
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
+/* User Auth Display States */
+body.is-owner #btn-login-modal,
+body.is-owner #mobile-btn-login {
+    display: none !important;
+}
+
+body:not(.is-owner) .user-profile-widget,
+body:not(.is-owner) #mobile-sidebar-user {
+    display: none !important;
+}
+
 /* Mobile Navigation & Sidebar Styles */
 .mobile-menu-trigger {
     display: none;
@@ -887,7 +898,6 @@ body.is-owner button.owner-only.btn-block {
     .header-controls #btn-add-task { display: none !important; }
     
     #btn-login-modal {
-        display: inline-flex !important;
         padding: 0.3rem 0.65rem;
         font-size: 0.78rem;
     }
