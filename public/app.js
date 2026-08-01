@@ -273,6 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (mobileSidebarUser) mobileSidebarUser.style.display = isLoggedIn ? 'block' : 'none';
         if (mobileBtnLogin) mobileBtnLogin.style.display = isLoggedIn ? 'none' : 'block';
+        if (btnHeroLogin) btnHeroLogin.style.display = isLoggedIn ? 'none' : 'inline-flex';
 
         if (isLoggedIn && user) {
             const displayName = user.name || user.email || 'Пользователь';

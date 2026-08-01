@@ -1017,7 +1017,8 @@ body:not(.mode-workspace) {
 
 /* User Auth Display States */
 body.is-owner #btn-login-modal,
-body.is-owner #mobile-btn-login {
+body.is-owner #mobile-btn-login,
+body.is-owner #btn-hero-login {
     display: none !important;
 }
 
