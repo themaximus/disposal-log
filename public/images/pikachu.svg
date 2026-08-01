@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <polygon points="20,50 10,10 40,30" fill="#f1c40f" stroke="#2c3e50" stroke-width="3"/>
+  <polygon points="10,10 20,20 15,30" fill="#2c3e50"/>
+  <polygon points="80,50 90,10 60,30" fill="#f1c40f" stroke="#2c3e50" stroke-width="3"/>
+  <polygon points="90,10 80,20 85,30" fill="#2c3e50"/>
+  <circle cx="50" cy="60" r="35" fill="#f1c40f" stroke="#2c3e50" stroke-width="3"/>
+  <circle cx="25" cy="65" r="8" fill="#e74c3c"/>
+  <circle cx="75" cy="65" r="8" fill="#e74c3c"/>
+  <circle cx="35" cy="50" r="4" fill="#2c3e50"/>
+  <circle cx="65" cy="50" r="4" fill="#2c3e50"/>
+  <path d="M 45 65 Q 50 70 55 65" fill="none" stroke="#2c3e50" stroke-width="2"/>
+</svg>

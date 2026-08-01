@@ -1,0 +1,9 @@
+<b>Done</b>
+
+<b>Название:</b> {title}
+<b>Сложность:</b> {stars}
+{tags}
+<b>Описание:</b> {description}
+
+<i>Создано: {created_at}</i>
+<i>Выполнено: {completed_at}</i>

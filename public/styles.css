@@ -1,0 +1,635 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    /* GitHub Design Tokens extracted via Dembrandt */
+    --github-canvas: #0d1117;
+    --github-surface: #161b22;
+    --github-subtle: #21262d;
+    --github-border: #30363d;
+    --github-border-muted: #21262d;
+
+    --github-green: #238636;
+    --github-green-hover: #2ea44f;
+    --github-green-text: #3fb950;
+    
+    --github-blue: #1f6feb;
+    --github-blue-hover: #388bfd;
+    --github-blue-text: #58a6ff;
+    
+    --github-yellow: #d29922;
+    --github-yellow-text: #f0883e;
+
+    --github-red: #da3633;
+    --github-red-text: #f85149;
+
+    --text-main: #f0f6fc;
+    --text-muted: #8b949e;
+    --text-dim: #484f58;
+
+    --col-red: #f85149;
+    --col-red-border: #da3633;
+    
+    --col-orange: #f0883e;
+    --col-orange-border: #d29922;
+    
+    --col-green: #3fb950;
+    --col-green-border: #238636;
+    
+    --bg-card: #161b22;
+    --bg-card-hover: #1c2128;
+
+    /* Difficulties used for borders */
+    --diff-1: #3fb950;
+    --diff-2: #d29922;
+    --diff-3: #f85149;
+
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    background: var(--github-canvas);
+    color: var(--text-main);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Background */
+.animated-bg {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: -10;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 0%, #161b22 0%, #0d1117 100%);
+}
+
+/* GitHub Style Header Panel */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--github-surface);
+    border-bottom: 1px solid var(--github-border);
+    padding: 0.75rem 2rem;
+    box-shadow: 0 1px 0 rgba(31, 35, 40, 0.04);
+    z-index: 20;
+}
+
+.header-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.logo-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.logo-text-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.github-title {
+    font-family: var(--font-family);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.text-green {
+    color: var(--github-green-text);
+    font-weight: 600;
+}
+
+.system-status {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 1px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--github-green-text);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--github-green-text);
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* GitHub View Mode Toggle Buttons */
+.view-modes {
+    display: flex;
+    background: var(--github-canvas);
+    border: 1px solid var(--github-border);
+    border-radius: 6px;
+    padding: 2px;
+}
+
+.btn-view {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.3rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.15s ease;
+}
+
+.btn-view:hover {
+    color: var(--text-main);
+    background: var(--github-subtle);
+}
+
+.btn-view.active {
+    background: var(--github-blue);
+    color: #ffffff;
+}
+
+/* GitHub Buttons */
+.btn {
+    padding: 0.45rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--github-border);
+    font-family: var(--font-family);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.2, 0, 0, 1);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--github-subtle);
+    color: var(--text-main);
+    box-shadow: 0 1px 0 rgba(31, 35, 40, 0.04);
+}
+
+.btn:hover {
+    background: #30363d;
+    border-color: #8b949e;
+}
+
+.btn-primary {
+    background-color: var(--github-green);
+    border-color: rgba(240, 246, 252, 0.1);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: var(--github-green-hover);
+    box-shadow: 0 1px 0 rgba(31, 35, 40, 0.1);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--github-subtle);
+    border-color: var(--github-border);
+    color: var(--text-muted);
+}
+.btn-secondary:hover {
+    background: #30363d;
+    color: var(--text-main);
+}
+
+.btn-small {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+}
+
+/* Kanban Board Layout */
+.board {
+    display: flex;
+    gap: 1.25rem;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 1.25rem 2rem;
+}
+
+/* Columns */
+.column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 340px;
+    min-height: 0;
+}
+
+.column-header {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--github-border);
+    border-bottom: none;
+    display: inline-block;
+    width: max-content;
+    padding-right: 2.5rem;
+    position: relative;
+    clip-path: polygon(0 0, 88% 0, 100% 100%, 0 100%);
+    margin-bottom: -1px;
+    z-index: 2;
+    border-radius: 6px 0 0 0;
+    background: var(--github-surface);
+}
+
+.column-header h2 {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.count {
+    background: rgba(110, 118, 129, 0.2);
+    border: 1px solid var(--github-border);
+    padding: 0.05rem 0.5rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.column-red { border-top: 3px solid var(--col-red) !important; }
+.column-red .count { color: var(--col-red); border-color: rgba(248, 81, 73, 0.4); background: rgba(248, 81, 73, 0.15); }
+
+.column-orange { border-top: 3px solid var(--col-orange) !important; }
+.column-orange .count { color: var(--col-orange); border-color: rgba(240, 136, 62, 0.4); background: rgba(240, 136, 62, 0.15); }
+
+.column-green { border-top: 3px solid var(--col-green) !important; }
+.column-green .count { color: var(--col-green); border-color: rgba(63, 185, 80, 0.4); background: rgba(63, 185, 80, 0.15); }
+
+.column-body {
+    background: var(--github-surface);
+    border-radius: 0 6px 6px 6px;
+    border: 1px solid var(--github-border);
+    flex: 1;
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 0;
+}
+
+#column-todo .column-body { border-left: 3px solid var(--col-red); }
+#column-in-progress .column-body { border-left: 3px solid var(--col-orange); }
+#column-done .column-body { border-left: 3px solid var(--col-green); }
+
+.task-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: row;
+    gap: 0.85rem;
+    min-height: 100px;
+    padding-right: 0.3rem;
+    z-index: 5;
+    align-items: flex-start;
+}
+
+.task-list::-webkit-scrollbar { width: 8px; }
+.task-list::-webkit-scrollbar-track { background: transparent; }
+.task-list::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+.task-list::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+
+/* Task Card (GitHub Cards Style - Structure 100% Preserved) */
+.task-card {
+    background: var(--bg-card);
+    border-radius: 6px;
+    padding: 0.6rem;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--github-border);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+    box-shadow: 0 1px 0 rgba(31, 35, 40, 0.04);
+    height: max-content;
+    margin-bottom: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    cursor: grab;
+}
+
+.task-card[data-diff="1"] { border-left: 4px solid var(--diff-1); }
+.task-card[data-diff="2"] { border-left: 4px solid var(--diff-2); }
+.task-card[data-diff="3"] { border-left: 4px solid var(--diff-3); }
+
+.task-card:hover {
+    transform: translateY(-2px);
+    background: var(--bg-card-hover);
+    box-shadow: 0 4px 12px rgba(1, 4, 9, 0.4);
+    border-color: #8b949e;
+}
+
+/* Stack Container and Layers (Diagonal Stacking Preserved) */
+.stack-container {
+    position: relative;
+    width: 100%;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.stack-container .task-card {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35);
+    margin-bottom: 0 !important;
+}
+
+.stack-container .task-card:not(:last-child) {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+    cursor: grab;
+}
+
+.stack-container:has(.task-card:not(:last-child):hover) {
+    transform: translateY(-5px);
+}
+
+.stack-container .task-card:last-child:hover {
+    transform: translateY(-12px) scale(1.01) !important;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45) !important;
+    z-index: 200 !important;
+}
+
+.drag-target {
+    border-color: var(--col-green-border) !important;
+    box-shadow: 0 0 12px rgba(63, 185, 80, 0.4) !important;
+    transform: scale(1.02);
+}
+
+.hover-center {
+    filter: brightness(0.95) !important;
+}
+
+.hover-center::after {
+    content: "";
+    position: absolute;
+    top: -8px; left: -8px;
+    width: calc(100% + 16px);
+    height: calc(100% + 16px);
+    border: 3px dashed var(--github-blue-text);
+    border-radius: 6px;
+    background: rgba(88, 166, 255, 0.1);
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 8px 20px rgba(88, 166, 255, 0.2);
+    animation: pulseDrop 0.8s infinite alternate;
+}
+
+.hover-top { position: relative; }
+.hover-top::before {
+    content: '';
+    position: absolute;
+    top: -8px; left: 0; right: 0;
+    height: 4px;
+    background: var(--github-blue-text);
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(88, 166, 255, 0.6);
+    z-index: 1000;
+    pointer-events: none;
+    animation: glowPulse 0.8s infinite alternate;
+}
+
+.hover-bottom { position: relative; }
+.hover-bottom::after {
+    content: '';
+    position: absolute;
+    bottom: -8px; left: 0; right: 0;
+    height: 4px;
+    background: var(--github-blue-text);
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(88, 166, 255, 0.6);
+    z-index: 1000;
+    pointer-events: none;
+    animation: glowPulse 0.8s infinite alternate;
+}
+
+@keyframes glowPulse {
+    0% { opacity: 0.6; transform: scaleY(0.9); }
+    100% { opacity: 1; transform: scaleY(1.1); }
+}
+
+.custom-drag-ghost {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.95;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+    transform: rotate(2deg) scale(1.03);
+    transition: transform 0.1s ease;
+}
+
+@keyframes pulseDrop {
+    0% { transform: translateY(0) scale(1.01); opacity: 0.6; }
+    50% { transform: translateY(-4px) scale(0.99); opacity: 1; }
+    100% { transform: translateY(0) scale(1.01); opacity: 0.6; }
+}
+
+.drag-over-list {
+    background: rgba(255, 255, 255, 0.02);
+    outline: 2px dashed var(--github-blue-text);
+}
+
+body.is-dragging .task-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 10;
+}
+
+.card-banner {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--github-border);
+    background: #0d1117;
+}
+
+.card-content {
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.4rem;
+}
+
+.card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.card-stars {
+    font-size: 0.95rem;
+    letter-spacing: 1px;
+}
+.task-card[data-diff="1"] .card-stars { color: var(--diff-1); }
+.task-card[data-diff="2"] .card-stars { color: var(--diff-2); }
+.task-card[data-diff="3"] .card-stars { color: var(--diff-3); }
+
+.card-desc {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    line-height: 1.4;
+    margin-bottom: 0.85rem;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+/* Actions inside Card */
+.card-actions {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.8rem;
+    display: flex;
+    gap: 0.4rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+.task-card:hover .card-actions { opacity: 1; }
+
+.btn-icon {
+    background: var(--github-subtle);
+    border: 1px solid var(--github-border);
+    color: var(--text-main);
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.15s ease;
+}
+.btn-icon:hover { background: #30363d; border-color: #8b949e; }
+.btn-icon.delete:hover { color: var(--github-red-text); border-color: var(--github-red-text); }
+.btn-icon.edit:hover { color: var(--github-yellow-text); border-color: var(--github-yellow-text); }
+
+/* Layout Columns */
+.task-list-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.board[data-view="2"] .column, .board[data-view="3"] .column { min-width: 420px; }
+.board[data-view="2"] .card-desc, .board[data-view="3"] .card-desc { display: none; }
+.board[data-view="2"] .card-banner, .board[data-view="3"] .card-banner { aspect-ratio: 4/3; height: auto; }
+
+.sortable-ghost {
+    opacity: 0.25;
+    background: rgba(0,0,0,0.2);
+    border: 2px dashed var(--github-blue-text);
+}
+.sortable-drag { cursor: grabbing !important; }
+
+/* Modals & Dialogs */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(1, 4, 9, 0.8);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    z-index: 100;
+}
+.modal-overlay.active { opacity: 1; pointer-events: all; }
+
+.modal {
+    background: var(--github-surface);
+    border: 1px solid var(--github-border);
+    border-radius: 12px;
+    width: 100%; max-width: 500px;
+    padding: 2rem;
+    transform: translateY(16px); transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+    box-shadow: 0 24px 48px rgba(1, 4, 9, 0.7);
+    color: var(--text-main);
+}
+.modal-overlay.active .modal { transform: translateY(0); }
+.modal-fullscreen { max-width: 1100px; width: 95%; height: 88vh; display: flex; flex-direction: column; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.modal-header h2 { font-weight: 600; color: var(--text-main); font-size: 1.5rem; }
+.btn-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+.btn-close:hover { color: var(--text-main); }
+.form-group { margin-bottom: 1.25rem; }
+.form-group label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.88rem; color: var(--text-muted); }
+.form-group input[type="text"], .form-group textarea {
+    width: 100%; padding: 0.65rem 0.85rem; background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 6px; color: white; font-family: var(--font-family); font-size: 0.9rem;
+}
+.form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--github-blue); box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.3); }
+.difficulty-selector { display: flex; gap: 1rem; }
+.difficulty-selector label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text-main); font-weight: 500; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.8rem; margin-top: 2rem; }
+
+.existing-images-container { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.image-preview-item { position: relative; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid var(--github-border); }
+.image-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.btn-remove-image { position: absolute; top: 2px; right: 2px; background: var(--github-red); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; }
+
+.images-indicator { position: absolute; bottom: 0.5rem; right: 0.5rem; background: rgba(1, 4, 9, 0.85); color: white; padding: 0.15rem 0.5rem; border-radius: 100px; font-size: 0.75rem; pointer-events: none; border: 1px solid var(--github-border); }
+
+/* GitHub Badges / Labels */
+.tags-container { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.tag-badge {
+    display: inline-block;
+    padding: 0.22rem 0.65rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    color: #e2e8f0 !important;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    letter-spacing: 0.2px;
+}
+.tag-selectable { cursor: pointer; opacity: 0.65; transition: all 0.15s ease; }
+.tag-selectable:hover { opacity: 0.85; }
+.tag-selectable.selected { opacity: 1; transform: scale(1.05); border-color: #e2e8f0 !important; box-shadow: 0 0 8px rgba(226, 232, 240, 0.3); }
+.card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.4rem; }

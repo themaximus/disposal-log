@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <!-- Outer Arc for Top Text -->
+    <path id="textArcTop" d="M 70 250 A 180 180 0 0 1 430 250" fill="none"/>
+    <!-- Outer Arc for Bottom Text -->
+    <path id="textArcBottom" d="M 430 250 A 180 180 0 0 1 70 250" fill="none"/>
+    
+    <!-- Clip Path for Inner Emblem Art -->
+    <clipPath id="innerClip">
+      <circle cx="250" cy="250" r="176"/>
+    </clipPath>
+  </defs>
+
+  <!-- Outer Black Ring Badge -->
+  <circle cx="250" cy="250" r="242" fill="#111317" stroke="#111317" stroke-width="4"/>
+
+  <!-- Inner Art Group (Clipped to Inner Circle) -->
+  <g clip-path="url(#innerClip)">
+    <!-- White Background -->
+    <rect x="0" y="0" width="500" height="500" fill="#FFFFFF"/>
+
+    <!-- Red Sun -->
+    <circle cx="325" cy="195" r="72" fill="#D32027"/>
+
+    <!-- Left Pine Trees Silhouette -->
+    <!-- Tree 1 (Leftmost) -->
+    <polygon points="130,205 110,285 150,285" fill="#111317"/>
+    <polygon points="130,225 105,315 155,315" fill="#111317"/>
+    <!-- Tree 2 (Middle Left) -->
+    <polygon points="168,242 146,310 190,310" fill="#111317"/>
+    <polygon points="168,260 140,340 196,340" fill="#111317"/>
+    <!-- Tree 3 (Inner Left) -->
+    <polygon points="194,275 178,325 210,325" fill="#111317"/>
+
+    <!-- Center Industrial Factory Silhouette -->
+    <!-- Main Tall Chimney -->
+    <rect x="254" y="118" width="16" height="180" fill="#111317"/>
+    <!-- Second Chimney -->
+    <rect x="285" y="180" width="13" height="120" fill="#111317"/>
+
+    <!-- Factory Buildings -->
+    <!-- Left Angled Building -->
+    <polygon points="206,218 244,196 244,300 206,300" fill="#111317"/>
+    <!-- Center Roof Sections -->
+    <polygon points="244,196 270,250 270,300 244,300" fill="#111317"/>
+    <polygon points="270,250 300,230 300,300 270,300" fill="#111317"/>
+    <!-- Right Block Building -->
+    <polygon points="300,252 382,252 382,305 300,305" fill="#111317"/>
+    
+    <!-- White Door Cutout -->
+    <path d="M 295,268 L 295,302 L 308,302 L 308,268 Z" fill="#FFFFFF"/>
+
+    <!-- Bottom Perspective Ground & Red/White Path -->
+    <!-- Black Ground Right -->
+    <polygon points="295,302 440,302 440,440 226,440" fill="#111317"/>
+    <!-- Red Perspective Road -->
+    <polygon points="120,335 295,302 226,398" fill="#D32027"/>
+    <!-- White Perspective Beam / Lane -->
+    <polygon points="168,378 295,302 226,398" fill="#FFFFFF"/>
+    <!-- Black Ground Left -->
+    <polygon points="100,340 120,335 226,398 226,440 0,440 0,250" fill="#111317"/>
+  </g>
+
+  <!-- Inner Circle Border Ring -->
+  <circle cx="250" cy="250" r="176" fill="none" stroke="#111317" stroke-width="10"/>
+
+  <!-- Top Text: DISPOSAL -->
+  <text font-family="-apple-system, BlinkMacSystemFont, 'Chakra Petch', 'Arial Black', sans-serif" font-weight="900" font-size="44" fill="#FFFFFF" letter-spacing="9">
+    <textPath href="#textArcTop" startOffset="50%" text-anchor="middle">DISPOSAL</textPath>
+  </text>
+
+  <!-- Bottom Text: LOG -->
+  <text font-family="-apple-system, BlinkMacSystemFont, 'Chakra Petch', 'Arial Black', sans-serif" font-weight="900" font-size="46" fill="#FFFFFF" letter-spacing="14">
+    <textPath href="#textArcBottom" startOffset="50%" text-anchor="middle">LOG</textPath>
+  </text>
+</svg>

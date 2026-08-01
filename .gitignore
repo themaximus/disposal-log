@@ -1,0 +1,28 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables & secrets
+.env
+
+# Database & local backups
+database.sqlite
+backups/
+!backups/.gitkeep
+
+# User uploaded files
+uploads/*
+!uploads/.gitkeep
+
+# Extracted design tokens output
+output/
+
+# Logs & temp files
+*.log
+launcher_log.txt
+
+# OS metadata
+.DS_Store
+Thumbs.db

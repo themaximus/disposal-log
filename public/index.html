@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DISPOSAL LOG</title>
+    <link rel="icon" type="image/png" href="images/disposal_log_logo.png">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- GitHub Dark Background -->
+    <div class="animated-bg"></div>
+
+    <!-- Header Panel -->
+    <header class="header">
+        <div class="header-logo">
+            <div class="logo-icon-wrapper">
+                <img src="images/disposal_log_logo.png" alt="Disposal Log Logo" class="logo-icon" style="border-radius: 50%;">
+            </div>
+            <div class="logo-text-group">
+                <h1 class="github-title">DISPOSAL <span class="text-green">LOG</span></h1>
+                <span class="system-status"><span class="status-dot"></span>Task Control // Game Dev</span>
+            </div>
+        </div>
+        <div class="header-controls">
+            <div class="view-modes">
+                <button class="btn-view active" data-view="1" title="1 колонка">1</button>
+                <button class="btn-view" data-view="2" title="2 колонки">2</button>
+                <button class="btn-view" data-view="3" title="3 колонки">3</button>
+            </div>
+            <button id="btn-settings" class="btn btn-secondary" title="Настройки TG">⚙️</button>
+            <button id="btn-add-task" class="btn btn-primary">＋ Добавить механику</button>
+        </div>
+    </header>
+
+    <!-- Main Kanban Board -->
+    <main class="board">
+        <!-- Колонка 1: Предстоящие -->
+        <section class="column" id="column-todo">
+            <div class="column-header column-red">
+                <h2>Предстоящие <span class="count" id="count-todo">0</span></h2>
+            </div>
+            <div class="column-body">
+                <div class="task-list" id="list-todo" data-status="todo">
+                    <!-- Задачи будут здесь -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Колонка 2: В работе -->
+        <section class="column" id="column-in-progress">
+            <div class="column-header column-orange">
+                <h2>В работе <span class="count" id="count-in-progress">0</span></h2>
+            </div>
+            <div class="column-body">
+                <div class="task-list" id="list-in-progress" data-status="in_progress">
+                    <!-- Задачи будут здесь -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Колонка 3: Реализованные -->
+        <section class="column" id="column-done">
+            <div class="column-header column-green">
+                <h2>Реализованные <span class="count" id="count-done">0</span></h2>
+            </div>
+            <div class="column-body">
+                <div class="task-list" id="list-done" data-status="done">
+                    <!-- Задачи будут здесь -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Модальное окно просмотра задачи (GitHub Dark Dialog) -->
+    <div class="modal-overlay" id="modal-view">
+        <div class="modal modal-fullscreen">
+            <div class="modal-actions" style="margin-top: 0; margin-bottom: 1.2rem; justify-content: space-between; align-items: center;">
+                <h2 id="view-title" style="margin: 0; font-size: 1.5rem; font-weight: 600;">Название</h2>
+                <button type="button" class="btn-icon" id="btn-close-view" style="width: 32px; height: 32px; font-size: 1rem;">✕</button>
+            </div>
+            
+            <div id="view-tags" class="tags-container" style="margin-bottom: 1rem;"></div>
+            
+            <div id="view-media-container" style="width: 100%; display: flex; gap: 1rem; overflow-x: auto; margin-bottom: 1.5rem; padding-bottom: 0.5rem;">
+                <!-- Картинки и видео будут здесь -->
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.03); padding: 1.2rem; border-radius: 6px; border: 1px solid #30363d; margin-bottom: 1.2rem;">
+                <h3 style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Описание задачи</h3>
+                <div id="view-desc" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6; color: var(--text-main);"></div>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.03); padding: 1.2rem; border-radius: 6px; border: 1px solid #30363d;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">Подзадачи (Дерево)</h3>
+                    <button class="btn btn-primary btn-small" id="btn-add-subtask">+ Добавить подзадачу</button>
+                </div>
+                <div id="view-subtasks-list" class="task-list" style="display: flex; flex-direction: column; gap: 0.5rem; min-height: 50px;">
+                    <!-- subtasks rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления/редактирования задачи -->
+    <div class="modal-overlay" id="modal-add">
+        <div class="modal">
+            <h2 id="modal-title">Новая Механика</h2>
+            <form id="form-add-task">
+                <input type="hidden" id="task-id">
+                <input type="hidden" id="task-parent-id" name="parent_id">
+                <div class="form-group">
+                    <label for="task-title">Название механики</label>
+                    <input type="text" id="task-title" name="title" required placeholder="Например: Двойной прыжок">
+                </div>
+                <div class="form-group">
+                    <label for="task-desc">Описание</label>
+                    <textarea id="task-desc" name="description" rows="3" placeholder="Опишите, как это должно работать..."></textarea>
+                </div>
+                
+                <!-- Блок тегов -->
+                <div class="form-group">
+                    <label>Теги / Категории</label>
+                    <div id="tags-container" class="tags-container">
+                        <!-- Существующие теги -->
+                    </div>
+                    <input type="hidden" id="selected-tags-json" name="tags" value="[]">
+                    <button type="button" id="btn-show-new-tag" class="btn btn-secondary btn-small" style="margin-top: 0.5rem;">+ Создать тег</button>
+                    
+                    <div id="new-tag-form" style="display: none; margin-top: 0.5rem; gap: 0.5rem; align-items: center;">
+                        <input type="text" id="new-tag-name" placeholder="Название тега" style="flex: 1; padding: 0.4rem;">
+                        <input type="color" id="new-tag-color" value="#238636" style="width: 32px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer;">
+                        <button type="button" id="btn-save-new-tag" class="btn btn-primary btn-small">💾</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Сложность</label>
+                    <div class="difficulty-selector">
+                        <label><input type="radio" name="difficulty" value="1" checked> <span>★ Легко</span></label>
+                        <label><input type="radio" name="difficulty" value="2"> <span>★★ Средне</span></label>
+                        <label><input type="radio" name="difficulty" value="3"> <span>★★★ Сложно</span></label>
+                    </div>
+                </div>
+                <div class="form-group" id="existing-images-group" style="display: none;">
+                    <label>Текущие медиафайлы</label>
+                    <div class="existing-images-container" id="existing-images-container">
+                        <!-- Миниатюры будут добавлены через JS -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="task-image">Прикрепить Медиа (Фото / Видео)</label>
+                    <input type="file" id="task-image" name="images" accept="image/*,video/mp4,video/quicktime,video/webm" multiple>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Настройки Telegram -->
+    <div class="modal-overlay" id="modal-settings">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 style="font-size: 1.4rem; font-weight: 600;">Настройки Telegram</h2>
+                <button class="btn-close" id="btn-close-settings">✕</button>
+            </div>
+            <form id="form-settings">
+                <div class="form-group">
+                    <label for="settings-bot-token">Токен бота (BOT_TOKEN)</label>
+                    <input type="text" id="settings-bot-token" name="botToken" placeholder="Введите токен Telegram-бота">
+                </div>
+                <div class="form-group">
+                    <label for="settings-channel-id">ID канала (CHANNEL_ID)</label>
+                    <input type="text" id="settings-channel-id" name="channelId" placeholder="Введите ID канала (например, -100...)">
+                </div>
+                <div class="form-group">
+                    <label for="settings-template">Шаблон отчета (HTML)</label>
+                    <textarea id="settings-template" name="telegramTemplate" rows="6" style="width:100%; padding:0.75rem; background:#0d1117; border:1px solid #30363d; border-radius:6px; color:#fff; font-family:monospace; font-size:0.85rem;" placeholder="Шаблон отчета..."></textarea>
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem; line-height:1.4;">
+                        Доступные теги: <b>{title}</b>, <b>{stars}</b>, <b>{tags}</b>, <b>{description}</b>, <b>{created_at}</b>, <b>{completed_at}</b>.
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-settings">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </header>
+
+    <script src="app.js"></script>
+</body>
+</html>

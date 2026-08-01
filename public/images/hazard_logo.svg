@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Outer Hexagon Gear -->
+  <polygon points="50,5 88,27 88,73 50,95 12,73 12,27" fill="#182028" stroke="url(#grad1)" stroke-width="4" filter="url(#glow)"/>
+  
+  <!-- Radiation / Biohazard Warning Symbol -->
+  <path d="M50 25 L65 48 A 18 18 0 0 1 35 48 Z" fill="url(#grad1)"/>
+  <path d="M50 50 L28 65 A 18 18 0 0 1 28 35 Z" stroke="#182028" stroke-width="2" fill="url(#grad1)"/>
+  <path d="M50 50 L72 65 A 18 18 0 0 1 72 35 Z" stroke="#182028" stroke-width="2" fill="url(#grad1)"/>
+  
+  <circle cx="50" cy="50" r="10" fill="#182028" stroke="url(#grad1)" stroke-width="3"/>
+  <circle cx="50" cy="50" r="4" fill="#fbbf24"/>
+</svg>
