@@ -185,6 +185,12 @@ body {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
+/* Mode Switching Rules */
+body:not(.mode-workspace) #kanban-board-section,
+body:not(.mode-workspace) .mobile-tab-bar {
+    display: none !important;
+}
+
 body.mode-workspace #landing-hero {
     display: none !important;
 }
