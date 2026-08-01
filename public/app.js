@@ -160,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
             shareOwnerId = shareParam;
             isGuestView = true;
             document.body.classList.add('is-guest-view');
+            setAppMode('workspace');
             fetchPublicBoard(shareParam);
         }
 
