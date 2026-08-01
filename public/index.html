@@ -30,9 +30,14 @@
                 <button class="btn-view" data-view="3" title="3 колонки">3</button>
             </div>
             <div id="user-profile-widget" class="user-profile-widget" style="display: none;">
-                <img id="user-avatar" src="" alt="Avatar" class="user-avatar-img">
-                <span id="user-name" class="user-name-text"></span>
-                <button id="btn-logout" class="btn btn-secondary btn-sm" title="Выйти">Выйти</button>
+                <div class="user-avatar-wrapper">
+                    <img id="user-avatar" src="images/disposal_log_logo.png" alt="Avatar" class="user-avatar-img">
+                </div>
+                <div class="user-info-text">
+                    <span id="user-name" class="user-name-text">Пользователь</span>
+                    <span id="user-provider-text" class="user-provider-badge">🌐 OAuth</span>
+                </div>
+                <button id="btn-logout" class="btn-logout-icon" title="Выйти из аккаунта">🚪</button>
             </div>
             <button id="btn-login-modal" class="btn btn-primary btn-sm">Войти</button>
             <button id="btn-settings" class="btn btn-secondary owner-only" title="Настройки TG">⚙️</button>

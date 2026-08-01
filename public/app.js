@@ -91,6 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLoggedIn && user) {
             if (userAvatar) userAvatar.src = user.avatar_url || 'images/disposal_log_logo.png';
             if (userName) userName.textContent = user.name || user.email || 'Пользователь';
+            const userProviderText = document.getElementById('user-provider-text');
+            if (userProviderText) {
+                userProviderText.textContent = user.provider === 'github' ? '🐙 GitHub' : '🌐 Google';
+            }
         }
 
         document.querySelectorAll('.owner-only').forEach(el => {
