@@ -677,7 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchTasks() {
         try {
-            const res = await fetch('/api/tasks');
+            const res = await fetch('/api/tasks?t=' + Date.now());
             currentTasks = await res.json();
             renderTasks(currentTasks);
         } catch (error) { console.error('Error fetching tasks:', error); }
