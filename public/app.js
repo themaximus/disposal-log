@@ -78,6 +78,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function createLetterAvatar(name) {
+        const firstChar = (name || 'U').charAt(0).toUpperCase();
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 64, 64);
+        grad.addColorStop(0, '#238636');
+        grad.addColorStop(1, '#1f6feb');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(32, 32, 32, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 30px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(firstChar, 32, 34);
+        return canvas.toDataURL();
+    }
+
     function updateUserUI(user) {
         currentUser = user;
         const isLoggedIn = !!user;
@@ -89,8 +110,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnLoginModal) btnLoginModal.style.display = isLoggedIn ? 'none' : 'inline-flex';
 
         if (isLoggedIn && user) {
-            if (userAvatar) userAvatar.src = user.avatar_url || 'images/disposal_log_logo.png';
-            if (userName) userName.textContent = user.name || user.email || 'Пользователь';
+            const displayName = user.name || user.email || 'Пользователь';
+            if (userAvatar) {
+                userAvatar.src = (user.avatar_url && user.avatar_url.trim().length > 0) 
+                    ? user.avatar_url 
+                    : createLetterAvatar(displayName);
+            }
+            if (userName) userName.textContent = displayName;
             const userProviderText = document.getElementById('user-provider-text');
             if (userProviderText) {
                 userProviderText.textContent = user.provider === 'github' ? '🐙 GitHub' : '🌐 Google';
