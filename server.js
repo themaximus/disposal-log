@@ -68,15 +68,23 @@ function fetchJson(url, options = {}, postData = null) {
 function createOrGetUser(provider, providerId, email, name, avatarUrl, callback) {
     db.get(`SELECT * FROM users WHERE provider = ? AND provider_id = ?`, [provider, providerId], (err, row) => {
         if (err) return callback(err);
+        const handleUser = (user) => {
+            if (user.id === 1) {
+                db.run(`UPDATE tasks SET user_id = 1 WHERE user_id IS NULL`, () => {});
+                db.run(`UPDATE tags SET user_id = 1 WHERE user_id IS NULL`, () => {});
+            }
+            callback(null, user);
+        };
+
         if (row) {
             db.run(`UPDATE users SET email = ?, name = ?, avatar_url = ? WHERE id = ?`, [email, name, avatarUrl, row.id], () => {
-                callback(null, { ...row, email, name, avatar_url: avatarUrl });
+                handleUser({ ...row, email, name, avatar_url: avatarUrl });
             });
         } else {
             db.run(`INSERT INTO users (provider, provider_id, email, name, avatar_url) VALUES (?, ?, ?, ?, ?)`,
                 [provider, providerId, email, name, avatarUrl], function(err2) {
                     if (err2) return callback(err2);
-                    callback(null, { id: this.lastID, provider, provider_id: providerId, email, name, avatar_url: avatarUrl });
+                    handleUser({ id: this.lastID, provider, provider_id: providerId, email, name, avatar_url: avatarUrl });
                 }
             );
         }
@@ -384,10 +392,10 @@ app.put('/api/settings', sessionMiddleware, requireUser, (req, res) => {
 
 // Tags API
 app.get('/api/tags', sessionMiddleware, (req, res) => {
-    let query = "SELECT * FROM tags";
+    let query = "SELECT * FROM tags WHERE user_id = 1 OR user_id IS NULL";
     let params = [];
     if (req.user) {
-        query = "SELECT * FROM tags WHERE user_id = ? OR user_id IS NULL";
+        query = "SELECT * FROM tags WHERE user_id = ?";
         params = [req.user.id];
     }
     db.all(query, params, (err, rows) => {
@@ -407,11 +415,11 @@ app.post('/api/tags', sessionMiddleware, requireUser, (req, res) => {
 
 // Tasks API
 app.get('/api/tasks', sessionMiddleware, (req, res) => {
-    let query = "SELECT * FROM tasks WHERE user_id IS NULL ORDER BY status DESC, position ASC, created_at DESC";
+    let query = "SELECT * FROM tasks WHERE user_id = 1 OR user_id IS NULL ORDER BY status DESC, position ASC, created_at DESC";
     let params = [];
     
     if (req.user) {
-        query = "SELECT * FROM tasks WHERE user_id = ? OR user_id IS NULL ORDER BY status DESC, position ASC, created_at DESC";
+        query = "SELECT * FROM tasks WHERE user_id = ? ORDER BY status DESC, position ASC, created_at DESC";
         params = [req.user.id];
     }
     
