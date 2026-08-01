@@ -650,6 +650,79 @@ body.is-owner button.owner-only.btn-block {
     display: block !important;
 }
 
+/* User Profile Widget in Header */
+.user-profile-widget {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: var(--github-canvas);
+    border: 1px solid var(--github-border);
+    padding: 0.25rem 0.6rem 0.25rem 0.35rem;
+    border-radius: 100px;
+}
+
+.user-avatar-img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--github-border);
+}
+
+.user-name-text {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-main);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.78rem;
+    border-radius: 100px;
+}
+
+/* OAuth Buttons Styles */
+.btn-oauth {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.btn-google {
+    background: #ffffff;
+    color: #3c4043;
+    border-color: #dadce0;
+}
+.btn-google:hover {
+    background: #f8f9fa;
+    border-color: #d2e3fc;
+    box-shadow: 0 1px 3px rgba(60,64,67,0.15);
+}
+
+.btn-github {
+    background: #24292e;
+    color: #ffffff;
+    border-color: rgba(255,255,255,0.15);
+}
+.btn-github:hover {
+    background: #2f363d;
+    border-color: rgba(255,255,255,0.25);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
 /* Mobile Navigation & Sidebar Styles */
 .mobile-menu-trigger {
     display: none;

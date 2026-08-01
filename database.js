@@ -14,8 +14,31 @@ const db = new sqlite3.Database(dbPath, (err) => {
         console.error('Error opening database at ' + dbPath, err.message);
     } else {
         console.log('Connected to SQLite database at:', dbPath);
+
+        // Users table for Google & GitHub OAuth
+        db.run(`CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT,
+            name TEXT,
+            avatar_url TEXT,
+            provider TEXT NOT NULL,
+            provider_id TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        // Sessions table for token authentication
+        db.run(`CREATE TABLE IF NOT EXISTS sessions (
+            token TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )`);
+
+        // Tasks table
         db.run(`CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
             title TEXT NOT NULL,
             description TEXT,
             image_url TEXT,
@@ -31,9 +54,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
             parent_id INTEGER,
             group_id TEXT
         )`, (err) => {
-            if (err) {
-                console.error('Error creating table', err.message);
-            } else {
+            if (!err) {
+                db.run(`ALTER TABLE tasks ADD COLUMN user_id INTEGER`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN telegram_message_id INTEGER`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN images_json TEXT`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN telegram_message_ids_json TEXT`, () => {});
@@ -44,11 +66,17 @@ const db = new sqlite3.Database(dbPath, (err) => {
             }
         });
 
+        // Tags table
         db.run(`CREATE TABLE IF NOT EXISTS tags (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
             name TEXT NOT NULL,
             color TEXT DEFAULT '#3b82f6'
-        )`);
+        )`, (err) => {
+            if (!err) {
+                db.run(`ALTER TABLE tags ADD COLUMN user_id INTEGER`, () => {});
+            }
+        });
     }
 });
 

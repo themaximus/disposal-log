@@ -4,6 +4,8 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const https = require('https');
 const db = require('./database');
 const { Telegraf } = require('telegraf');
 
@@ -18,15 +20,108 @@ const backupsDir = path.resolve(dataDir, 'backups');
 if (!fs.existsSync(uploadsDir)) { try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch(e){} }
 if (!fs.existsSync(backupsDir)) { try { fs.mkdirSync(backupsDir, { recursive: true }); } catch(e){} }
 
-// Admin Master Password for Owner Protection
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+// Helper Functions
+function getAppUrl(req) {
+    if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+        return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+    }
+    if (process.env.APP_URL) {
+        return process.env.APP_URL.replace(/\/$/, '');
+    }
+    const host = req.headers.host || `localhost:${port}`;
+    const proto = req.headers['x-forwarded-proto'] || 'http';
+    return `${proto}://${host}`;
+}
 
-function authMiddleware(req, res, next) {
-    const key = req.headers['x-admin-key'] || req.headers['authorization'];
-    if (key === ADMIN_PASSWORD || key === `Bearer ${ADMIN_PASSWORD}`) {
+function parseCookies(req) {
+    const list = {};
+    const rc = req.headers.cookie;
+    if (rc) {
+        rc.split(';').forEach(cookie => {
+            const parts = cookie.split('=');
+            list[parts.shift().trim()] = decodeURIComponent(parts.join('='));
+        });
+    }
+    return list;
+}
+
+function fetchJson(url, options = {}, postData = null) {
+    return new Promise((resolve, reject) => {
+        const u = new URL(url);
+        const req = https.request(u, options, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    resolve({ status: res.statusCode, data: JSON.parse(data) });
+                } catch(e) {
+                    resolve({ status: res.statusCode, raw: data });
+                }
+            });
+        });
+        req.on('error', reject);
+        if (postData) req.write(typeof postData === 'string' ? postData : JSON.stringify(postData));
+        req.end();
+    });
+}
+
+function createOrGetUser(provider, providerId, email, name, avatarUrl, callback) {
+    db.get(`SELECT * FROM users WHERE provider = ? AND provider_id = ?`, [provider, providerId], (err, row) => {
+        if (err) return callback(err);
+        if (row) {
+            db.run(`UPDATE users SET email = ?, name = ?, avatar_url = ? WHERE id = ?`, [email, name, avatarUrl, row.id], () => {
+                callback(null, { ...row, email, name, avatar_url: avatarUrl });
+            });
+        } else {
+            db.run(`INSERT INTO users (provider, provider_id, email, name, avatar_url) VALUES (?, ?, ?, ?, ?)`,
+                [provider, providerId, email, name, avatarUrl], function(err2) {
+                    if (err2) return callback(err2);
+                    callback(null, { id: this.lastID, provider, provider_id: providerId, email, name, avatar_url: avatarUrl });
+                }
+            );
+        }
+    });
+}
+
+function createSession(userId, callback) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    db.run(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`, [token, userId, expiresAt], (err) => {
+        if (err) return callback(err);
+        callback(null, token);
+    });
+}
+
+function sessionMiddleware(req, res, next) {
+    const cookies = parseCookies(req);
+    const token = cookies.session_token || req.headers['x-session-token'] || (req.headers.authorization && req.headers.authorization.replace('Bearer ', ''));
+    
+    if (!token) {
+        req.user = null;
         return next();
     }
-    return res.status(401).json({ error: 'Доступ запрещен. Требуется пароль владельца.' });
+
+    db.get(`SELECT s.token, s.expires_at, u.id, u.email, u.name, u.avatar_url, u.provider FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?`, [token], (err, row) => {
+        if (err || !row || new Date(row.expires_at) < new Date()) {
+            req.user = null;
+        } else {
+            req.user = {
+                id: row.id,
+                email: row.email,
+                name: row.name,
+                avatar_url: row.avatar_url,
+                provider: row.provider
+            };
+        }
+        next();
+    });
+}
+
+function requireUser(req, res, next) {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Авторизуйтесь через Google или GitHub' });
+    }
+    next();
 }
 
 // Telegram Bot setup
@@ -72,8 +167,8 @@ function initBot() {
 }
 initBot();
 
-// Middleware
-app.use(cors());
+// Express Middleware
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static(uploadsDir));
@@ -89,67 +184,149 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// API Endpoints
+// OAuth Endpoints
 
-// Anti-Bruteforce Rate Limiter for Auth
-const authAttempts = new Map(); // ip -> { count, lockUntil }
-
-app.post('/api/auth/login', (req, res) => {
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const now = Date.now();
-    const attempt = authAttempts.get(ip) || { count: 0, lockUntil: 0 };
-    
-    if (attempt.lockUntil > now) {
-        const remainingMin = Math.ceil((attempt.lockUntil - now) / 60000);
-        return res.status(429).json({ success: false, error: `Слишком много попыток. Заблокировано на ${remainingMin} мин.` });
-    }
-
-    const { password } = req.body;
-    if (password && password === ADMIN_PASSWORD) {
-        authAttempts.delete(ip);
-        return res.json({ success: true, token: ADMIN_PASSWORD });
-    }
-    
-    attempt.count += 1;
-    if (attempt.count >= 5) {
-        attempt.lockUntil = now + 15 * 60 * 1000; // 15 minutes lockout
-        console.warn(`[SECURITY] IP ${ip} locked out for 15 minutes due to failed login attempts.`);
-    }
-    authAttempts.set(ip, attempt);
-
-    return res.status(401).json({ success: false, error: 'Неверный секретный ключ' });
+// 1. GitHub OAuth
+app.get('/api/auth/github', (req, res) => {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    if (!clientId) return res.status(500).send('GITHUB_CLIENT_ID не настроен в вашей панели Railway.');
+    const redirectUri = `${getAppUrl(req)}/api/auth/github/callback`;
+    const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
+    res.redirect(githubUrl);
 });
 
-app.get('/api/auth/check', (req, res) => {
-    const key = req.headers['x-admin-key'];
-    res.json({ isOwner: key === ADMIN_PASSWORD });
-});
+app.get('/api/auth/github/callback', async (req, res) => {
+    const code = req.query.code;
+    if (!code) return res.redirect('/?auth_error=code_missing');
 
-// Admin Migration / Restore Endpoints
-app.post('/api/admin/restore-db', authMiddleware, upload.single('database'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No database file provided' });
-    const targetDbPath = path.resolve(dataDir, 'database.sqlite');
     try {
-        fs.copyFileSync(req.file.path, targetDbPath);
-        try { fs.unlinkSync(req.file.path); } catch(e){}
-        res.json({ success: true, message: 'Database successfully restored!' });
+        const clientId = process.env.GITHUB_CLIENT_ID;
+        const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+        const redirectUri = `${getAppUrl(req)}/api/auth/github/callback`;
+
+        const tokenRes = await fetchJson('https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        }, JSON.stringify({ client_id: clientId, client_secret: clientSecret, code, redirect_uri: redirectUri }));
+
+        const accessToken = tokenRes.data?.access_token;
+        if (!accessToken) return res.redirect('/?auth_error=token_failed');
+
+        const profileRes = await fetchJson('https://api.github.com/user', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'User-Agent': 'DisposalLogApp'
+            }
+        });
+        const profile = profileRes.data;
+
+        let email = profile.email;
+        if (!email) {
+            const emailsRes = await fetchJson('https://api.github.com/user/emails', {
+                headers: { 'Authorization': `Bearer ${accessToken}`, 'User-Agent': 'DisposalLogApp' }
+            });
+            if (Array.isArray(emailsRes.data)) {
+                const primary = emailsRes.data.find(e => e.primary) || emailsRes.data[0];
+                if (primary) email = primary.email;
+            }
+        }
+
+        const name = profile.name || profile.login || 'GitHub User';
+        const avatarUrl = profile.avatar_url || '';
+        const providerId = String(profile.id);
+
+        createOrGetUser('github', providerId, email, name, avatarUrl, (err, user) => {
+            if (err || !user) return res.redirect('/?auth_error=user_create_failed');
+            createSession(user.id, (err, token) => {
+                if (err) return res.redirect('/?auth_error=session_failed');
+                res.setHeader('Set-Cookie', `session_token=${token}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`);
+                res.redirect(`/?session=${token}`);
+            });
+        });
     } catch(e) {
-        res.status(500).json({ error: e.message });
+        console.error('GitHub Auth Error:', e);
+        res.redirect('/?auth_error=github_exception');
     }
 });
 
-const syncStorage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadsDir),
-    filename: (req, file, cb) => cb(null, file.originalname)
-});
-const uploadSyncMedia = multer({ storage: syncStorage });
-
-app.post('/api/admin/upload-file', authMiddleware, uploadSyncMedia.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file provided' });
-    res.json({ success: true, filename: req.file.filename });
+// 2. Google OAuth
+app.get('/api/auth/google', (req, res) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) return res.status(500).send('GOOGLE_CLIENT_ID не настроен в вашей панели Railway.');
+    const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
+    const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email`;
+    res.redirect(googleUrl);
 });
 
-// Get settings (Public)
+app.get('/api/auth/google/callback', async (req, res) => {
+    const code = req.query.code;
+    if (!code) return res.redirect('/?auth_error=code_missing');
+
+    try {
+        const clientId = process.env.GOOGLE_CLIENT_ID;
+        const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+        const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
+
+        const postBody = new URLSearchParams({
+            client_id: clientId,
+            client_secret: clientSecret,
+            code,
+            grant_type: 'authorization_code',
+            redirect_uri: redirectUri
+        }).toString();
+
+        const tokenRes = await fetchJson('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        }, postBody);
+
+        const accessToken = tokenRes.data?.access_token;
+        if (!accessToken) return res.redirect('/?auth_error=token_failed');
+
+        const profileRes = await fetchJson('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        const profile = profileRes.data;
+
+        const email = profile.email || '';
+        const name = profile.name || profile.given_name || 'Google User';
+        const avatarUrl = profile.picture || '';
+        const providerId = String(profile.id);
+
+        createOrGetUser('google', providerId, email, name, avatarUrl, (err, user) => {
+            if (err || !user) return res.redirect('/?auth_error=user_create_failed');
+            createSession(user.id, (err, token) => {
+                if (err) return res.redirect('/?auth_error=session_failed');
+                res.setHeader('Set-Cookie', `session_token=${token}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`);
+                res.redirect(`/?session=${token}`);
+            });
+        });
+    } catch(e) {
+        console.error('Google Auth Error:', e);
+        res.redirect('/?auth_error=google_exception');
+    }
+});
+
+// Profile and Session Status
+app.get('/api/auth/me', sessionMiddleware, (req, res) => {
+    res.json({ user: req.user });
+});
+
+// Logout Endpoint
+app.post('/api/auth/logout', sessionMiddleware, (req, res) => {
+    const cookies = parseCookies(req);
+    const token = cookies.session_token || req.headers['x-session-token'];
+    if (token) {
+        db.run(`DELETE FROM sessions WHERE token = ?`, [token], () => {});
+    }
+    res.setHeader('Set-Cookie', 'session_token=; Path=/; HttpOnly; Max-Age=0');
+    res.json({ success: true });
+});
+
+// Settings API
 app.get('/api/settings', (req, res) => {
     initBot();
     const templatePath = path.join(__dirname, 'telegram_template.txt');
@@ -164,8 +341,7 @@ app.get('/api/settings', (req, res) => {
     });
 });
 
-// Update settings (Owner Protected)
-app.put('/api/settings', authMiddleware, (req, res) => {
+app.put('/api/settings', sessionMiddleware, requireUser, (req, res) => {
     const { botToken: newToken, channelId: newChannelId, telegramTemplate: newTemplate } = req.body;
     const envPath = path.join(__dirname, '.env');
     let envContent = '';
@@ -194,40 +370,52 @@ app.put('/api/settings', authMiddleware, (req, res) => {
     
     try {
         fs.writeFileSync(envPath, newLines.join('\n'), 'utf8');
-        
         if (typeof newTemplate === 'string') {
             const templatePath = path.join(__dirname, 'telegram_template.txt');
             fs.writeFileSync(templatePath, newTemplate, 'utf8');
         }
-        
         initBot();
-        res.json({ success: true, botToken, channelId });
+        res.json({ success: true });
     } catch (e) {
         console.error('Error writing settings:', e);
         res.status(500).json({ error: 'Failed to write settings' });
     }
 });
 
-// Get all tags (Public)
-app.get('/api/tags', (req, res) => {
-    db.all("SELECT * FROM tags", [], (err, rows) => {
+// Tags API
+app.get('/api/tags', sessionMiddleware, (req, res) => {
+    let query = "SELECT * FROM tags";
+    let params = [];
+    if (req.user) {
+        query = "SELECT * FROM tags WHERE user_id = ? OR user_id IS NULL";
+        params = [req.user.id];
+    }
+    db.all(query, params, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
 
-// Create tag (Owner Protected)
-app.post('/api/tags', authMiddleware, (req, res) => {
+app.post('/api/tags', sessionMiddleware, requireUser, (req, res) => {
     const { name, color } = req.body;
-    db.run("INSERT INTO tags (name, color) VALUES (?, ?)", [name, color || '#3b82f6'], function(err) {
+    const userId = req.user.id;
+    db.run("INSERT INTO tags (user_id, name, color) VALUES (?, ?, ?)", [userId, name, color || '#3b82f6'], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ id: this.lastID, name, color: color || '#3b82f6' });
     });
 });
 
-// Get all tasks (Public)
-app.get('/api/tasks', (req, res) => {
-    db.all("SELECT * FROM tasks ORDER BY status DESC, position ASC, created_at DESC", [], (err, rows) => {
+// Tasks API
+app.get('/api/tasks', sessionMiddleware, (req, res) => {
+    let query = "SELECT * FROM tasks WHERE user_id IS NULL ORDER BY status DESC, position ASC, created_at DESC";
+    let params = [];
+    
+    if (req.user) {
+        query = "SELECT * FROM tasks WHERE user_id = ? OR user_id IS NULL ORDER BY status DESC, position ASC, created_at DESC";
+        params = [req.user.id];
+    }
+    
+    db.all(query, params, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         rows.forEach(r => {
             if (r.images_json) { try { r.images = JSON.parse(r.images_json); } catch(e) { r.images = []; } }
@@ -241,9 +429,9 @@ app.get('/api/tasks', (req, res) => {
     });
 });
 
-// Create task (Owner Protected)
-app.post('/api/tasks', authMiddleware, upload.array('images', 5), (req, res) => {
+app.post('/api/tasks', sessionMiddleware, requireUser, upload.array('images', 5), (req, res) => {
     const { title, description, difficulty, tags, parent_id } = req.body;
+    const userId = req.user.id;
     let images = [];
     if (req.files && req.files.length > 0) {
         images = req.files.map(f => `/uploads/${f.filename}`);
@@ -252,20 +440,20 @@ app.post('/api/tasks', authMiddleware, upload.array('images', 5), (req, res) => 
     const tagsJson = tags || '[]';
     
     const initialStatus = parent_id ? 'locked' : 'todo';
-    const query = `INSERT INTO tasks (title, description, images_json, difficulty, tags_json, status, position, parent_id) VALUES (?, ?, ?, ?, ?, ?, 9999, ?)`;
-    db.run(query, [title, description, imagesJson, difficulty || 1, tagsJson, initialStatus, parent_id || null], function(err) {
+    const query = `INSERT INTO tasks (user_id, title, description, images_json, difficulty, tags_json, status, position, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, 9999, ?)`;
+    db.run(query, [userId, title, description, imagesJson, difficulty || 1, tagsJson, initialStatus, parent_id || null], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true, id: this.lastID });
     });
 });
 
-// Bulk update positions and status (Owner Protected)
-app.put('/api/tasks/positions', authMiddleware, (req, res) => {
+app.put('/api/tasks/positions', sessionMiddleware, requireUser, (req, res) => {
     const { updates } = req.body;
+    const userId = req.user.id;
     const ids = updates.map(u => u.id);
     if (ids.length === 0) return res.json({ success: true });
 
-    db.all(`SELECT id, status FROM tasks WHERE id IN (${ids.join(',')})`, [], (err, rows) => {
+    db.all(`SELECT id, status FROM tasks WHERE id IN (${ids.join(',')}) AND (user_id = ? OR user_id IS NULL)`, [userId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         
         const oldStatuses = {};
@@ -282,80 +470,52 @@ app.put('/api/tasks/positions', authMiddleware, (req, res) => {
                 if (u.status !== 'todo') {
                     query += ", group_id = NULL";
                 }
-                query += " WHERE id = ?";
-                params.push(u.id);
+                query += " WHERE id = ? AND (user_id = ? OR user_id IS NULL)";
+                params.push(u.id, userId);
                 db.run(query, params);
             });
             db.run("COMMIT", (err) => {
                 if (err) return res.status(500).json({ error: err.message });
-                
-                if (bot && channelId) {
-                    updates.forEach(u => {
-                        const oldStatus = oldStatuses[u.id];
-                        if (u.status === 'done' && oldStatus !== 'done') {
-                            db.get("SELECT * FROM tasks WHERE id = ?", [u.id], (err, t) => {
-                                if (t) sendTelegramNotification(t);
-                            });
-                        } else if (u.status !== 'done' && oldStatus === 'done') {
-                            db.get("SELECT * FROM tasks WHERE id = ?", [u.id], (err, t) => {
-                                if (t) deleteTelegramMessages(t);
-                            });
-                        }
-                    });
-                }
-                
                 res.json({ success: true });
             });
         });
     });
 });
 
-// Update task status only (Owner Protected)
-app.put('/api/tasks/:id/status', authMiddleware, (req, res) => {
+app.put('/api/tasks/:id/status', sessionMiddleware, requireUser, (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
+    const userId = req.user.id;
     
-    db.get("SELECT * FROM tasks WHERE id = ?", [id], async (err, task) => {
+    db.get("SELECT * FROM tasks WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], async (err, task) => {
         if (err || !task) return res.status(404).json({ error: 'Task not found' });
-        
-        const oldStatus = task.status;
         
         let query = `UPDATE tasks SET status = ?`;
         let params = [status];
         if (status === 'done') query += `, completed_at = CURRENT_TIMESTAMP`;
         if (status !== 'todo') query += `, group_id = NULL`;
-        query += ` WHERE id = ?`;
-        params.push(id);
+        query += ` WHERE id = ? AND (user_id = ? OR user_id IS NULL)`;
+        params.push(id, userId);
         
         db.run(query, params, async function(err) {
             if (err) return res.status(500).json({ error: err.message });
-            
-            db.get("SELECT * FROM tasks WHERE id = ?", [id], async (err, updatedTask) => {
-                if (!err && updatedTask && bot && channelId) {
-                    if (status === 'done' && oldStatus !== 'done') {
-                        await sendTelegramNotification(updatedTask);
-                    } else if (status !== 'done' && oldStatus === 'done') {
-                        await deleteTelegramMessages(updatedTask);
-                    }
-                }
-            });
             res.json({ success: true });
         });
     });
 });
 
-// Link task into a stack (Owner Protected)
-app.put('/api/tasks/:id/link', authMiddleware, (req, res) => {
+app.put('/api/tasks/:id/link', sessionMiddleware, requireUser, (req, res) => {
     const { id } = req.params;
     const { parent_id: target_id } = req.body;
+    const userId = req.user.id;
     
     if (!target_id) return res.status(400).json({ error: 'target_id is required' });
     
-    db.get("SELECT * FROM tasks WHERE id = ?", [target_id], (err, targetTask) => {
+    db.get("SELECT * FROM tasks WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [target_id, userId], (err, targetTask) => {
         if (err || !targetTask) return res.status(404).json({ error: 'Target task not found' });
         
         if (targetTask.status !== 'todo') {
-            return res.status(400).json({ error: 'Stacking is only allowed in the TODO column' });
+            return res.status(400).json({ error: 'Stacking is only allowed in TODO' });
         }
         
         let groupId = targetTask.group_id;
@@ -364,260 +524,44 @@ app.put('/api/tasks/:id/link', authMiddleware, (req, res) => {
             db.run("UPDATE tasks SET group_id = ? WHERE id = ?", [groupId, target_id]);
         }
         
-        db.run("UPDATE tasks SET group_id = ?, position = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?", [groupId, targetTask.position - 1, id], function(err) {
+        db.run("UPDATE tasks SET group_id = ?, position = ?, created_at = CURRENT_TIMESTAMP WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [groupId, targetTask.position - 1, id, userId], function(err) {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true, group_id: groupId });
         });
     });
 });
 
-// Unlink task from group (Owner Protected)
-app.put('/api/tasks/:id/unlink', authMiddleware, (req, res) => {
+app.put('/api/tasks/:id/unlink', sessionMiddleware, requireUser, (req, res) => {
     const { id } = req.params;
+    const userId = req.user.id;
     
-    db.get("SELECT group_id FROM tasks WHERE id = ?", [id], (err, row) => {
+    db.get("SELECT group_id FROM tasks WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], (err, row) => {
         if (err || !row || !row.group_id) {
-            return db.run("UPDATE tasks SET parent_id = NULL, group_id = NULL WHERE id = ?", [id], () => res.json({ success: true }));
+            return db.run("UPDATE tasks SET parent_id = NULL, group_id = NULL WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], () => res.json({ success: true }));
         }
         
         const groupId = row.group_id;
-        db.run("UPDATE tasks SET group_id = NULL, parent_id = NULL WHERE id = ?", [id], function(err) {
+        db.run("UPDATE tasks SET group_id = NULL, parent_id = NULL WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], function(err) {
             if (err) return res.status(500).json({ error: err.message });
-            
-            db.all("SELECT id FROM tasks WHERE group_id = ?", [groupId], (err, rows) => {
-                if (!err && rows && rows.length === 1) {
-                    db.run("UPDATE tasks SET group_id = NULL WHERE id = ?", [rows[0].id]);
-                }
-            });
             res.json({ success: true });
         });
     });
 });
 
-// Delete a task (Owner Protected)
-app.delete('/api/tasks/:id', authMiddleware, (req, res) => {
+app.delete('/api/tasks/:id', sessionMiddleware, requireUser, (req, res) => {
     const { id } = req.params;
-    db.get("SELECT * FROM tasks WHERE id = ?", [id], async (err, task) => {
-        if (err || !task) return res.status(404).json({ error: 'Task not found' });
-        
-        if (task.status === 'done' && bot && channelId) {
-            await deleteTelegramMessages(task);
-        }
-        
-        db.run("DELETE FROM tasks WHERE id = ?", [id], (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true });
-        });
+    const userId = req.user.id;
+    db.run("DELETE FROM tasks WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
     });
 });
 
-// Edit a task (Owner Protected)
-app.put('/api/tasks/:id', authMiddleware, upload.array('images', 5), (req, res) => {
-    const { id } = req.params;
-    const { title, description, difficulty, tags } = req.body;
-    
-    let existingImages = req.body.existing_images || [];
-    if (!Array.isArray(existingImages)) existingImages = [existingImages];
-    
-    let newImages = [];
-    if (req.files && req.files.length > 0) {
-        newImages = req.files.map(f => `/uploads/${f.filename}`);
-    }
-    
-    const finalImages = [...existingImages, ...newImages];
-    const finalImagesJson = JSON.stringify(finalImages);
-    const tagsJson = tags || '[]';
-    
-    db.get("SELECT * FROM tasks WHERE id = ?", [id], async (err, task) => {
-        if (err || !task) return res.status(404).json({ error: 'Task not found' });
-        
-        let oldImages = [];
-        if (task.images_json) { try { oldImages = JSON.parse(task.images_json); } catch(e){} }
-        else if (task.image_url) { oldImages = [task.image_url]; }
-        
-        const imagesChanged = JSON.stringify(oldImages) !== finalImagesJson;
-        let diff = difficulty || task.difficulty;
-        
-        db.run(`UPDATE tasks SET title = ?, description = ?, difficulty = ?, images_json = ?, tags_json = ? WHERE id = ?`, 
-        [title, description, diff, finalImagesJson, tagsJson, id], async function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            
-            if (task.status === 'done' && bot && channelId) {
-                db.get("SELECT * FROM tasks WHERE id = ?", [id], async (err, updatedTask) => {
-                    if (imagesChanged) {
-                        await deleteTelegramMessages(updatedTask);
-                        await sendTelegramNotification(updatedTask);
-                    } else {
-                        const caption = getTelegramCaption(updatedTask);
-                        let msgIds = [];
-                        if (updatedTask.telegram_message_ids_json) {
-                            try { msgIds = JSON.parse(updatedTask.telegram_message_ids_json); } catch(e){}
-                        } else if (updatedTask.telegram_message_id) {
-                            msgIds = [updatedTask.telegram_message_id];
-                        }
-                        
-                        if (msgIds.length > 0) {
-                            try {
-                                if (finalImages.length > 0) {
-                                    await bot.telegram.editMessageCaption(channelId, msgIds[0], undefined, caption, { parse_mode: 'HTML' });
-                                } else {
-                                    await bot.telegram.editMessageText(channelId, msgIds[0], undefined, caption, { parse_mode: 'HTML' });
-                                }
-                            } catch(e) { console.error('Error editing TG', e); }
-                        }
-                    }
-                });
-            }
-            res.json({ success: true });
-        });
-    });
-});
-
-function getTelegramCaption(task) {
-    const templatePath = path.join(__dirname, 'telegram_template.txt');
-    let template = `<b>ТАСК ВЫПОЛНЕН</b>\n\n<b>Название:</b> {title}\n<b>Сложность:</b> {stars}\n{tags}\n<b>Описание:</b> {description}\n\n<i>Создана: {created_at}</i>\n<i>Выполнена: {completed_at}</i>`;
-    if (fs.existsSync(templatePath)) {
-        try {
-            template = fs.readFileSync(templatePath, 'utf8');
-        } catch(e) {
-            console.error('Error reading telegram_template.txt', e);
-        }
-    }
-
-    const diff = task.difficulty || 1;
-    const stars = '★'.repeat(diff) + '☆'.repeat(3 - diff);
-    
-    let tagsStr = '';
-    if (task.tags_json) {
-        try {
-            const tagsArr = JSON.parse(task.tags_json);
-            if (tagsArr.length > 0) {
-                tagsStr = `<b>Теги:</b> ${tagsArr.map(t => '#' + t.name.replace(/\s+/g, '_')).join(' ')}\n`;
-            }
-        } catch(e) {}
-    }
-
-    const dateOpts = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-    const createdAtStr = new Date(task.created_at).toLocaleString('ru-RU', dateOpts);
-    const completedAtStr = task.completed_at ? new Date(task.completed_at).toLocaleString('ru-RU', dateOpts) : '';
-    
-    let caption = template
-        .replace(/{title}/g, task.title)
-        .replace(/{stars}/g, stars)
-        .replace(/{tags}/g, tagsStr)
-        .replace(/{description}/g, task.description || 'Нет описания')
-        .replace(/{created_at}/g, createdAtStr)
-        .replace(/{completed_at}/g, completedAtStr);
-        
-    return caption;
-}
-
-async function deleteTelegramMessages(task) {
-    let msgIds = [];
-    if (task.telegram_message_ids_json) {
-        try { msgIds = JSON.parse(task.telegram_message_ids_json); } catch(e){}
-    } else if (task.telegram_message_id) {
-        msgIds = [task.telegram_message_id];
-    }
-    
-    for (let msgId of msgIds) {
-        try { await bot.telegram.deleteMessage(channelId, msgId); } catch(e) {}
-    }
-}
-
-function isVideo(url) {
-    return !!url.match(/\.(mp4|webm|mov|mkv)$/i);
-}
-
-async function sendTelegramNotification(task) {
-    try {
-        const caption = getTelegramCaption(task);
-        let images = [];
-        if (task.images_json) { try { images = JSON.parse(task.images_json); } catch(e){} }
-        else if (task.image_url) { images = [task.image_url]; }
-
-        let msgIds = [];
-        
-        if (images.length === 0) {
-            const sent = await bot.telegram.sendMessage(channelId, caption, { parse_mode: 'HTML' });
-            if (sent) msgIds.push(sent.message_id);
-        } else if (images.length === 1) {
-            const imageRelPath = images[0].replace(/^\/uploads\//, '');
-            const imagePath = path.join(uploadsDir, imageRelPath);
-            if (fs.existsSync(imagePath)) {
-                let sent;
-                if (isVideo(images[0])) {
-                    sent = await bot.telegram.sendVideo(channelId, { source: imagePath }, { caption: caption, parse_mode: 'HTML' });
-                } else {
-                    sent = await bot.telegram.sendPhoto(channelId, { source: imagePath }, { caption: caption, parse_mode: 'HTML' });
-                }
-                if (sent) msgIds.push(sent.message_id);
-            } else {
-                const sent = await bot.telegram.sendMessage(channelId, caption, { parse_mode: 'HTML' });
-                if (sent) msgIds.push(sent.message_id);
-            }
-        } else {
-            const media = [];
-            for (let i = 0; i < images.length; i++) {
-                const imageRelPath = images[i].replace(/^\/uploads\//, '');
-                const imagePath = path.join(uploadsDir, imageRelPath);
-                if (fs.existsSync(imagePath)) {
-                    let m = { type: isVideo(images[i]) ? 'video' : 'photo', media: { source: imagePath } };
-                    if (i === 0) { m.caption = caption; m.parse_mode = 'HTML'; }
-                    media.push(m);
-                }
-            }
-            if (media.length > 0) {
-                const sentArr = await bot.telegram.sendMediaGroup(channelId, media);
-                if (sentArr && Array.isArray(sentArr)) msgIds = sentArr.map(m => m.message_id);
-            } else {
-                const sent = await bot.telegram.sendMessage(channelId, caption, { parse_mode: 'HTML' });
-                if (sent) msgIds.push(sent.message_id);
-            }
-        }
-        
-        if (msgIds.length > 0) {
-            db.run(`UPDATE tasks SET telegram_message_ids_json = ? WHERE id = ?`, [JSON.stringify(msgIds), task.id]);
-        }
-    } catch (error) { console.error('Error sending Telegram notification:', error); }
-}
-
-// Backups
-function backupDatabase() {
-    const dbPath = path.resolve(dataDir, 'database.sqlite');
-    if (fs.existsSync(dbPath)) {
-        const date = new Date();
-        const timestamp = date.toISOString().replace(/[:.]/g, '-');
-        const backupPath = path.join(backupsDir, `database_backup_${timestamp}.sqlite`);
-        
-        fs.copyFile(dbPath, backupPath, (err) => {
-            if (!err) {
-                console.log(`Успешный бекап базы данных: ${backupPath}`);
-                cleanOldBackups(backupsDir);
-            }
-        });
-    }
-}
-
-function cleanOldBackups(dir) {
-    fs.readdir(dir, (err, files) => {
-        if (err) return;
-        const backups = files.filter(f => f.startsWith('database_backup_') && f.endsWith('.sqlite'));
-        if (backups.length > 7) {
-            backups.sort();
-            const toDelete = backups.slice(0, backups.length - 7);
-            toDelete.forEach(file => fs.unlink(path.join(dir, file), () => {}));
-        }
-    });
-}
-
-// Health check endpoint for Railway / Cloud proxies
+// Health check
 app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${port}`);
-    backupDatabase();
-    setInterval(backupDatabase, 24 * 60 * 60 * 1000);
 });

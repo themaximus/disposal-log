@@ -1,152 +1,102 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     let selectedTags = [];
+    let currentUser = null;
     let isOwnerLoggedIn = false;
     window.isOwnerLoggedIn = false;
 
-    // Owner Authentication State
-    function getAdminToken() {
-        return localStorage.getItem('disposal_admin_token') || '';
+    function getSessionToken() {
+        return localStorage.getItem('session_token') || '';
     }
 
     async function authFetch(url, options = {}) {
         options.headers = options.headers || {};
-        const token = getAdminToken();
+        options.credentials = 'include';
+        const token = getSessionToken();
         if (token) {
             if (options.headers instanceof Headers) {
-                options.headers.set('x-admin-key', token);
+                options.headers.set('x-session-token', token);
             } else {
-                options.headers['x-admin-key'] = token;
+                options.headers['x-session-token'] = token;
             }
         }
         const response = await fetch(url, options);
         if (response.status === 401) {
-            localStorage.removeItem('disposal_admin_token');
-            updateOwnerUI(false);
-            openAuthModal('Требуется пароль владельца.');
+            updateUserUI(null);
         }
         return response;
     }
 
-    const btnAuth = document.getElementById('btn-auth');
-    const modalAuthOverlay = document.getElementById('modal-auth');
-    const btnCloseAuth = document.getElementById('btn-close-auth');
-    const btnCancelAuth = document.getElementById('btn-cancel-auth');
-    const formAuth = document.getElementById('form-auth');
-    const authPasswordInput = document.getElementById('auth-password');
+    const modalOAuthOverlay = document.getElementById('modal-oauth');
+    const btnLoginModal = document.getElementById('btn-login-modal');
+    const btnCloseOAuth = document.getElementById('btn-close-oauth');
+    const userProfileWidget = document.getElementById('user-profile-widget');
+    const userAvatar = document.getElementById('user-avatar');
+    const userName = document.getElementById('user-name');
+    const btnLogout = document.getElementById('btn-logout');
 
-    function openAuthModal(msg) {
-        if (modalAuthOverlay) {
-            if (authPasswordInput) authPasswordInput.value = '';
-            modalAuthOverlay.classList.add('active');
-        }
+    function openOAuthModal() {
+        if (modalOAuthOverlay) modalOAuthOverlay.classList.add('active');
     }
 
-    function closeAuthModal() {
-        if (modalAuthOverlay) modalAuthOverlay.classList.remove('active');
+    function closeOAuthModal() {
+        if (modalOAuthOverlay) modalOAuthOverlay.classList.remove('active');
     }
 
-    if (btnAuth) {
-        btnAuth.addEventListener('click', () => {
-            if (isOwnerLoggedIn) {
-                if (confirm('Выйти из режима владельца?')) {
-                    localStorage.removeItem('disposal_admin_token');
-                    updateOwnerUI(false);
-                }
-            } else {
-                openAuthModal();
-            }
-        });
-    }
+    if (btnLoginModal) btnLoginModal.addEventListener('click', openOAuthModal);
+    if (btnCloseOAuth) btnCloseOAuth.addEventListener('click', closeOAuthModal);
 
-    if (btnCloseAuth) btnCloseAuth.addEventListener('click', closeAuthModal);
-    if (btnCancelAuth) btnCancelAuth.addEventListener('click', closeAuthModal);
-
-    if (formAuth) {
-        formAuth.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const password = authPasswordInput.value;
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
             try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    localStorage.setItem('disposal_admin_token', data.token);
-                    closeAuthModal();
-                    updateOwnerUI(true);
-                } else {
-                    alert(data.error || 'Неверный пароль!');
-                }
-            } catch(err) {
-                alert('Ошибка сети при авторизации');
-            }
+                await authFetch('/api/auth/logout', { method: 'POST' });
+            } catch(e) {}
+            localStorage.removeItem('session_token');
+            updateUserUI(null);
+            fetchTasks();
         });
     }
 
     async function checkOwnerStatus() {
-        // Secret URL parameter login (?key=YOUR_SECRET_KEY or ?admin=YOUR_SECRET_KEY)
         const urlParams = new URLSearchParams(window.location.search);
-        const secretKey = urlParams.get('key') || urlParams.get('admin');
-        
-        if (secretKey) {
-            try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: secretKey })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    localStorage.setItem('disposal_admin_token', data.token);
-                    history.replaceState(null, '', window.location.pathname);
-                    updateOwnerUI(true);
-                    return;
-                }
-            } catch(e) {}
+        const sessionToken = urlParams.get('session');
+        if (sessionToken) {
+            localStorage.setItem('session_token', sessionToken);
+            history.replaceState(null, '', window.location.pathname);
         }
 
-        const token = getAdminToken();
-        if (!token) {
-            updateOwnerUI(false);
-            return;
-        }
         try {
-            const res = await fetch('/api/auth/check', {
-                headers: { 'x-admin-key': token }
-            });
-            const data = await res.json();
-            updateOwnerUI(!!data.isOwner);
+            const res = await authFetch('/api/auth/me');
+            if (res.ok) {
+                const data = await res.json();
+                updateUserUI(data.user);
+            } else {
+                updateUserUI(null);
+            }
         } catch(e) {
-            updateOwnerUI(false);
+            updateUserUI(null);
         }
     }
 
-    // Secret Hotkey Ctrl+Shift+A for Owner Login
-    document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a' || e.key === 'Ф' || e.key === 'ф')) {
-            e.preventDefault();
-            if (isOwnerLoggedIn) {
-                if (confirm('Выйти из режима владельца?')) {
-                    localStorage.removeItem('disposal_admin_token');
-                    updateOwnerUI(false);
-                }
-            } else {
-                openAuthModal();
-            }
-        }
-    });
+    function updateUserUI(user) {
+        currentUser = user;
+        const isLoggedIn = !!user;
+        isOwnerLoggedIn = isLoggedIn;
+        window.isOwnerLoggedIn = isLoggedIn;
+        document.body.classList.toggle('is-owner', isLoggedIn);
 
-    function updateOwnerUI(isOwner) {
-        isOwnerLoggedIn = isOwner;
-        window.isOwnerLoggedIn = isOwner;
-        document.body.classList.toggle('is-owner', !!isOwner);
+        if (userProfileWidget) userProfileWidget.style.display = isLoggedIn ? 'flex' : 'none';
+        if (btnLoginModal) btnLoginModal.style.display = isLoggedIn ? 'none' : 'inline-flex';
+
+        if (isLoggedIn && user) {
+            if (userAvatar) userAvatar.src = user.avatar_url || 'images/disposal_log_logo.png';
+            if (userName) userName.textContent = user.name || user.email || 'Пользователь';
+        }
 
         document.querySelectorAll('.owner-only').forEach(el => {
-            el.style.display = isOwner ? '' : 'none';
+            el.style.display = isLoggedIn ? '' : 'none';
         });
+
         if (currentTasks && currentTasks.length > 0) {
             renderTasks(currentTasks);
         }
