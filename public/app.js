@@ -39,15 +39,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalOAuthOverlay) modalOAuthOverlay.classList.add('active');
     }
 
+    function setAppMode(mode) {
+        const isWorkspace = mode === 'workspace';
+        document.body.classList.toggle('mode-workspace', isWorkspace);
+
+        const tabMain = document.getElementById('tab-nav-main');
+        const tabWorkspace = document.getElementById('tab-nav-workspace');
+        const mobMain = document.getElementById('mob-nav-main');
+        const mobWorkspace = document.getElementById('mob-nav-workspace');
+
+        if (tabMain) tabMain.classList.toggle('active', !isWorkspace);
+        if (tabWorkspace) tabWorkspace.classList.toggle('active', isWorkspace);
+        if (mobMain) mobMain.classList.toggle('active', !isWorkspace);
+        if (mobWorkspace) mobWorkspace.classList.toggle('active', isWorkspace);
+
+        if (isWorkspace) {
+            const boardEl = document.getElementById('kanban-board-section');
+            if (boardEl) boardEl.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    const tabNavMain = document.getElementById('tab-nav-main');
+    const tabNavWorkspace = document.getElementById('tab-nav-workspace');
+    const mobNavMain = document.getElementById('mob-nav-main');
+    const mobNavWorkspace = document.getElementById('mob-nav-workspace');
+
+    if (tabNavMain) tabNavMain.addEventListener('click', () => setAppMode('landing'));
+    if (tabNavWorkspace) tabNavWorkspace.addEventListener('click', () => setAppMode('workspace'));
+    if (mobNavMain) mobNavMain.addEventListener('click', () => { if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); setAppMode('landing'); });
+    if (mobNavWorkspace) mobNavWorkspace.addEventListener('click', () => { if (typeof closeMobileSidebar === 'function') closeMobileSidebar(); setAppMode('workspace'); });
+
     const btnHeroBoard = document.getElementById('btn-hero-board');
     const btnHeroLogin = document.getElementById('btn-hero-login');
 
     if (btnHeroBoard) {
         btnHeroBoard.addEventListener('click', () => {
-            const boardEl = document.getElementById('kanban-board-section');
-            if (boardEl) {
-                boardEl.scrollIntoView({ behavior: 'smooth' });
-            }
+            setAppMode('workspace');
         });
     }
 
