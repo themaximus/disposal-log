@@ -1125,38 +1125,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Edit button click
-        card.querySelector('.edit').addEventListener('click', (e) => {
-            e.stopPropagation();
-            modalTitle.textContent = 'Редактировать Механику';
-            taskIdInput.value = task.id;
-            document.getElementById('task-title').value = task.title;
-            document.getElementById('task-desc').value = task.description || '';
-            const diffRadios = document.getElementsByName('difficulty');
-            for(let radio of diffRadios) {
-                if(radio.value == task.difficulty) radio.checked = true;
-            }
-            
-            selectedTags = task.tags ? [...task.tags] : [];
-            renderTagsUI();
+        const btnEdit = card.querySelector('.edit');
+        if (btnEdit) {
+            btnEdit.addEventListener('click', (e) => {
+                e.stopPropagation();
+                modalTitle.textContent = 'Редактировать Механику';
+                taskIdInput.value = task.id;
+                document.getElementById('task-title').value = task.title;
+                document.getElementById('task-desc').value = task.description || '';
+                const diffRadios = document.getElementsByName('difficulty');
+                for(let radio of diffRadios) {
+                    if(radio.value == task.difficulty) radio.checked = true;
+                }
+                
+                selectedTags = task.tags ? [...task.tags] : [];
+                renderTagsUI();
 
-            currentExistingImages = task.images ? [...task.images] : [];
-            renderExistingImages();
+                currentExistingImages = task.images ? [...task.images] : [];
+                renderExistingImages();
 
-            formAddTask.querySelector('button[type="submit"]').textContent = 'Сохранить изменения';
-            modalOverlay.classList.add('active');
-        });
+                formAddTask.querySelector('button[type="submit"]').textContent = 'Сохранить изменения';
+                modalOverlay.classList.add('active');
+            });
+        }
 
         // Delete button click
-        card.querySelector('.delete').addEventListener('click', async (e) => {
-            e.stopPropagation();
-            if(confirm('Вы уверены, что хотите удалить эту задачу?')) {
-                try {
-                    const res = await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' });
-                    if (res.ok) fetchTasks();
-                    else alert('Не удалось удалить задачу');
-                } catch (e) { console.error(e); alert('Ошибка сети при удалении'); }
-            }
-        });
+        const btnDelete = card.querySelector('.delete');
+        if (btnDelete) {
+            btnDelete.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if(confirm('Вы уверены, что хотите удалить эту задачу?')) {
+                    try {
+                        const res = await authFetch(`/api/tasks/${task.id}`, { method: 'DELETE' });
+                        if (res.ok) fetchTasks();
+                        else alert('Не удалось удалить задачу');
+                    } catch (e) { console.error(e); alert('Ошибка сети при удалении'); }
+                }
+            });
+        }
 
         // Click on card opens details
         card.addEventListener('click', () => {
