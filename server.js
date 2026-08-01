@@ -91,13 +91,33 @@ const upload = multer({ storage: storage });
 
 // API Endpoints
 
-// Authentication API
+// Anti-Bruteforce Rate Limiter for Auth
+const authAttempts = new Map(); // ip -> { count, lockUntil }
+
 app.post('/api/auth/login', (req, res) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const now = Date.now();
+    const attempt = authAttempts.get(ip) || { count: 0, lockUntil: 0 };
+    
+    if (attempt.lockUntil > now) {
+        const remainingMin = Math.ceil((attempt.lockUntil - now) / 60000);
+        return res.status(429).json({ success: false, error: `Слишком много попыток. Заблокировано на ${remainingMin} мин.` });
+    }
+
     const { password } = req.body;
-    if (password === ADMIN_PASSWORD) {
+    if (password && password === ADMIN_PASSWORD) {
+        authAttempts.delete(ip);
         return res.json({ success: true, token: ADMIN_PASSWORD });
     }
-    return res.status(401).json({ success: false, error: 'Неверный пароль владельца' });
+    
+    attempt.count += 1;
+    if (attempt.count >= 5) {
+        attempt.lockUntil = now + 15 * 60 * 1000; // 15 minutes lockout
+        console.warn(`[SECURITY] IP ${ip} locked out for 15 minutes due to failed login attempts.`);
+    }
+    authAttempts.set(ip, attempt);
+
+    return res.status(401).json({ success: false, error: 'Неверный секретный ключ' });
 });
 
 app.get('/api/auth/check', (req, res) => {

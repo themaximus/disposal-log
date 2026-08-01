@@ -87,6 +87,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function checkOwnerStatus() {
+        // Secret URL parameter login (?key=YOUR_SECRET_KEY or ?admin=YOUR_SECRET_KEY)
+        const urlParams = new URLSearchParams(window.location.search);
+        const secretKey = urlParams.get('key') || urlParams.get('admin');
+        
+        if (secretKey) {
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: secretKey })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    localStorage.setItem('disposal_admin_token', data.token);
+                    history.replaceState(null, '', window.location.pathname);
+                    updateOwnerUI(true);
+                    return;
+                }
+            } catch(e) {}
+        }
+
         const token = getAdminToken();
         if (!token) {
             updateOwnerUI(false);
@@ -102,6 +123,21 @@ document.addEventListener('DOMContentLoaded', () => {
             updateOwnerUI(false);
         }
     }
+
+    // Secret Hotkey Ctrl+Shift+A for Owner Login
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a' || e.key === 'Ф' || e.key === 'ф')) {
+            e.preventDefault();
+            if (isOwnerLoggedIn) {
+                if (confirm('Выйти из режима владельца?')) {
+                    localStorage.removeItem('disposal_admin_token');
+                    updateOwnerUI(false);
+                }
+            } else {
+                openAuthModal();
+            }
+        }
+    });
 
     function updateOwnerUI(isOwner) {
         isOwnerLoggedIn = isOwner;
