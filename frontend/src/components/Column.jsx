@@ -1,13 +1,40 @@
-import React from 'react';
+import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 
-export default function Column({ column, tasks, onEditTask, onDeleteTask, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
+export default function Column({ column, tasks, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <section className="column" id={`column-${column.column_key}`}>
       <div className="column-header" style={{ borderTop: `3px solid ${column.color || '#388bfd'}` }}>
         <h2>
           {column.title} <span className="count">{tasks.length}</span>
         </h2>
+        
+        <div style={{ position: 'relative' }}>
+          <button
+            className="btn-col-action"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            title="Настройки колонки"
+          >
+            ⋮
+          </button>
+          
+          {isMenuOpen && (
+            <div
+              className="floating-dropdown-menu"
+              style={{ top: '30px', right: 0, minWidth: '160px' }}
+              onMouseLeave={() => setIsMenuOpen(false)}
+            >
+              <button className="dropdown-item" onClick={() => { setIsMenuOpen(false); onEditColumn(column); }}>
+                ✏️ Настроить
+              </button>
+              <button className="dropdown-item danger" onClick={() => { setIsMenuOpen(false); onDeleteColumn(column.id); }}>
+                🗑️ Удалить
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div

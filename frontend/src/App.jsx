@@ -9,10 +9,13 @@ import BoardModal from './modals/BoardModal';
 import ShareModal from './modals/ShareModal';
 import AuthModal from './modals/AuthModal';
 import ProfileModal from './modals/ProfileModal';
+import SettingsModal from './modals/SettingsModal';
+import ColumnModal from './modals/ColumnModal';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentTab, setCurrentTab] = useState('workspace'); // 'landing' | 'workspace'
+  const [viewMode, setViewMode] = useState(3); // 1, 2, 3 columns view
   const [boards, setBoards] = useState([]);
   const [currentBoardId, setCurrentBoardId] = useState(null);
   const [columns, setColumns] = useState([]);
@@ -33,6 +36,9 @@ export default function App() {
   const [shareBoardModal, setShareBoardModal] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
+  const [columnToEdit, setColumnToEdit] = useState(null);
 
   useEffect(() => {
     // Fetch Current User
@@ -187,6 +193,20 @@ export default function App() {
       });
   };
 
+  const handleSaveColumn = (colData) => {
+    setColumns(prev => prev.map(c => c.id === colData.id ? { ...c, ...colData } : c));
+    setIsColumnModalOpen(false);
+  };
+
+  const handleDeleteColumn = (colId) => {
+    if (!window.confirm('Удалить эту колонку?')) return;
+    setColumns(prev => prev.filter(c => c.id !== colId));
+  };
+
+  const handleLogout = () => {
+    window.location.href = '/api/auth/logout';
+  };
+
   return (
     <div className="app-container">
       <div className="animated-bg"></div>
@@ -194,10 +214,14 @@ export default function App() {
       <Header
         currentUser={currentUser}
         currentTab={currentTab}
+        viewMode={viewMode}
         onSelectTab={(tab) => setCurrentTab(tab)}
+        onChangeViewMode={(mode) => setViewMode(mode)}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
         onAddTask={() => { setTaskToEdit(null); setIsTaskModalOpen(true); }}
+        onLogout={handleLogout}
       />
 
       {currentTab === 'landing' ? (
@@ -217,12 +241,24 @@ export default function App() {
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />
 
-          <main className="board">
-            {columns.map(col => (
+          <main
+            className="board"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${viewMode}, minmax(320px, 1fr))`,
+              gap: '1.25rem',
+              flex: 1,
+              overflowX: 'auto',
+              padding: '1.25rem 2rem'
+            }}
+          >
+            {columns.slice(0, viewMode).map(col => (
               <Column
                 key={col.id}
                 column={col}
                 tasks={tasks.filter(t => (t.status || 'todo') === col.column_key)}
+                onEditColumn={(col) => { setColumnToEdit(col); setIsColumnModalOpen(true); }}
+                onDeleteColumn={handleDeleteColumn}
                 onEditTask={(task) => { setTaskToEdit(task); setIsTaskModalOpen(true); }}
                 onDeleteTask={handleDeleteTask}
                 onDragStartTask={handleDragStartTask}
@@ -243,6 +279,19 @@ export default function App() {
 
       {isProfileModalOpen && (
         <ProfileModal user={currentUser} onClose={() => setIsProfileModalOpen(false)} />
+      )}
+
+      {isSettingsModalOpen && (
+        <SettingsModal onClose={() => setIsSettingsModalOpen(false)} />
+      )}
+
+      {isColumnModalOpen && (
+        <ColumnModal
+          columnToEdit={columnToEdit}
+          boardId={currentBoardId}
+          onClose={() => setIsColumnModalOpen(false)}
+          onSave={handleSaveColumn}
+        />
       )}
 
       {isTaskModalOpen && (
