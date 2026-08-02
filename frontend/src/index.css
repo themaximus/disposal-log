@@ -62,7 +62,6 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* Background */
 .animated-bg {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -78,7 +77,8 @@ body {
     align-items: center;
     background: var(--github-surface);
     border-bottom: 1px solid var(--github-border);
-    padding: 0.75rem 2rem;
+    padding: 0.65rem 1.5rem;
+    height: 60px;
     box-shadow: 0 1px 0 rgba(31, 35, 40, 0.04);
     z-index: 20;
 }
@@ -90,7 +90,7 @@ body {
 }
 
 .github-title {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     font-weight: 600;
     color: #ffffff;
 }
@@ -98,7 +98,7 @@ body {
 .text-green { color: var(--github-green-text); font-weight: 600; }
 
 .system-status {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--text-muted);
     display: flex;
     align-items: center;
@@ -125,6 +125,69 @@ body {
     gap: 0.75rem;
 }
 
+/* User Profile Widget Fix */
+.user-profile-widget {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(22, 27, 34, 0.85);
+    border: 1px solid var(--github-border);
+    padding: 0.25rem 0.65rem 0.25rem 0.35rem;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-profile-widget:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--github-canvas);
+}
+
+.user-avatar-wrapper {
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    border: 2px solid var(--github-blue) !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.user-avatar-img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+}
+
+.user-info-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.user-name-text {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-main);
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-provider-badge {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
 .btn {
     padding: 0.45rem 1rem;
     border-radius: 6px;
@@ -143,6 +206,20 @@ body {
 .btn-primary { background-color: var(--github-green); color: #ffffff; }
 .btn-primary:hover { background-color: var(--github-green-hover); }
 .btn-secondary { background: var(--github-subtle); color: var(--text-muted); }
+.btn-icon {
+    background: var(--github-subtle);
+    border: 1px solid var(--github-border);
+    color: var(--text-main);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.btn-icon:hover { background: #30363d; }
 
 /* Workspace Layout */
 .workspace-wrapper {
@@ -251,7 +328,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-width: 340px;
+    min-width: 320px;
     min-height: 0;
 }
 
@@ -325,8 +402,27 @@ body {
 .task-card[data-diff="2"] { border-left: 4px solid var(--diff-2); }
 .task-card[data-diff="3"] { border-left: 4px solid var(--diff-3); }
 
-.card-title { font-size: 1rem; font-weight: 600; color: var(--text-main); }
-.card-desc { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.3rem; }
+.card-banner {
+    width: 100%;
+    max-height: 130px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--github-border);
+    margin-bottom: 0.5rem;
+}
+
+.card-title { font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
+.card-desc { color: var(--text-muted); font-size: 0.82rem; margin-top: 0.3rem; line-height: 1.4; }
+
+.card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+.tag-badge {
+    padding: 0.2rem 0.55rem;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #ffffff;
+    display: inline-block;
+}
 
 .card-footer {
     display: flex; justify-content: space-between; align-items: center;
@@ -362,18 +458,3 @@ body {
 .sync-indicator.active { opacity: 1; transform: translateY(0); }
 .sync-spinner { width: 14px; height: 14px; border: 2px solid rgba(56, 139, 253, 0.3); border-top-color: #58a6ff; border-radius: 50%; animation: syncSpin 0.7s linear infinite; }
 @keyframes syncSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-/* Floating Dropdown */
-.floating-dropdown-menu {
-    position: fixed; background: #161b22; border: 1px solid #30363d;
-    border-radius: 8px; box-shadow: 0 12px 36px rgba(0,0,0,0.8);
-    min-width: 190px; z-index: 999999; display: flex; flex-direction: column;
-    padding: 0.35rem 0; animation: dropdownFadeIn 0.15s cubic-bezier(0.2, 0, 0, 1);
-}
-.floating-dropdown-menu .dropdown-item {
-    background: transparent; border: none; color: #c9d1d9; font-size: 0.83rem;
-    padding: 0.55rem 0.85rem; text-align: left; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
-}
-.floating-dropdown-menu .dropdown-item:hover { background: #21262d; color: #58a6ff; }
-.floating-dropdown-menu .dropdown-item.danger:hover { background: rgba(248, 81, 73, 0.15); color: #f85149; }
-@keyframes dropdownFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }

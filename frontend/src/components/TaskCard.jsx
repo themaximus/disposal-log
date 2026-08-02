@@ -2,7 +2,10 @@ import React from 'react';
 
 export default function TaskCard({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop }) {
   const diffStars = '★'.repeat(task.difficulty || 1) + '☆'.repeat(3 - (task.difficulty || 1));
-  const coverImage = (task.images && task.images.length > 0) ? task.images[0] : null;
+  
+  const validCover = (task.images && task.images.length > 0 && typeof task.images[0] === 'string' && task.images[0].startsWith('/uploads/'))
+    ? task.images[0]
+    : (task.image_url && task.image_url.startsWith('/uploads/')) ? task.image_url : null;
 
   return (
     <div
@@ -13,8 +16,13 @@ export default function TaskCard({ task, onEdit, onDelete, onDragStart, onDragOv
       onDragOver={(e) => onDragOver(e, task)}
       onDrop={(e) => onDrop(e, task)}
     >
-      {coverImage && (
-        <img src={coverImage} alt="Cover" className="card-banner" />
+      {validCover && (
+        <img
+          src={validCover}
+          alt="Cover"
+          className="card-banner"
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
       )}
       <div className="card-content">
         <div className="card-header">
@@ -29,7 +37,7 @@ export default function TaskCard({ task, onEdit, onDelete, onDragStart, onDragOv
         {task.tags && task.tags.length > 0 && (
           <div className="card-tags">
             {task.tags.map((t, idx) => (
-              <span key={idx} className="tag-badge" style={{ backgroundColor: t.color }}>
+              <span key={idx} className="tag-badge" style={{ backgroundColor: t.color || '#3b82f6' }}>
                 {t.name}
               </span>
             ))}
