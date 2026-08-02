@@ -315,8 +315,17 @@ app.get(['/api/auth/github/callback', '/auth/github/callback'], async (req, res)
     }
 });
 
-// 2. Google OAuth
+// 2. Google OAuth (Standard clean login: no scary permissions)
 app.get(['/api/auth/google', '/auth/google'], (req, res) => {
+    const clientId = getEnvVar('GOOGLE_CLIENT_ID');
+    if (!clientId) return res.status(500).send('GOOGLE_CLIENT_ID не настроен в вашей панели Railway.');
+    const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
+    const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email`;
+    res.redirect(googleUrl);
+});
+
+// 2b. Google Drive Consent Route (Called only when user explicitly connects Google Drive for media uploads!)
+app.get(['/api/auth/google-drive', '/auth/google-drive'], (req, res) => {
     const clientId = getEnvVar('GOOGLE_CLIENT_ID');
     if (!clientId) return res.status(500).send('GOOGLE_CLIENT_ID не настроен в вашей панели Railway.');
     const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
@@ -364,7 +373,7 @@ app.get(['/api/auth/google/callback', '/auth/google/callback'], async (req, res)
             createSession(user.id, (err, token) => {
                 if (err) return res.redirect('/?auth_error=session_failed');
                 res.setHeader('Set-Cookie', `session_token=${token}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`);
-                res.redirect(`/?session=${token}`);
+                res.redirect(`/?session=${token}&tab=workspace`);
             });
         });
     } catch(e) {

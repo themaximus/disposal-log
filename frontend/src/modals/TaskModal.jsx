@@ -264,6 +264,49 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
           <div className="form-group">
             <label>Медиафайлы (Изображения и Видео MP4/WebM)</label>
             
+            {currentUser && !currentUser.google_access_token && (
+              <div style={{
+                background: 'rgba(56, 139, 253, 0.08)',
+                border: '1px solid rgba(56, 139, 253, 0.25)',
+                borderRadius: '8px',
+                padding: '0.75rem 0.9rem',
+                marginBottom: '0.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.5rem'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#4285F4' }}>cloud</span>
+                    Подключить личный Google Диск
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                    Сохраняйте медиафайлы прямо в ваше личное облако Google.
+                  </div>
+                </div>
+                <a
+                  href="/api/auth/google-drive"
+                  className="btn btn-secondary"
+                  style={{
+                    padding: '0.4rem 0.75rem',
+                    fontSize: '0.78rem',
+                    whiteSpace: 'nowrap',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    background: '#4285F4',
+                    color: '#fff',
+                    borderColor: '#4285F4'
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.95rem' }}>add_link</span>
+                  Подключить
+                </a>
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
               <input
                 type="text"
