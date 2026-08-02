@@ -53,51 +53,45 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
     }
   }, [taskToEdit]);
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    setIsUploading(true);
+    const googleToken = currentUser && currentUser.google_access_token;
+
+    if (googleToken) {
+      try {
+        const uploadedUrls = [];
+        for (let i = 0; i < files.length; i++) {
+          const driveUrl = await uploadFileDirectToGoogleDrive(files[i], googleToken);
+          uploadedUrls.push(driveUrl);
+        }
+        setImages(prev => [...prev, ...uploadedUrls]);
+        setIsUploading(false);
+        return;
+      } catch (err) {
+        console.error('Direct Google Drive upload failed, falling back:', err);
+      }
+    }
+
+    // Fallback if no google token
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
       formData.append('images', files[i]);
     }
 
-    setIsUploading(true);
-
-    fetch('/api/upload/google-drive', {
+    fetch('/api/upload', {
       method: 'POST',
       body: formData
     })
       .then(res => res.json())
       .then(data => {
-        if (data.urls && Array.isArray(data.urls) && data.urls.length > 0) {
+        if (data.urls && Array.isArray(data.urls)) {
           setImages(prev => [...prev, ...data.urls]);
-          return;
         }
-        return fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        })
-          .then(res => res.json())
-          .then(fallbackData => {
-            if (fallbackData.urls && Array.isArray(fallbackData.urls)) {
-              setImages(prev => [...prev, ...fallbackData.urls]);
-            }
-          });
       })
-      .catch(() => {
-        fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        })
-          .then(res => res.json())
-          .then(fallbackData => {
-            if (fallbackData.urls && Array.isArray(fallbackData.urls)) {
-              setImages(prev => [...prev, ...fallbackData.urls]);
-            }
-          })
-          .catch(console.error);
-      })
+      .catch(console.error)
       .finally(() => setIsUploading(false));
   };
 

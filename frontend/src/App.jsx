@@ -887,6 +887,7 @@ export default function App() {
       {isTaskModalOpen && (
         <TaskModal
           task={taskToEdit}
+          currentUser={currentUser}
           onClose={() => { setIsTaskModalOpen(false); setTaskToEdit(null); }}
           onSave={handleSaveTask}
         />
