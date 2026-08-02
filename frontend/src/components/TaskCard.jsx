@@ -1,8 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStart, onDragOverTask, onDragOver, onDrop }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [subtasks, setSubtasks] = useState(task.subtasks || []);
+
+  useEffect(() => {
+    if (Array.isArray(task.subtasks)) {
+      setSubtasks(task.subtasks);
+    } else if (typeof task.subtasks_json === 'string') {
+      try {
+        const parsed = JSON.parse(task.subtasks_json);
+        if (Array.isArray(parsed)) setSubtasks(parsed);
+      } catch (e) {}
+    }
+  }, [task.subtasks, task.subtasks_json]);
 
   const diffStars = '★'.repeat(task.difficulty || 1) + '☆'.repeat(3 - (task.difficulty || 1));
   
@@ -120,67 +131,54 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
           <p className="card-desc">{task.description}</p>
         )}
 
-        {/* Sub-task Progress Badge & Bar */}
-        {totalSubtasks > 0 && (
-          <div className="card-subtasks-section" style={{ marginTop: '0.55rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-              <span className="subtask-badge-pill" style={{
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                color: completedSubtasks === totalSubtasks ? 'var(--github-green-text)' : 'var(--github-blue-text)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.3rem'
-              }}>
-                ☑️ {completedSubtasks}/{totalSubtasks} ({subtaskPercent}%)
+        {/* Sub-task Dedicated Inner Container Box */}
+        {totalSubtasks > 0 ? (
+          <div className="card-subtasks-box">
+            <div className="subtasks-box-header">
+              <span className={`subtask-badge-pill ${completedSubtasks === totalSubtasks ? 'done' : ''}`}>
+                📋 Чек-лист {completedSubtasks}/{totalSubtasks} ({subtaskPercent}%)
               </span>
             </div>
-            <div className="card-subtask-progress-track" style={{
-              height: '4px',
-              background: 'var(--github-canvas)',
-              borderRadius: '10px',
-              overflow: 'hidden',
-              border: '1px solid var(--github-border)'
-            }}>
-              <div style={{
-                height: '100%',
-                width: `${subtaskPercent}%`,
-                background: completedSubtasks === totalSubtasks ? 'var(--github-green-text)' : 'var(--github-blue)',
-                transition: 'width 0.3s ease'
-              }} />
+            
+            <div className="card-subtask-progress-track">
+              <div
+                className={`subtask-progress-bar-fill ${completedSubtasks === totalSubtasks ? 'done' : ''}`}
+                style={{ width: `${subtaskPercent}%` }}
+              />
             </div>
 
-            {/* Quick interactive subtask items (Visible in non-stack or 1-column view) */}
             {!isInStack && (
-              <div className="card-subtask-quick-list" style={{ marginTop: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <div className="card-subtask-quick-list">
                 {subtasks.map((st, idx) => (
                   <label
                     key={st.id || idx}
+                    className={`subtask-row ${st.completed ? 'completed' : ''}`}
                     onClick={(e) => e.stopPropagation()}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      cursor: 'pointer',
-                      fontSize: '0.76rem',
-                      color: st.completed ? 'var(--text-muted)' : 'var(--text-main)',
-                      textDecoration: st.completed ? 'line-through' : 'none'
-                    }}
                   >
                     <input
                       type="checkbox"
                       checked={st.completed}
                       onChange={(e) => handleToggleSubtask(e, idx)}
-                      style={{ accentColor: 'var(--github-green)' }}
                     />
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {st.text}
-                    </span>
+                    <span className="subtask-text">{st.text}</span>
                   </label>
                 ))}
               </div>
             )}
           </div>
+        ) : (
+          /* Button to add subtasks for tasks that don't have them yet */
+          <button
+            type="button"
+            className="btn-add-checklist-card"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(task);
+            }}
+            title="Добавить чек-лист подзадач"
+          >
+            + Добавить чек-лист
+          </button>
         )}
 
         {task.tags && task.tags.length > 0 && (

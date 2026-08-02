@@ -1101,6 +1101,123 @@ body {
     margin-top: 0.45rem !important;
 }
 
+/* Dedicated Sub-tasks Container Box inside Task Card */
+.card-subtasks-box {
+    margin-top: 0.6rem;
+    background: var(--github-canvas);
+    border: 1px solid var(--github-border);
+    border-radius: 8px;
+    padding: 0.55rem 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.subtasks-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.subtask-badge-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--github-blue-text);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.subtask-badge-pill.done {
+    color: var(--github-green-text);
+}
+
+.card-subtask-progress-track {
+    height: 4px;
+    background: var(--github-surface);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--github-border);
+}
+
+.subtask-progress-bar-fill {
+    height: 100%;
+    background: var(--github-blue);
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.subtask-progress-bar-fill.done {
+    background: var(--github-green-text);
+}
+
+.card-subtask-quick-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.2rem;
+}
+
+.subtask-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    cursor: pointer;
+    padding: 0.2rem 0.35rem;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+}
+
+.subtask-row:hover {
+    background: var(--github-subtle);
+}
+
+.subtask-row input[type="checkbox"] {
+    accent-color: var(--github-green);
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+}
+
+.subtask-row .subtask-text {
+    font-size: 0.76rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.subtask-row.completed .subtask-text {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    opacity: 0.75;
+}
+
+/* Quick Add Checklist Button on Card */
+.btn-add-checklist-card {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    background: transparent;
+    border: 1px dashed var(--github-border);
+    color: var(--text-muted);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.55rem;
+    transition: all 0.15s ease;
+    width: fit-content;
+}
+
+.btn-add-checklist-card:hover {
+    border-color: var(--github-blue-hover);
+    color: var(--github-blue-text);
+    background: rgba(56, 139, 253, 0.08);
+}
+
 /* Drag Over Stacking Target Visual Indicator */
 .task-card.drag-over-target {
     border: 2px dashed #58a6ff !important;
