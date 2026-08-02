@@ -14,8 +14,8 @@ import ColumnModal from './modals/ColumnModal';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [currentTab, setCurrentTab] = useState('workspace'); // 'landing' | 'workspace'
-  const [viewMode, setViewMode] = useState(3); // 1, 2, 3 columns view
+  const [currentTab, setCurrentTab] = useState('landing'); // Defaults to 'landing' for guest protection
+  const [viewMode, setViewMode] = useState(3);
   const [boards, setBoards] = useState([]);
   const [currentBoardId, setCurrentBoardId] = useState(null);
   const [columns, setColumns] = useState([]);
@@ -54,26 +54,31 @@ export default function App() {
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data && (data.id || data.user)) {
-          setCurrentUser(data.id ? data : data.user);
+          const userObj = data.id ? data : data.user;
+          setCurrentUser(userObj);
+          setCurrentTab('workspace'); // Open workspace automatically for logged-in user
+          fetchBoards();
         } else {
           setCurrentUser(null);
+          setCurrentTab('landing');
         }
       })
-      .catch(() => setCurrentUser(null));
-
-    // Fetch Boards
-    fetchBoards();
+      .catch(() => {
+        setCurrentUser(null);
+        setCurrentTab('landing');
+      });
   }, []);
 
   const fetchBoards = () => {
     fetch('/api/boards')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           setBoards(data);
-          if (data.length > 0 && !currentBoardId) {
-            selectBoard(data[0].id);
-          }
+          selectBoard(data[0].id);
+        } else {
+          setBoards([]);
+          setTasks([]);
         }
       })
       .catch(console.error);
@@ -96,9 +101,20 @@ export default function App() {
       .then(data => {
         if (Array.isArray(data)) {
           setTasks(data);
+        } else {
+          setTasks([]);
         }
       })
       .catch(console.error);
+  };
+
+  // Tab Switcher Guard: Require Auth for 'workspace'
+  const handleSelectTab = (tab) => {
+    if (tab === 'workspace' && !currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    setCurrentTab(tab);
   };
 
   // Drag & Drop Handlers
@@ -218,6 +234,9 @@ export default function App() {
       .finally(() => {
         document.cookie = 'session_token=; path=/; max-age=0';
         setCurrentUser(null);
+        setBoards([]);
+        setTasks([]);
+        setCurrentBoardId(null);
         setIsProfileModalOpen(false);
         setCurrentTab('landing');
         setIsAuthModalOpen(true);
@@ -232,7 +251,7 @@ export default function App() {
         currentUser={currentUser}
         currentTab={currentTab}
         viewMode={viewMode}
-        onSelectTab={(tab) => setCurrentTab(tab)}
+        onSelectTab={handleSelectTab}
         onChangeViewMode={(mode) => setViewMode(mode)}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
@@ -244,7 +263,7 @@ export default function App() {
       {currentTab === 'landing' ? (
         <LandingHero
           onOpenAuth={() => setIsAuthModalOpen(true)}
-          onOpenWorkspace={() => setCurrentTab('workspace')}
+          onOpenWorkspace={() => handleSelectTab('workspace')}
         />
       ) : (
         <div className="workspace-wrapper">

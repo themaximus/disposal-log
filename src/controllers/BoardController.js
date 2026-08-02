@@ -4,15 +4,11 @@ const BoardRepository = require('../repositories/BoardRepository');
 class BoardController {
     static getBoards(req, res) {
         if (!req.user) {
-            return res.json([
-                { id: 1, name: 'Основная доска', description: 'Демонстрационная доска проекта', icon: '📋' }
-            ]);
+            return res.json([]);
         }
         BoardService.getUserBoards(req.user.id, (err, boards) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.json((boards && boards.length > 0) ? boards : [
-                { id: 1, name: 'Основная доска', description: 'Ваша главная доска задач', icon: '📋' }
-            ]);
+            res.json(boards || []);
         });
     }
 
