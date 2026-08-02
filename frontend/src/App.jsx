@@ -21,7 +21,9 @@ import {
   getOfflineBoardData,
   saveOfflineBoardData,
   deleteOfflineBoard,
-  addOfflineBoard
+  addOfflineBoard,
+  getGuestBoard,
+  GUEST_BOARD_ID
 } from './utils/offlineStorage';
 
 export default function App() {
@@ -65,10 +67,20 @@ export default function App() {
         if (user) {
           setCurrentUser(user);
           fetchBoards();
+        } else {
+          initGuestMode();
         }
       })
-      .catch(console.error);
+      .catch(() => {
+        initGuestMode();
+      });
   }, []);
+
+  const initGuestMode = () => {
+    const guestBoard = getGuestBoard();
+    setBoards([guestBoard]);
+    selectBoard(GUEST_BOARD_ID, guestBoard);
+  };
 
   const fetchBoards = () => {
     const offlineList = getOfflineBoards();
@@ -129,7 +141,8 @@ export default function App() {
 
   const handleSelectTab = (tab) => {
     if (tab === 'workspace' && !currentUser) {
-      setIsAuthModalOpen(true);
+      initGuestMode();
+      setCurrentTab('workspace');
       return;
     }
     setCurrentTab(tab);
@@ -587,13 +600,10 @@ export default function App() {
     fetch('/api/auth/logout', { method: 'POST' })
       .then(() => {
         setCurrentUser(null);
-        setBoards([]);
-        setCurrentBoardId(null);
-        setColumns([]);
-        setTasks([]);
+        initGuestMode();
         setCurrentTab('landing');
         setSyncStatus('synced');
-        setSyncMessage('Выполнен выход из аккаунта');
+        setSyncMessage('Режим гостей (Офлайн)');
       })
       .catch(console.error);
   };
