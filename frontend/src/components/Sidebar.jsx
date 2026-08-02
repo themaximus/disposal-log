@@ -30,90 +30,91 @@ export default function Sidebar({
 
   return (
     <aside className={`boards-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-      {/* Top Brand Header */}
-      <div className="sidebar-brand-header">
-        <div className="sidebar-logo-block">
-          <span className="material-symbols-outlined" style={{ color: 'var(--github-green-text)', fontSize: '1.4rem' }}>
-            rocket_launch
-          </span>
-          {!isCollapsed && (
-            <div className="sidebar-logo-text">
-              <span className="github-title" style={{ fontSize: '1.05rem' }}>PULSE</span>
-              <span className="system-status">
-                <span className="status-dot"></span> Online
-              </span>
+      {/* Top Group: Logo, Nav, View Modes */}
+      <div className="sidebar-top-group">
+        {/* Brand Header */}
+        <div className="sidebar-brand-header">
+          <div className="sidebar-logo-block">
+            <span className="material-symbols-outlined" style={{ color: 'var(--github-green-text)', fontSize: '1.35rem' }}>
+              rocket_launch
+            </span>
+            {!isCollapsed && (
+              <div className="sidebar-logo-text">
+                <span className="github-title" style={{ fontSize: '1rem', letterSpacing: '0.5px' }}>PULSE</span>
+                <span className="system-status">
+                  <span className="status-dot"></span> Online
+                </span>
+              </div>
+            )}
+          </div>
+
+          <button
+            className="btn-collapse-toggle"
+            onClick={onToggleCollapse}
+            title={isCollapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар'}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>
+              {isCollapsed ? 'chevron_right' : 'chevron_left'}
+            </span>
+          </button>
+        </div>
+
+        {/* Primary Nav Tabs */}
+        <div className="sidebar-nav-section">
+          <button
+            className={`sidebar-nav-btn ${currentTab === 'landing' ? 'active' : ''}`}
+            onClick={() => onSelectTab('landing')}
+            title="Главная страница"
+          >
+            <span className="material-symbols-outlined">home</span>
+            {!isCollapsed && <span>Главная</span>}
+          </button>
+
+          <button
+            className={`sidebar-nav-btn ${currentTab === 'workspace' ? 'active' : ''}`}
+            onClick={() => onSelectTab('workspace')}
+            title="Рабочее пространство Задачи"
+          >
+            <span className="material-symbols-outlined">space_dashboard</span>
+            {!isCollapsed && <span>Задачи</span>}
+          </button>
+
+          {/* Integrated View Modes Switcher */}
+          {currentTab === 'workspace' && (
+            <div className="sidebar-view-row">
+              {!isCollapsed && <span className="view-mode-label">Вид сетки:</span>}
+              <div className="view-modes-segmented">
+                <button
+                  className={`btn-view-segment ${viewMode === 1 ? 'active' : ''}`}
+                  onClick={() => onChangeViewMode(1)}
+                  title="1 карточка в ряд"
+                >
+                  1
+                </button>
+                <button
+                  className={`btn-view-segment ${viewMode === 2 ? 'active' : ''}`}
+                  onClick={() => onChangeViewMode(2)}
+                  title="2 карточки в ряд"
+                >
+                  2
+                </button>
+                <button
+                  className={`btn-view-segment ${viewMode === 3 ? 'active' : ''}`}
+                  onClick={() => onChangeViewMode(3)}
+                  title="3 карточки в ряд"
+                >
+                  3
+                </button>
+              </div>
             </div>
           )}
         </div>
-
-        <button
-          className="btn-collapse-toggle"
-          onClick={onToggleCollapse}
-          title={isCollapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар'}
-        >
-          <span className="material-symbols-outlined">
-            {isCollapsed ? 'chevron_right' : 'chevron_left'}
-          </span>
-        </button>
       </div>
 
-      {/* Navigation Tabs (Главная / Задачи) */}
-      <div className="sidebar-nav-section">
-        <button
-          className={`sidebar-nav-btn ${currentTab === 'landing' ? 'active' : ''}`}
-          onClick={() => onSelectTab('landing')}
-          title="Главная страница"
-        >
-          <span className="material-symbols-outlined">home</span>
-          {!isCollapsed && <span>Главная</span>}
-        </button>
-
-        <button
-          className={`sidebar-nav-btn ${currentTab === 'workspace' ? 'active' : ''}`}
-          onClick={() => onSelectTab('workspace')}
-          title="Рабочее пространство Задачи"
-        >
-          <span className="material-symbols-outlined">space_dashboard</span>
-          {!isCollapsed && <span>Задачи</span>}
-        </button>
-      </div>
-
-      {/* View Mode Switcher (1, 2, 3) */}
-      {currentTab === 'workspace' && (
-        <div className="sidebar-view-modes-box">
-          {!isCollapsed && <span className="sidebar-subheading">Вид:</span>}
-          <div className="view-modes" style={{ width: isCollapsed ? '100%' : 'auto', justifyContent: 'center' }}>
-            <button
-              className={`btn-view ${viewMode === 1 ? 'active' : ''}`}
-              onClick={() => onChangeViewMode(1)}
-              title="1 карточка в ряд"
-            >
-              1
-            </button>
-            <button
-              className={`btn-view ${viewMode === 2 ? 'active' : ''}`}
-              onClick={() => onChangeViewMode(2)}
-              title="2 карточки в ряд"
-            >
-              2
-            </button>
-            <button
-              className={`btn-view ${viewMode === 3 ? 'active' : ''}`}
-              onClick={() => onChangeViewMode(3)}
-              title="3 карточки в ряд"
-            >
-              3
-            </button>
-          </div>
-        </div>
-      )}
-
-      <hr className="sidebar-divider" />
-
-      {/* Boards Section */}
+      {/* Middle Group: Boards List (Scrollable) */}
       <div className="sidebar-content">
         <div className="sidebar-boards-header">
-          {!isCollapsed && <span className="sidebar-heading">Мои Доски</span>}
+          {!isCollapsed && <span className="sidebar-heading">МОИ ДОСКИ</span>}
         </div>
 
         <div className="boards-list">
@@ -224,14 +225,14 @@ export default function Sidebar({
         </div>
 
         {!isCollapsed && (
-          <button className="btn btn-secondary btn-new-board" style={{ marginTop: '0.8rem', width: '100%' }} onClick={onCreateBoard}>
+          <button className="btn btn-secondary btn-new-board" style={{ marginTop: '0.6rem', width: '100%' }} onClick={onCreateBoard}>
             <span className="material-symbols-outlined" style={{ fontSize: '1rem', marginRight: '4px' }}>add</span>
             Создать доску
           </button>
         )}
       </div>
 
-      {/* Bottom Footer Section: User Profile & Settings */}
+      {/* Bottom Fixed Footer: Profile & Settings */}
       <div className="sidebar-footer">
         {currentUser ? (
           <div className="sidebar-user-widget" onClick={onOpenProfile} title="Профиль пользователя">
