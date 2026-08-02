@@ -21,9 +21,7 @@ import {
   getOfflineBoardData,
   saveOfflineBoardData,
   deleteOfflineBoard,
-  addOfflineBoard,
-  getGuestBoard,
-  GUEST_BOARD_ID
+  addOfflineBoard
 } from './utils/offlineStorage';
 
 export default function App() {
@@ -78,16 +76,18 @@ export default function App() {
 
   const initGuestMode = (shouldSwitchTab = false) => {
     const offlineList = getOfflineBoards();
-    let guestBoards = offlineList;
-    if (guestBoards.length === 0) {
-      const defaultBoard = getGuestBoard();
-      guestBoards = [defaultBoard];
-      addOfflineBoard(defaultBoard);
+    setBoards(offlineList);
+
+    if (offlineList.length > 0) {
+      const activeId = currentBoardId || offlineList[0].id;
+      const targetBoard = offlineList.find(b => String(b.id) === String(activeId)) || offlineList[0];
+      selectBoard(targetBoard.id, targetBoard);
+    } else {
+      setCurrentBoardId(null);
+      setColumns([]);
+      setTasks([]);
     }
-    setBoards(guestBoards);
-    const activeId = currentBoardId || guestBoards[0].id;
-    const targetBoard = guestBoards.find(b => String(b.id) === String(activeId)) || guestBoards[0];
-    selectBoard(targetBoard.id, targetBoard);
+
     if (shouldSwitchTab) {
       setCurrentTab('workspace');
     }
@@ -724,7 +724,31 @@ export default function App() {
           />
         )}
 
-        {currentTab === 'workspace' && (
+        {currentTab === 'workspace' && boards.length === 0 && (
+          <div className="empty-workspace-state">
+            <div className="empty-state-card">
+              <span className="material-symbols-outlined empty-icon" style={{ fontSize: '3rem', color: 'var(--github-blue-text)', marginBottom: '0.75rem' }}>
+                space_dashboard
+              </span>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>
+                У вас пока нет ни одной доски
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '0 0 1.5rem 0', maxWidth: '360px', lineHeight: 1.45 }}>
+                Создайте свою первую доску, чтобы распределять задачи по колонкам и управлять процессами.
+              </p>
+              <button
+                className="btn btn-primary"
+                style={{ background: 'var(--github-green)', borderColor: 'var(--github-green-hover)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.4rem', fontWeight: 700, fontSize: '0.92rem' }}
+                onClick={() => setIsBoardModalOpen(true)}
+              >
+                <span className="material-symbols-outlined">add</span>
+                Создать доску
+              </button>
+            </div>
+          </div>
+        )}
+
+        {currentTab === 'workspace' && boards.length > 0 && (
           <main className="board" data-card-mode={viewMode}>
             {columns.map(col => (
               <Column

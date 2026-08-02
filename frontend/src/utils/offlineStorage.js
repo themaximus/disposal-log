@@ -3,16 +3,6 @@
 const OFFLINE_BOARDS_KEY = 'pulse_offline_boards_list';
 const getBoardDataKey = (boardId) => `pulse_offline_board_data_${boardId}`;
 
-export const GUEST_BOARD_ID = 'guest_board';
-
-export const getGuestBoard = () => ({
-  id: GUEST_BOARD_ID,
-  name: 'Гостевая доска',
-  icon: '⚡',
-  is_offline: true,
-  description: 'Локальное пространство гостей (localStorage)'
-});
-
 export const getOfflineBoards = () => {
   try {
     const raw = localStorage.getItem(OFFLINE_BOARDS_KEY);
@@ -34,35 +24,11 @@ export const getOfflineBoardData = (boardId) => {
     if (raw) return JSON.parse(raw);
   } catch (e) {}
 
-  if (boardId === GUEST_BOARD_ID) {
-    return {
-      columns: [
-        { id: 'off_col_1', column_key: 'todo', title: 'Предстоящие', position: 0, color: '#f85149' },
-        { id: 'off_col_2', column_key: 'in_progress', title: 'В работе', position: 1, color: '#d29922' },
-        { id: 'off_col_3', column_key: 'done', title: 'Реализованные', position: 2, color: '#3fb950' }
-      ],
-      tasks: [
-        {
-          id: 'guest_sample_1',
-          board_id: GUEST_BOARD_ID,
-          title: 'Добро пожаловать в Гостевой режим! ⚡',
-          description: 'Все ваши задачи сохраняются локально в вашем браузере (localStorage). Сервер нагружается ровно на 0%!',
-          status: 'todo',
-          difficulty: 3,
-          subtasks: [
-            { id: 's1', title: 'Создать первую задачу', done: false },
-            { id: 's2', title: 'Попробовать перетаскивание карточек', done: true }
-          ]
-        }
-      ]
-    };
-  }
-
   return {
     columns: [
       { id: 'off_col_1', column_key: 'todo', title: 'Предстоящие', position: 0, color: '#f85149' },
       { id: 'off_col_2', column_key: 'in_progress', title: 'В работе', position: 1, color: '#d29922' },
-      { id: 'off_col_3', color: 'done', title: 'Реализованные', position: 2, color: '#3fb950' }
+      { id: 'off_col_3', column_key: 'done', title: 'Реализованные', position: 2, color: '#3fb950' }
     ],
     tasks: []
   };

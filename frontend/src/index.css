@@ -1896,6 +1896,31 @@ body {
     margin-top: 0.75rem; font-size: 0.78rem; color: var(--text-muted);
 }
 
+.empty-workspace-state {
+    flex: 1;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    box-sizing: border-box;
+    background: var(--bg-main);
+}
+
+.empty-state-card {
+    background: var(--github-surface);
+    border: 1px solid var(--github-border);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
 /* ==========================================================================
    MOBILE & RESPONSIVE DESIGN SYSTEM (<768px & <576px)
    ========================================================================== */
