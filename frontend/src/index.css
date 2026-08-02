@@ -409,6 +409,89 @@ body {
     box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.15);
 }
 
+/* Option Cards (Share & Access Modal) */
+.option-cards-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.1rem;
+}
+
+.option-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: var(--github-canvas);
+    border: 1px solid var(--github-border);
+    padding: 0.75rem 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.option-card:hover {
+    border-color: #8b949e;
+    background: var(--github-subtle);
+}
+
+.option-card.active {
+    border-color: var(--github-blue-hover);
+    background: rgba(56, 139, 253, 0.12);
+    box-shadow: 0 0 0 1px var(--github-blue);
+}
+
+.option-card-icon {
+    font-size: 1.3rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--github-surface);
+    border-radius: 8px;
+    border: 1px solid var(--github-border);
+    flex-shrink: 0;
+}
+
+.option-card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.option-card-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.option-card-sub {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    line-height: 1.3;
+}
+
+.option-card-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--github-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: transparent;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.option-card.active .option-card-check {
+    border-color: var(--github-blue);
+    background: var(--github-blue);
+    color: #ffffff;
+}
+
 /* Custom Upload Zone */
 .custom-upload-zone {
     display: flex;
