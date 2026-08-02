@@ -11,6 +11,7 @@ import SettingsModal from './modals/SettingsModal';
 import TaskModal from './modals/TaskModal';
 import BoardModal from './modals/BoardModal';
 import ColumnModal from './modals/ColumnModal';
+import ManageColumnsModal from './modals/ManageColumnsModal';
 import ShareModal from './modals/ShareModal';
 
 export default function App() {
@@ -37,6 +38,8 @@ export default function App() {
 
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
   const [columnToEdit, setColumnToEdit] = useState(null);
+  const [isManageColumnsModalOpen, setIsManageColumnsModalOpen] = useState(false);
+  const [manageColumnsBoard, setManageColumnsBoard] = useState(null);
 
   const [draggedTaskId, setDraggedTaskId] = useState(null);
 
@@ -299,6 +302,17 @@ export default function App() {
     setIsColumnModalOpen(false);
   };
 
+  const handleSaveReorderedColumns = (reorderedCols) => {
+    setColumns(reorderedCols);
+    reorderedCols.forEach((col, idx) => {
+      fetch(`/api/columns/${col.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ position: idx })
+      }).catch(console.error);
+    });
+  };
+
   const handleDeleteColumn = (colId) => {
     if (!window.confirm('Удалить эту колонку?')) return;
     fetch(`/api/columns/${colId}`, { method: 'DELETE' })
@@ -367,6 +381,10 @@ export default function App() {
             onSelectBoard={selectBoard}
             onCreateBoard={() => setIsBoardModalOpen(true)}
             onOpenShare={(b) => setShareBoardModal(b)}
+            onOpenManageColumns={(b) => {
+              setManageColumnsBoard(b);
+              setIsManageColumnsModalOpen(true);
+            }}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />
@@ -390,21 +408,6 @@ export default function App() {
                 onDropColumn={handleDropColumn}
               />
             ))}
-
-            {/* Vertical Slim Hidden/Reveal Add New Column Button */}
-            <div className="add-column-wrapper" title="Добавить колонку">
-              <button
-                type="button"
-                className="btn-add-new-column"
-                onClick={() => {
-                  setColumnToEdit(null);
-                  setIsColumnModalOpen(true);
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '1.3rem' }}>add</span>
-                <span className="add-column-text-vertical">Добавить колонку</span>
-              </button>
-            </div>
           </main>
         </div>
       )}
@@ -445,6 +448,21 @@ export default function App() {
           boardId={currentBoardId}
           onClose={() => setIsColumnModalOpen(false)}
           onSave={handleSaveColumn}
+        />
+      )}
+
+      {isManageColumnsModalOpen && (
+        <ManageColumnsModal
+          board={manageColumnsBoard}
+          columns={columns}
+          onClose={() => setIsManageColumnsModalOpen(false)}
+          onSaveColumns={handleSaveReorderedColumns}
+          onAddColumn={(colData) => handleSaveColumn(colData)}
+          onEditColumn={(col) => {
+            setColumnToEdit(col);
+            setIsColumnModalOpen(true);
+          }}
+          onDeleteColumn={handleDeleteColumn}
         />
       )}
 
