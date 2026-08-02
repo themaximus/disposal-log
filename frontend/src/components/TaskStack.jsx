@@ -17,21 +17,11 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
         position: 'relative',
         width: '100%',
         height: 'auto',
-        minHeight: '165px',
-        marginBottom: `calc(1rem + ${maxOffsetPx}px)`,
-        marginRight: `${maxOffsetPx}px`
+        marginBottom: `calc(1rem + ${maxOffsetPx}px)`
       }}
     >
-      <div
-        className="stack-badge-bar"
-        style={{
-          position: 'absolute',
-          top: '-10px',
-          right: '8px',
-          zIndex: 999
-        }}
-      >
-        <span>📚 Стопка ({tasks.length})</span>
+      <div className="stack-header-bar">
+        <span className="stack-badge-pill">📚 Стопка ({tasks.length})</span>
         <button
           className="btn-unlink-stack"
           title="Разгруппировать стопку"
@@ -40,42 +30,43 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
             onUnlinkGroup(groupId);
           }}
         >
-          🔓
+          🔓 Разгруппировать
         </button>
       </div>
 
-      {reversedTasks.map((task, index) => {
-        const isVisible = index >= startVisibleIndex;
-        if (!isVisible) return null;
+      <div className="stack-deck-wrapper" style={{ position: 'relative', width: '100%' }}>
+        {reversedTasks.map((task, index) => {
+          const isVisible = index >= startVisibleIndex;
+          if (!isVisible) return null;
 
-        const offsetIndex = index - startVisibleIndex;
-        const offsetPx = offsetIndex * 6;
+          const offsetIndex = index - startVisibleIndex;
+          const offsetPx = offsetIndex * 6;
 
-        return (
-          <div
-            key={task.id}
-            className="stack-card-layer"
-            style={{
-              position: offsetIndex > 0 ? 'absolute' : 'relative',
-              top: offsetIndex > 0 ? `${offsetPx}px` : undefined,
-              left: offsetIndex > 0 ? `${offsetPx}px` : undefined,
-              width: '100%',
-              height: '100%',
-              zIndex: index + 1
-            }}
-          >
-            <TaskCard
-              task={task}
-              isInStack={true}
-              onEdit={onEditTask}
-              onDelete={onDeleteTask}
-              onDragStart={onDragStartTask}
-              onDragOver={onDragOverTask}
-              onDrop={onDropTask}
-            />
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={task.id}
+              className="stack-card-layer"
+              style={{
+                position: offsetIndex > 0 ? 'absolute' : 'relative',
+                top: offsetIndex > 0 ? `${offsetPx}px` : undefined,
+                left: offsetIndex > 0 ? `${offsetPx}px` : undefined,
+                width: '100%',
+                zIndex: index + 1
+              }}
+            >
+              <TaskCard
+                task={task}
+                isInStack={true}
+                onEdit={onEditTask}
+                onDelete={onDeleteTask}
+                onDragStart={onDragStartTask}
+                onDragOverTask={onDragOverTask}
+                onDrop={onDropTask}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

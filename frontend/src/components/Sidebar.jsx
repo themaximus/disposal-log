@@ -27,14 +27,14 @@ export default function Sidebar({ boards, currentBoardId, onSelectBoard, onCreat
               </div>
               {!isCollapsed && (
                 <button
-                  className="btn-dots"
+                  className="btn-board-settings"
                   onClick={(e) => {
                     e.stopPropagation();
                     onOpenShare(b);
                   }}
-                  title="Настройки доступа"
+                  title="Настройки доступа и шеринг"
                 >
-                  🔗
+                  ⚙️
                 </button>
               )}
             </div>
