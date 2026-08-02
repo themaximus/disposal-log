@@ -12,6 +12,15 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
 
   const isVideoUrl = (url) => typeof url === 'string' && /\.(mp4|webm|mov|ogg)$/i.test(url);
 
+  const parseGoogleDriveUrl = (url) => {
+    if (typeof url !== 'string') return url;
+    const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (driveMatch && driveMatch[1]) {
+      return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
+    }
+    return url;
+  };
+
   useEffect(() => {
     if (taskToEdit) {
       setTitle(taskToEdit.title || '');
@@ -246,12 +255,13 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     if (imageUrlInput.trim()) {
-                      setImages(prev => [...prev, imageUrlInput.trim()]);
+                      const formatted = parseGoogleDriveUrl(imageUrlInput.trim());
+                      setImages(prev => [...prev, formatted]);
                       setImageUrlInput('');
                     }
                   }
                 }}
-                placeholder="Вставьте прямую ссылку на картинку или Google Drive..."
+                placeholder="Вставьте ссылку на картинку или ссылку с Google Drive..."
                 style={{ flex: 1, padding: '0.45rem 0.65rem', fontSize: '0.82rem' }}
               />
               <button
@@ -259,7 +269,8 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
                 className="btn btn-secondary"
                 onClick={() => {
                   if (imageUrlInput.trim()) {
-                    setImages(prev => [...prev, imageUrlInput.trim()]);
+                    const formatted = parseGoogleDriveUrl(imageUrlInput.trim());
+                    setImages(prev => [...prev, formatted]);
                     setImageUrlInput('');
                   }
                 }}
