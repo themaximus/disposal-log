@@ -1343,6 +1343,10 @@ body.is-guest-view .task-card {
     background: rgba(255, 255, 255, 0.12);
 }
 
+.dropdown-menu {
+    display: none !important;
+}
+
 /* Floating Body Dropdown Menu & Items */
 .floating-dropdown-menu {
     position: fixed !important;
@@ -1401,19 +1405,30 @@ body.is-guest-view .task-card {
 
 .boards-sidebar.collapsed .sidebar-header-bar {
     justify-content: center !important;
+    align-items: center !important;
     padding: 0.85rem 0 !important;
     width: 100% !important;
 }
 
 .boards-sidebar.collapsed .sidebar-title-group {
     justify-content: center !important;
+    align-items: center !important;
     width: 100% !important;
     margin: 0 !important;
+}
+
+.boards-sidebar.collapsed .sidebar-icon {
+    font-size: 1.3rem !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .boards-sidebar.collapsed .sidebar-heading,
 .boards-sidebar.collapsed .board-item-name,
 .boards-sidebar.collapsed .dropdown-container,
+.boards-sidebar.collapsed .dropdown-menu,
 .boards-sidebar.collapsed .btn-new-board,
 .boards-sidebar.collapsed #btn-create-board {
     display: none !important;
@@ -1452,6 +1467,11 @@ body.is-guest-view .task-card {
     box-sizing: border-box !important;
 }
 
+.boards-sidebar.collapsed .board-item > div {
+    justify-content: center !important;
+    width: 100% !important;
+}
+
 .boards-sidebar.collapsed .board-item:hover {
     background: #21262d !important;
     border-color: #30363d !important;
@@ -1471,7 +1491,7 @@ body.is-guest-view .task-card {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     padding: 0 !important;
 }
 

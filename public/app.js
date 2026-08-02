@@ -698,10 +698,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h2>${col.title} <span class="count" id="count-${col.column_key}">0</span></h2>
                         <div class="dropdown-container owner-only">
                             <button type="button" class="btn-dots btn-col-dots" title="Опции колонки">⋮</button>
-                            <div class="dropdown-menu">
-                                <button type="button" class="dropdown-item btn-menu-col-edit">✏️ Настроить имя/цвет</button>
-                                ${columns.length > 1 ? '<button type="button" class="dropdown-item danger btn-menu-col-delete">🗑️ Удалить колонку</button>' : ''}
-                            </div>
                         </div>
                     </div>
                 </div>
