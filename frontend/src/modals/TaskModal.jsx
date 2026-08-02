@@ -7,6 +7,7 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
   const [images, setImages] = useState([]);
   const [subtasks, setSubtasks] = useState([]);
   const [newSubtaskText, setNewSubtaskText] = useState('');
+  const [imageUrlInput, setImageUrlInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   const isVideoUrl = (url) => typeof url === 'string' && /\.(mp4|webm|mov|ogg)$/i.test(url);
@@ -236,6 +237,38 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
           <div className="form-group">
             <label>Медиафайлы (Изображения и Видео MP4/WebM)</label>
             
+            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
+              <input
+                type="text"
+                value={imageUrlInput}
+                onChange={e => setImageUrlInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (imageUrlInput.trim()) {
+                      setImages(prev => [...prev, imageUrlInput.trim()]);
+                      setImageUrlInput('');
+                    }
+                  }
+                }}
+                placeholder="Вставьте прямую ссылку на картинку или Google Drive..."
+                style={{ flex: 1, padding: '0.45rem 0.65rem', fontSize: '0.82rem' }}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  if (imageUrlInput.trim()) {
+                    setImages(prev => [...prev, imageUrlInput.trim()]);
+                    setImageUrlInput('');
+                  }
+                }}
+                style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
+              >
+                + Ссылка
+              </button>
+            </div>
+
             <label className="custom-upload-zone">
               <input
                 type="file"
@@ -248,7 +281,7 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
                 <span className="material-symbols-outlined upload-icon" style={{ fontSize: '1.8rem', color: 'var(--github-blue-text)' }}>cloud_upload</span>
                 <div>
                   <span className="upload-title">
-                    {isUploading ? 'Загрузка файлов...' : 'Выбрать или перетащить медиафайлы'}
+                    {isUploading ? 'Загрузка файлов...' : 'Выбрать локальные файлы'}
                   </span>
                   <span className="upload-subtitle">Поддерживаются PNG, JPG, MP4, WebM</span>
                 </div>
