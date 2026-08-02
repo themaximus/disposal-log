@@ -178,7 +178,6 @@ initBot();
 // Express Middleware
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
-app.use(express.static('public'));
 app.use('/uploads', express.static(uploadsDir));
 
 // Multer setup with MIME validation
@@ -1021,24 +1020,29 @@ app.delete('/api/tasks/:id', sessionMiddleware, requireUser, (req, res) => {
     });
 });
 
-// Health check endpoint (MUST be before any static wildcard routes)
+// Health check endpoint (MUST respond 200 OK immediately for Railway)
 app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
 // Serve static frontend assets (dist for Vite React, fallback to public)
 const distDir = path.join(__dirname, 'dist');
-if (fs.existsSync(distDir)) {
-    app.use(express.static(distDir));
-    app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/uploads') || req.path === '/health') {
-            return next();
-        }
-        res.sendFile(path.join(distDir, 'index.html'));
-    });
-} else {
-    app.use(express.static(path.join(__dirname, 'public')));
-}
+const publicDir = path.join(__dirname, 'public');
+const staticDir = fs.existsSync(distDir) ? distDir : publicDir;
+
+app.use(express.static(staticDir));
+
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/uploads') || req.path === '/health') {
+        return next();
+    }
+    const indexPath = path.join(staticDir, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(200).send('OK');
+    }
+});
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${port}`);
