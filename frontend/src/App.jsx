@@ -452,6 +452,7 @@ export default function App() {
                 onDeleteColumn={handleDeleteColumn}
                 onEditTask={(task) => { setTaskToEdit(task); setIsTaskModalOpen(true); }}
                 onDeleteTask={handleDeleteTask}
+                onSubtasksChange={handleSubtasksChange}
                 onUnlinkGroup={handleUnlinkGroup}
                 onDragStartTask={handleDragStartTask}
                 onDragOverTask={handleDragOverTask}

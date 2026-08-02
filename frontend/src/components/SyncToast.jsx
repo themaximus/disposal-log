@@ -10,7 +10,7 @@ export default function SyncToast({ status, message }) {
       setVisible(true);
       const timer = setTimeout(() => {
         setVisible(false);
-      }, 2500);
+      }, 2000);
       return () => clearTimeout(timer);
     } else {
       setVisible(false);
@@ -22,9 +22,9 @@ export default function SyncToast({ status, message }) {
   return (
     <div className={`sync-indicator active ${status}`}>
       {status === 'syncing' && <span className="sync-spinner"></span>}
-      {status === 'synced' && <span className="sync-icon" style={{ display: 'inline-block', color: '#3fb950' }}>✓</span>}
-      {status === 'error' && <span className="sync-icon" style={{ display: 'inline-block', color: '#f85149' }}>✕</span>}
-      <span>{message || 'Сохранение...'}</span>
+      {status === 'synced' && <span className="sync-icon" style={{ color: '#3fb950' }}>✓</span>}
+      {status === 'error' && <span className="sync-icon" style={{ color: '#f85149' }}>✕</span>}
+      <span>{message || (status === 'synced' ? 'Изменения сохранены' : 'Синхронизация...')}</span>
     </div>
   );
 }

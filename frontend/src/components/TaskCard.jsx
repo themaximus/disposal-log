@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function TaskCard({ task, isInStack, isDwellStackReady, onEdit, onDelete, onDragStart, onDragOverTask, onDragOver, onDrop }) {
+export default function TaskCard({ task, isInStack, isDwellStackReady, onEdit, onDelete, onSubtasksChange, onDragStart, onDragOverTask, onDragOver, onDrop }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [subtasks, setSubtasks] = useState(task.subtasks || []);
 
@@ -42,11 +42,15 @@ export default function TaskCard({ task, isInStack, isDwellStackReady, onEdit, o
     const updated = subtasks.map((st, i) => i === index ? { ...st, completed: !st.completed } : st);
     setSubtasks(updated);
 
-    fetch(`/api/tasks/${task.id}/subtasks`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subtasks: updated })
-    }).catch(console.error);
+    if (typeof onSubtasksChange === 'function') {
+      onSubtasksChange(task.id, updated);
+    } else {
+      fetch(`/api/tasks/${task.id}/subtasks`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subtasks: updated })
+      }).catch(console.error);
+    }
   };
 
   const completedSubtasks = subtasks.filter(st => st.completed).length;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 import TaskStack from './TaskStack';
 
-export default function Column({ column, groupedItems, viewMode, dwellStackTargetId, onAddTask, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
+export default function Column({ column, groupedItems, viewMode, dwellStackTargetId, onAddTask, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onSubtasksChange, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Total task count
@@ -120,6 +120,7 @@ export default function Column({ column, groupedItems, viewMode, dwellStackTarge
                   tasks={item.tasks}
                   onEditTask={onEditTask}
                   onDeleteTask={onDeleteTask}
+                  onSubtasksChange={onSubtasksChange}
                   onUnlinkGroup={onUnlinkGroup}
                   onDragStartTask={onDragStartTask}
                   onDragOverTask={onDragOverTask}
@@ -135,6 +136,7 @@ export default function Column({ column, groupedItems, viewMode, dwellStackTarge
                 isDwellStackReady={dwellStackTargetId === item.task.id}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
+                onSubtasksChange={onSubtasksChange}
                 onDragStart={onDragStartTask}
                 onDragOverTask={onDragOverTask}
                 onDrop={onDropTask}
