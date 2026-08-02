@@ -249,6 +249,27 @@ export default function App() {
       });
   };
 
+  const handleSubtasksChange = (taskId, updatedSubtasks) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: updatedSubtasks, subtasks_json: JSON.stringify(updatedSubtasks) } : t));
+    setSyncStatus('syncing');
+    setSyncMessage('Синхронизация...');
+
+    fetch(`/api/tasks/${taskId}/subtasks`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subtasks: updatedSubtasks })
+    })
+      .then(() => {
+        setSyncStatus('synced');
+        setSyncMessage('Изменения сохранены');
+      })
+      .catch(() => {
+        setSyncStatus('error');
+        setSyncMessage('Ошибка сохранения');
+        fetchBoardTasks(currentBoardId);
+      });
+  };
+
   const handleDropColumn = (e, columnKey) => {
     e.preventDefault();
     clearDwellTimer();
