@@ -1343,19 +1343,50 @@ body.is-guest-view .task-card {
     background: rgba(255, 255, 255, 0.12);
 }
 
+/* Floating Body Dropdown Menu & Items */
 .floating-dropdown-menu {
-    position: fixed;
-    background: var(--github-surface);
-    border: 1px solid var(--github-border);
-    border-radius: 10px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
-    min-width: 180px;
-    z-index: 999999;
-    display: flex;
-    flex-direction: column;
-    padding: 0.4rem 0;
-    overflow: hidden;
+    position: fixed !important;
+    background: #161b22 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 8px !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    min-width: 190px !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0.35rem 0 !important;
+    overflow: hidden !important;
     animation: dropdownFadeIn 0.15s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.floating-dropdown-menu .dropdown-item {
+    background: transparent !important;
+    border: none !important;
+    color: #c9d1d9 !important;
+    font-size: 0.83rem !important;
+    padding: 0.55rem 0.85rem !important;
+    width: 100% !important;
+    text-align: left !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.5rem !important;
+    cursor: pointer !important;
+    font-family: inherit !important;
+    box-sizing: border-box !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+.floating-dropdown-menu .dropdown-item:hover {
+    background: #21262d !important;
+    color: #58a6ff !important;
+}
+
+.floating-dropdown-menu .dropdown-item.danger:hover {
+    background: rgba(248, 81, 73, 0.15) !important;
+    color: #f85149 !important;
 }
 
 @keyframes dropdownFadeIn {
@@ -1365,12 +1396,19 @@ body.is-guest-view .task-card {
 
 /* Collapsible Sidebar Mini Icons View */
 .boards-sidebar.collapsed {
-    width: 64px;
+    width: 60px !important;
 }
 
 .boards-sidebar.collapsed .sidebar-header-bar {
-    justify-content: center;
-    padding: 0.85rem 0;
+    justify-content: center !important;
+    padding: 0.85rem 0 !important;
+    width: 100% !important;
+}
+
+.boards-sidebar.collapsed .sidebar-title-group {
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 !important;
 }
 
 .boards-sidebar.collapsed .sidebar-heading,
@@ -1382,48 +1420,59 @@ body.is-guest-view .task-card {
 }
 
 .boards-sidebar.collapsed .sidebar-content {
-    padding: 0.75rem 0.4rem;
-    align-items: center;
+    padding: 0.75rem 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
 }
 
 .boards-sidebar.collapsed .boards-list {
-    align-items: center;
-    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
 }
 
 .boards-sidebar.collapsed .board-item {
-    width: 42px;
-    height: 42px;
-    padding: 0;
-    margin: 0 auto 0.4rem auto;
-    border-radius: 10px;
-    justify-content: center;
-    align-items: center;
-    border: 1px solid transparent;
-    background: transparent;
-    transition: all 0.2s ease;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
 }
 
 .boards-sidebar.collapsed .board-item:hover {
-    background: var(--github-canvas);
-    border-color: var(--github-border);
-    transform: scale(1.08);
+    background: #21262d !important;
+    border-color: #30363d !important;
+    transform: scale(1.08) !important;
 }
 
 .boards-sidebar.collapsed .board-item.active {
-    background: rgba(56, 139, 253, 0.15);
-    border-color: rgba(56, 139, 253, 0.5);
-    box-shadow: 0 0 12px rgba(56, 139, 253, 0.2);
+    background: rgba(56, 139, 253, 0.15) !important;
+    border-color: rgba(56, 139, 253, 0.5) !important;
+    box-shadow: 0 0 12px rgba(56, 139, 253, 0.2) !important;
 }
 
 .boards-sidebar.collapsed .board-item-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 1.3rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 1.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* Premium Option Cards (Replaces raw radio buttons) */
