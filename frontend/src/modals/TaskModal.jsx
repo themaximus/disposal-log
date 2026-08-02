@@ -54,6 +54,58 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
     }
   }, [activeTask]);
 
+  const uploadFileDirectToGoogleDrive = async (fileObj, accessToken) => {
+    const metadata = {
+      name: fileObj.name,
+      mimeType: fileObj.type || 'application/octet-stream'
+    };
+
+    const boundary = '-------314159265358979323846';
+    const delimiter = "\r\n--" + boundary + "\r\n";
+    const close_delim = "\r\n--" + boundary + "--";
+
+    const arrayBuffer = await fileObj.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64Data = btoa(binary);
+
+    const multipartRequestBody =
+      delimiter +
+      'Content-Type: application/json\r\n\r\n' +
+      JSON.stringify(metadata) +
+      delimiter +
+      'Content-Type: ' + (fileObj.type || 'application/octet-stream') + '\r\n' +
+      'Content-Transfer-Encoding: base64\r\n\r\n' +
+      base64Data +
+      close_delim;
+
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`
+      },
+      body: multipartRequestBody
+    });
+
+    const data = await res.json();
+    if (!data.id) throw new Error('Google Drive upload failed');
+
+    await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ role: 'reader', type: 'anyone' })
+    });
+
+    return `https://lh3.googleusercontent.com/d/${data.id}`;
+  };
+
   const handleFileUpload = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
