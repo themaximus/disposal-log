@@ -572,6 +572,7 @@ function ensureDefaultBoardAndColumns(userId, cb) {
     db.get("SELECT * FROM boards WHERE user_id = ? ORDER BY id ASC LIMIT 1", [userId], (err, board) => {
         if (err) return cb(err);
         if (board) {
+            db.run("UPDATE tasks SET board_id = ? WHERE (user_id = ? OR user_id IS NULL) AND board_id IS NULL", [board.id, userId]);
             return ensureDefaultColumnsForBoard(board.id, (cErr, cols) => cb(null, board, cols));
         }
 
@@ -859,21 +860,33 @@ app.get('/api/public/board/:identifier', sessionMiddleware, (req, res) => {
 // Tasks API
 app.get('/api/tasks', sessionMiddleware, (req, res) => {
     const boardId = req.query.board_id;
-    let query = "SELECT * FROM tasks WHERE user_id = 1 OR user_id IS NULL ORDER BY status DESC, position ASC, created_at DESC";
+    const userId = req.user ? req.user.id : null;
+
+    if (userId && boardId) {
+        db.run("UPDATE tasks SET board_id = ? WHERE (user_id = ? OR user_id IS NULL) AND board_id IS NULL", [boardId, userId]);
+    }
+
+    let query = "SELECT * FROM tasks WHERE (user_id = 1 OR user_id IS NULL) ORDER BY status DESC, position ASC, created_at DESC";
     let params = [];
     
-    if (req.user) {
+    if (userId) {
         if (boardId) {
-            query = "SELECT * FROM tasks WHERE user_id = ? AND board_id = ? ORDER BY position ASC, created_at DESC";
-            params = [req.user.id, boardId];
+            query = "SELECT * FROM tasks WHERE (user_id = ? OR user_id IS NULL) AND (board_id = ? OR board_id IS NULL) ORDER BY position ASC, created_at DESC";
+            params = [userId, boardId];
         } else {
             query = "SELECT * FROM tasks WHERE user_id = ? ORDER BY position ASC, created_at DESC";
-            params = [req.user.id];
+            params = [userId];
+        }
+    } else {
+        if (boardId) {
+            query = "SELECT * FROM tasks WHERE (board_id = ? OR board_id IS NULL) ORDER BY position ASC, created_at DESC";
+            params = [boardId];
         }
     }
     
     db.all(query, params, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
+        rows = rows || [];
         rows.forEach(r => {
             if (r.images_json) { try { r.images = JSON.parse(r.images_json); } catch(e) { r.images = []; } }
             else if (r.image_url) { r.images = [r.image_url]; }
