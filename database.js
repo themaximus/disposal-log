@@ -23,7 +23,23 @@ const db = new sqlite3.Database(dbPath, (err) => {
             avatar_url TEXT,
             provider TEXT NOT NULL,
             provider_id TEXT NOT NULL,
+            share_mode TEXT DEFAULT 'link',
+            share_token TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`, (err) => {
+            if (!err) {
+                db.run(`ALTER TABLE users ADD COLUMN share_mode TEXT DEFAULT 'link'`, () => {});
+                db.run(`ALTER TABLE users ADD COLUMN share_token TEXT`, () => {});
+            }
+        });
+
+        // Board Access Table for restricted invited users
+        db.run(`CREATE TABLE IF NOT EXISTS board_access (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            owner_id INTEGER NOT NULL,
+            granted_email TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(owner_id, granted_email)
         )`);
 
         // Sessions table for token authentication

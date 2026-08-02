@@ -493,13 +493,129 @@ app.post('/api/tags', sessionMiddleware, requireUser, (req, res) => {
     });
 });
 
-// Public Read-Only Board API (For Shared Guest View)
-app.get('/api/public/board/:userId', (req, res) => {
-    const targetUserId = req.params.userId;
-    db.get("SELECT id, name, email, avatar_url, provider FROM users WHERE id = ?", [targetUserId], (err, user) => {
-        if (err || !user) return res.status(404).json({ error: 'Пользователь или доска не найдена' });
+// Google Sheets-style Sharing API
+app.get('/api/share/settings', sessionMiddleware, requireUser, (req, res) => {
+    const userId = req.user.id;
+    db.get("SELECT id, share_mode, share_token FROM users WHERE id = ?", [userId], (err, user) => {
+        if (err || !user) return res.status(404).json({ error: 'Пользователь не найден' });
         
-        db.all("SELECT * FROM tasks WHERE user_id = ? ORDER BY status DESC, position ASC, created_at DESC", [targetUserId], (tErr, rows) => {
+        let token = user.share_token;
+        if (!token) {
+            token = crypto.randomUUID();
+            db.run("UPDATE users SET share_token = ? WHERE id = ?", [token, userId]);
+        }
+
+        const shareMode = user.share_mode || 'link';
+        const baseUrl = getAppUrl(req);
+        let shareUrl = `${baseUrl}/?share_token=${token}`;
+        if (shareMode === 'public') {
+            shareUrl = `${baseUrl}/?share=${userId}`;
+        }
+
+        db.all("SELECT granted_email FROM board_access WHERE owner_id = ?", [userId], (aErr, accessRows) => {
+            const invitedEmails = accessRows ? accessRows.map(r => r.granted_email) : [];
+            res.json({
+                shareMode,
+                shareToken: token,
+                shareUrl,
+                invitedEmails
+            });
+        });
+    });
+});
+
+app.put('/api/share/mode', sessionMiddleware, requireUser, (req, res) => {
+    const { shareMode } = req.body;
+    const allowedModes = ['private', 'public', 'link', 'restricted'];
+    if (!allowedModes.includes(shareMode)) {
+        return res.status(400).json({ error: 'Неверный режим доступа' });
+    }
+    db.run("UPDATE users SET share_mode = ? WHERE id = ?", [shareMode, req.user.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, shareMode });
+    });
+});
+
+app.post('/api/share/rotate-token', sessionMiddleware, requireUser, (req, res) => {
+    const newToken = crypto.randomUUID();
+    db.run("UPDATE users SET share_token = ? WHERE id = ?", [newToken, req.user.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const baseUrl = getAppUrl(req);
+        res.json({ success: true, shareToken: newToken, shareUrl: `${baseUrl}/?share_token=${newToken}` });
+    });
+});
+
+app.post('/api/share/invite', sessionMiddleware, requireUser, (req, res) => {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+        return res.status(400).json({ error: 'Укажите корректный E-mail' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    db.run("INSERT OR IGNORE INTO board_access (owner_id, granted_email) VALUES (?, ?)", [req.user.id, cleanEmail], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, email: cleanEmail });
+    });
+});
+
+app.delete('/api/share/invite', sessionMiddleware, requireUser, (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Укажите E-mail' });
+    const cleanEmail = email.trim().toLowerCase();
+    db.run("DELETE FROM board_access WHERE owner_id = ? AND granted_email = ?", [req.user.id, cleanEmail], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// Public Board View Endpoint with Google Sheets Access Control Logic
+app.get('/api/public/board/:identifier', sessionMiddleware, (req, res) => {
+    const identifier = req.params.identifier;
+    const tokenQuery = req.query.token;
+
+    db.get("SELECT id, name, email, avatar_url, provider, share_mode, share_token FROM users WHERE id = ? OR share_token = ?", [identifier, identifier], (err, user) => {
+        if (err || !user) return res.status(404).json({ error: 'Пользователь или доска не найдена' });
+
+        const shareMode = user.share_mode || 'link';
+
+        // 1. Private Mode
+        if (shareMode === 'private') {
+            if (!req.user || req.user.id !== user.id) {
+                return res.status(403).json({ error: 'Доска приватная. Владелец отключил доступ.' });
+            }
+        }
+
+        // 2. Link Access Mode (Requires secret token in identifier or query)
+        if (shareMode === 'link') {
+            const matchesToken = (identifier === user.share_token) || (tokenQuery === user.share_token);
+            const isOwner = req.user && req.user.id === user.id;
+            if (!matchesToken && !isOwner) {
+                return res.status(403).json({ error: 'Доступ возможен только по секретной ссылке.' });
+            }
+        }
+
+        // 3. Restricted Mode (Requires specific email grant)
+        if (shareMode === 'restricted') {
+            const isOwner = req.user && req.user.id === user.id;
+            if (!isOwner) {
+                if (!req.user || !req.user.email) {
+                    return res.status(403).json({ error: 'Доступ ограничен. Войдите под аккаунтом, которому предоставлен доступ.', requireAuth: true });
+                }
+                const userEmail = req.user.email.toLowerCase();
+                db.get("SELECT id FROM board_access WHERE owner_id = ? AND granted_email = ?", [user.id, userEmail], (aErr, access) => {
+                    if (aErr || !access) {
+                        return res.status(403).json({ error: `У вашего аккаунта (${userEmail}) нет доступа к этой доске.` });
+                    }
+                    sendBoardData(res, user);
+                });
+                return;
+            }
+        }
+
+        sendBoardData(res, user);
+    });
+
+    function sendBoardData(res, user) {
+        db.all("SELECT * FROM tasks WHERE user_id = ? ORDER BY status DESC, position ASC, created_at DESC", [user.id], (tErr, rows) => {
             if (tErr) return res.status(500).json({ error: tErr.message });
             rows.forEach(r => {
                 if (r.images_json) { try { r.images = JSON.parse(r.images_json); } catch(e) { r.images = []; } }
@@ -510,15 +626,15 @@ app.get('/api/public/board/:userId', (req, res) => {
                 else { r.tags = []; }
             });
             
-            db.all("SELECT * FROM tags WHERE user_id = ?", [targetUserId], (tagErr, tagRows) => {
+            db.all("SELECT * FROM tags WHERE user_id = ?", [user.id], (tagErr, tagRows) => {
                 res.json({
-                    user: { id: user.id, name: user.name, avatar_url: user.avatar_url, provider: user.provider },
+                    user: { id: user.id, name: user.name, avatar_url: user.avatar_url, provider: user.provider, share_mode: user.share_mode },
                     tasks: rows,
                     tags: tagRows || []
                 });
             });
         });
-    });
+    }
 });
 
 // Tasks API

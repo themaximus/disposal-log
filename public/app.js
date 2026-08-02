@@ -114,15 +114,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function fetchPublicBoard(userId) {
+    async function fetchPublicBoard(identifier) {
         try {
-            const res = await fetch(`/api/public/board/${userId}`);
+            const res = await authFetch(`/api/public/board/${identifier}`);
+            const bannerEl = document.getElementById('guest-share-banner');
+            const bannerText = document.getElementById('guest-banner-text');
+
             if (res.ok) {
                 const data = await res.json();
                 console.log('[Guest View] Loaded public board for user:', data.user);
                 
-                const bannerEl = document.getElementById('guest-share-banner');
-                const bannerText = document.getElementById('guest-banner-text');
                 const ownerName = (data.user && (data.user.name || data.user.email)) ? (data.user.name || data.user.email) : 'Пользователь';
                 
                 if (bannerText) bannerText.textContent = `👁️ Доска пользователя: ${ownerName} (Только чтение)`;
@@ -131,7 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderTasks(data.tasks);
                 if (data.tags) renderTags(data.tags);
             } else {
-                console.warn('[Guest View] Failed to load public board');
+                const errData = await res.json();
+                console.warn('[Guest View] Access denied to public board:', errData.error);
+                if (errData.requireAuth && !currentUser) {
+                    openOAuthModal();
+                }
+                if (bannerText) bannerText.textContent = `🔒 ${errData.error || 'Доступ к доске ограничен владельцем'}`;
+                if (bannerEl) bannerEl.style.display = 'flex';
             }
         } catch(e) {
             console.error('[Guest View] Error loading public board:', e);
@@ -143,6 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const sessionToken = urlParams.get('session');
         const authError = urlParams.get('auth_error');
         const shareParam = urlParams.get('share');
+        const shareTokenParam = urlParams.get('share_token');
+        const targetShare = shareTokenParam || shareParam;
 
         if (authError) {
             console.error('[Auth Error]', authError);
@@ -156,12 +165,12 @@ document.addEventListener('DOMContentLoaded', () => {
             history.replaceState(null, '', window.location.pathname);
         }
 
-        if (shareParam) {
-            shareOwnerId = shareParam;
+        if (targetShare) {
+            shareOwnerId = targetShare;
             isGuestView = true;
             document.body.classList.add('is-guest-view');
             setAppMode('workspace');
-            fetchPublicBoard(shareParam);
+            fetchPublicBoard(targetShare);
         }
 
         try {
@@ -268,6 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (statProgress) statProgress.textContent = progress;
         if (statDone) statDone.textContent = done;
 
+        loadShareSettings();
         modalProfileOverlay.classList.add('active');
     }
 
@@ -308,19 +318,135 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Google Sheets Style Share Settings Integration
+    const shareLinkInput = document.getElementById('share-link-input');
+    const shareModeBadge = document.getElementById('share-mode-badge');
+    const restrictedUsersBlock = document.getElementById('restricted-users-block');
+    const inviteEmailInput = document.getElementById('invite-email-input');
+    const btnAddInviteEmail = document.getElementById('btn-add-invite-email');
+    const invitedEmailsList = document.getElementById('invited-emails-list');
+    const btnRotateToken = document.getElementById('btn-rotate-token');
+
+    async function loadShareSettings() {
+        if (!currentUser) return;
+        try {
+            const res = await authFetch('/api/share/settings');
+            if (res.ok) {
+                const data = await res.json();
+                const shareMode = data.shareMode || 'link';
+                
+                // Select radio
+                const radio = document.querySelector(`input[name="share_mode_radio"][value="${shareMode}"]`);
+                if (radio) radio.checked = true;
+
+                // Update input link
+                if (shareLinkInput) shareLinkInput.value = data.shareUrl;
+
+                // Update badge
+                const badgeLabels = {
+                    private: '🔒 Приватная',
+                    link: '🔑 По секретной ссылке',
+                    restricted: '👥 По приглашению',
+                    public: '🌐 Публичная'
+                };
+                if (shareModeBadge) shareModeBadge.textContent = badgeLabels[shareMode] || 'По ссылке';
+
+                // Restricted block visibility
+                if (restrictedUsersBlock) {
+                    restrictedUsersBlock.style.display = shareMode === 'restricted' ? 'block' : 'none';
+                }
+
+                // Render invited emails
+                if (invitedEmailsList) {
+                    invitedEmailsList.innerHTML = '';
+                    if (data.invitedEmails && data.invitedEmails.length > 0) {
+                        data.invitedEmails.forEach(email => {
+                            const chip = document.createElement('div');
+                            chip.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: var(--github-surface); border: 1px solid var(--github-border); border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.78rem; color: #fff;";
+                            chip.innerHTML = `
+                                <span>${email}</span>
+                                <button type="button" class="btn-remove-email" style="background:none; border:none; color:#f85149; cursor:pointer; font-size:0.8rem; margin-left:0.5rem;">✕</button>
+                            `;
+                            chip.querySelector('.btn-remove-email').addEventListener('click', async () => {
+                                await authFetch('/api/share/invite', {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ email })
+                                });
+                                loadShareSettings();
+                            });
+                            invitedEmailsList.appendChild(chip);
+                        });
+                    } else {
+                        invitedEmailsList.innerHTML = `<span style="font-size:0.72rem; color:var(--text-muted);">Список приглашенных пуст</span>`;
+                    }
+                }
+            }
+        } catch(e) {
+            console.error('Error loading share settings:', e);
+        }
+    }
+
+    // Share mode radio listener
+    document.querySelectorAll('input[name="share_mode_radio"]').forEach(radio => {
+        radio.addEventListener('change', async (e) => {
+            const shareMode = e.target.value;
+            await authFetch('/api/share/mode', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shareMode })
+            });
+            loadShareSettings();
+        });
+    });
+
+    // Rotate token listener
+    if (btnRotateToken) {
+        btnRotateToken.addEventListener('click', async () => {
+            if (confirm('Перегенерировать секретную ссылку? Старая ссылка перестанет работать.')) {
+                const res = await authFetch('/api/share/rotate-token', { method: 'POST' });
+                if (res.ok) {
+                    alert('🔑 Секретная ссылка успешно обновлена!');
+                    loadShareSettings();
+                }
+            }
+        });
+    }
+
+    // Add invite email listener
+    if (btnAddInviteEmail) {
+        btnAddInviteEmail.addEventListener('click', async () => {
+            const email = inviteEmailInput ? inviteEmailInput.value.trim() : '';
+            if (!email || !email.includes('@')) {
+                alert('Введите корректный E-mail адрес');
+                return;
+            }
+            const res = await authFetch('/api/share/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            if (res.ok) {
+                if (inviteEmailInput) inviteEmailInput.value = '';
+                loadShareSettings();
+            } else {
+                alert('Не удалось добавить пользователя');
+            }
+        });
+    }
+
     const btnShareBoard = document.getElementById('btn-share-board');
     if (btnShareBoard) {
         btnShareBoard.addEventListener('click', () => {
-            if (!currentUser) return;
-            const shareUrl = `${window.location.origin}/?share=${currentUser.id}`;
+            const shareUrl = shareLinkInput ? shareLinkInput.value : window.location.href;
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert(`🔗 Ссылка на вашу доску скопирована!\n\n${shareUrl}\n\nГости смогут просматривать ваши задачи без права редактирования.`);
+                    alert(`🔗 Ссылка скопирована в буфер обмена!\n\n${shareUrl}`);
                 }).catch(() => {
-                    prompt('Скопируйте ссылку на вашу доску:', shareUrl);
+                    prompt('Скопируйте ссылку:', shareUrl);
                 });
             } else {
-                prompt('Скопируйте ссылку на вашу доску:', shareUrl);
+                prompt('Скопируйте ссылку:', shareUrl);
             }
         });
     }

@@ -470,15 +470,65 @@
                     </div>
                 </div>
 
-                <div style="background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 12px; padding: 0.85rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                    <div style="display: flex; flex-direction: column;">
-                        <span style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">Гостевой доступ</span>
-                        <span style="font-size: 0.74rem; color: var(--text-muted);">Поделитесь вашей доской для чтения</span>
+                <!-- Блок режимов доступа (Как в Google Таблицах) -->
+                <div style="background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <span style="font-size: 0.92rem; font-weight: 700; color: var(--text-main);">🔗 Совместный доступ</span>
+                        <span id="share-mode-badge" style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 12px; font-weight: 600;">По секретной ссылке</span>
                     </div>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btn-share-board" style="border-color: rgba(56,139,253,0.4); color: #58a6ff; display: inline-flex; align-items: center; gap: 0.4rem;">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                        <span>Скопировать ссылку</span>
-                    </button>
+
+                    <div class="share-modes-selector" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.85rem;">
+                        <label style="display: flex; align-items: flex-start; gap: 0.6rem; background: var(--github-surface); border: 1px solid var(--github-border); padding: 0.55rem 0.65rem; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="share_mode_radio" value="private" style="margin-top: 0.15rem; accent-color: var(--github-blue);">
+                            <div>
+                                <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">🔒 Приватный доступ</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted);">Только вы имеете доступ к этой доске.</div>
+                            </div>
+                        </label>
+
+                        <label style="display: flex; align-items: flex-start; gap: 0.6rem; background: var(--github-surface); border: 1px solid var(--github-border); padding: 0.55rem 0.65rem; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="share_mode_radio" value="link" checked style="margin-top: 0.15rem; accent-color: var(--github-blue);">
+                            <div>
+                                <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">🔑 По секретной ссылке</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted);">Доступен только обладателям уникальной ссылки (UUID).</div>
+                            </div>
+                        </label>
+
+                        <label style="display: flex; align-items: flex-start; gap: 0.6rem; background: var(--github-surface); border: 1px solid var(--github-border); padding: 0.55rem 0.65rem; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="share_mode_radio" value="restricted" style="margin-top: 0.15rem; accent-color: var(--github-blue);">
+                            <div>
+                                <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">👥 Ограниченный (по E-mail)</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted);">Доступен только приглашенным пользователям.</div>
+                            </div>
+                        </label>
+
+                        <label style="display: flex; align-items: flex-start; gap: 0.6rem; background: var(--github-surface); border: 1px solid var(--github-border); padding: 0.55rem 0.65rem; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="share_mode_radio" value="public" style="margin-top: 0.15rem; accent-color: var(--github-blue);">
+                            <div>
+                                <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">🌐 Публичный (по ID)</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted);">Открыт абсолютно всем по вашему ID профиля.</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Блок приглашенных E-mail пользователей -->
+                    <div id="restricted-users-block" style="display: none; margin-bottom: 0.85rem; background: var(--github-surface); border: 1px solid var(--github-border); padding: 0.65rem; border-radius: 8px;">
+                        <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.4rem;">Предоставить доступ по E-mail:</div>
+                        <div style="display: flex; gap: 0.4rem; margin-bottom: 0.5rem;">
+                            <input type="email" id="invite-email-input" placeholder="colleague@gmail.com" style="flex: 1; padding: 0.35rem 0.55rem; font-size: 0.8rem; background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 6px; color: #fff;">
+                            <button type="button" id="btn-add-invite-email" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.65rem;">+ Добавить</button>
+                        </div>
+                        <div id="invited-emails-list" style="display: flex; flex-direction: column; gap: 0.3rem;">
+                            <!-- Сюда вставляются чипсы email адресов -->
+                        </div>
+                    </div>
+
+                    <!-- Поле ссылки и действия -->
+                    <div style="display: flex; gap: 0.4rem; align-items: center;">
+                        <input type="text" id="share-link-input" readonly style="flex: 1; padding: 0.4rem 0.55rem; background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 6px; color: var(--text-muted); font-size: 0.75rem; font-family: monospace;">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn-share-board" style="border-color: rgba(56,139,253,0.4); color: #58a6ff; white-space: nowrap;">Скопировать</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn-rotate-token" title="Перегенерировать секретный UUID токен" style="padding: 0.4rem 0.55rem;">🔄</button>
+                    </div>
                 </div>
 
                 <div class="modal-actions" style="justify-content: space-between; gap: 0.75rem;">
