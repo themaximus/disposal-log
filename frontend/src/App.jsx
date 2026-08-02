@@ -370,6 +370,7 @@ export default function App() {
             onLogout={handleLogout}
           />
           <LandingHero
+            currentUser={currentUser}
             onOpenAuth={() => setIsAuthModalOpen(true)}
             onOpenWorkspace={() => handleSelectTab('workspace')}
           />

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function LandingHero({ onOpenAuth, onOpenWorkspace }) {
+export default function LandingHero({ currentUser, onOpenAuth, onOpenWorkspace }) {
   return (
     <section className="hero-section">
       <div className="hero-container">
@@ -22,10 +22,13 @@ export default function LandingHero({ onOpenAuth, onOpenWorkspace }) {
             <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>rocket_launch</span>
             Открыть Доску Задач
           </button>
-          <button className="btn-hero-secondary" onClick={onOpenAuth}>
-            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>key</span>
-            Войти в Учётную Запись
-          </button>
+          
+          {!currentUser && (
+            <button className="btn-hero-secondary" onClick={onOpenAuth}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>key</span>
+              Войти в Учётную Запись
+            </button>
+          )}
         </div>
 
         <div className="hero-features-grid">
