@@ -1344,16 +1344,13 @@ body.is-guest-view .task-card {
 }
 
 .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 0.3rem;
+    position: fixed;
     background: var(--github-surface);
     border: 1px solid var(--github-border);
     border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    min-width: 170px;
-    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    min-width: 175px;
+    z-index: 99999;
     display: none;
     flex-direction: column;
     padding: 0.35rem 0;
@@ -1364,43 +1361,46 @@ body.is-guest-view .task-card {
     display: flex;
 }
 
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.5rem 0.85rem;
-    font-size: 0.82rem;
-    color: var(--text-main);
-    background: transparent;
-    border: none;
-    width: 100%;
-    text-align: left;
-    cursor: pointer;
-    transition: background 0.15s ease;
-}
-
-.dropdown-item:hover {
-    background: var(--github-canvas);
-    color: #58a6ff;
-}
-
-.dropdown-item.danger:hover {
-    color: #f85149;
-    background: rgba(248, 81, 73, 0.12);
-}
-
-.btn-sidebar-toggle:hover {
-    color: #fff;
-    background: var(--github-canvas);
+/* Collapsible Sidebar Mini Icons View */
+.boards-sidebar.collapsed {
+    width: 60px;
 }
 
 .boards-sidebar.collapsed .sidebar-heading,
-.boards-sidebar.collapsed .sidebar-content {
-    display: none;
+.boards-sidebar.collapsed .btn-new-board span,
+.boards-sidebar.collapsed .board-item-name,
+.boards-sidebar.collapsed .dropdown-container {
+    display: none !important;
 }
 
-.boards-sidebar.collapsed .btn-sidebar-toggle {
-    transform: rotate(180deg);
+.boards-sidebar.collapsed .sidebar-content {
+    display: flex;
+    padding: 0.5rem 0.35rem;
+    align-items: center;
+}
+
+.boards-sidebar.collapsed .btn-new-board {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.boards-sidebar.collapsed .board-item {
+    padding: 0.5rem;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.boards-sidebar.collapsed .board-item-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 1.2rem;
 }
 
 .sidebar-content {

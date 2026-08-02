@@ -593,10 +593,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnDots && dropdownMenu) {
                 btnDots.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    document.querySelectorAll('.dropdown-menu.active').forEach(m => {
-                        if (m !== dropdownMenu) m.classList.remove('active');
-                    });
-                    dropdownMenu.classList.toggle('active');
+                    const isActive = dropdownMenu.classList.contains('active');
+                    document.querySelectorAll('.dropdown-menu.active').forEach(m => m.classList.remove('active'));
+                    if (!isActive) {
+                        const rect = btnDots.getBoundingClientRect();
+                        dropdownMenu.style.top = `${rect.bottom + 4}px`;
+                        dropdownMenu.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - 185))}px`;
+                        dropdownMenu.classList.add('active');
+                    }
                 });
             }
 
@@ -696,10 +700,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnColDots && colDropdown) {
                 btnColDots.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    document.querySelectorAll('.dropdown-menu.active').forEach(m => {
-                        if (m !== colDropdown) m.classList.remove('active');
-                    });
-                    colDropdown.classList.toggle('active');
+                    const isActive = colDropdown.classList.contains('active');
+                    document.querySelectorAll('.dropdown-menu.active').forEach(m => m.classList.remove('active'));
+                    if (!isActive) {
+                        const rect = btnColDots.getBoundingClientRect();
+                        colDropdown.style.top = `${rect.bottom + 4}px`;
+                        colDropdown.style.left = `${Math.max(10, Math.min(rect.right - 170, window.innerWidth - 185))}px`;
+                        colDropdown.classList.add('active');
+                    }
                 });
             }
 
