@@ -85,10 +85,6 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
             Войти
           </button>
         )}
-
-        <button className="btn btn-secondary" onClick={onOpenSettings} title="Настройки TG и Системы">
-          <span className="material-symbols-outlined" style={{ fontSize: '1.15rem' }}>settings</span>
-        </button>
       </div>
     </header>
   );
