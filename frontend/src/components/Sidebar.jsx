@@ -18,6 +18,7 @@ export default function Sidebar({
   onOpenManageColumns,
   onToggleBoardMode,
   onOpenSyncModal,
+  onDeleteBoard,
   isCollapsed,
   onToggleCollapse,
   isMobileOpen,
@@ -285,6 +286,31 @@ export default function Sidebar({
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>share</span>
                         Доступ и шеринг
+                      </button>
+
+                      <button
+                        className="dropdown-item"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          width: '100%',
+                          padding: '0.45rem 0.65rem',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#f85149',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuBoardId(null);
+                          if (typeof onDeleteBoard === 'function') onDeleteBoard(b);
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: '#f85149' }}>delete</span>
+                        Удалить доску
                       </button>
                     </div>
                   )}

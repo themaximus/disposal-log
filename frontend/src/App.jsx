@@ -14,6 +14,7 @@ import ColumnModal from './modals/ColumnModal';
 import ManageColumnsModal from './modals/ManageColumnsModal';
 import ShareModal from './modals/ShareModal';
 import BoardSyncModal from './modals/BoardSyncModal';
+import ConfirmModal from './modals/ConfirmModal';
 
 import {
   getOfflineBoards,
@@ -52,6 +53,31 @@ export default function App() {
   const [columnToEdit, setColumnToEdit] = useState(null);
   const [isManageColumnsModalOpen, setIsManageColumnsModalOpen] = useState(false);
   const [manageColumnsBoard, setManageColumnsBoard] = useState(null);
+
+  const [confirmModalState, setConfirmModalState] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Подтвердить',
+    cancelText: 'Отмена',
+    confirmStyle: 'danger',
+    onConfirm: () => {}
+  });
+
+  const askConfirmation = ({ title, message, confirmText, cancelText, confirmStyle, onConfirm }) => {
+    setConfirmModalState({
+      isOpen: true,
+      title,
+      message,
+      confirmText: confirmText || 'Подтвердить',
+      cancelText: cancelText || 'Отмена',
+      confirmStyle: confirmStyle || 'danger',
+      onConfirm: () => {
+        setConfirmModalState(prev => ({ ...prev, isOpen: false }));
+        onConfirm();
+      }
+    });
+  };
 
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dwellStackTargetId, setDwellStackTargetId] = useState(null);
@@ -164,81 +190,86 @@ export default function App() {
 
     if (!targetBoard.is_offline) {
       // ONLINE -> OFFLINE
-      const confirmSwitch = window.confirm(
-        `Переключить доску "${targetBoard.name}" в Офлайн-режим?\n\nВсе данные этой доски будут сохранены локально в вашем браузере (localStorage) и полностью удалены с сервера.`
-      );
-      if (!confirmSwitch) return;
+      askConfirmation({
+        title: 'Переключить в Офлайн-режим?',
+        message: `Все данные доски "${targetBoard.name}" будут сохранены локально в вашем браузере (localStorage) и полностью удалены с сервера.`,
+        confirmText: 'Перевести в Офлайн',
+        confirmStyle: 'danger',
+        onConfirm: () => {
+          setSyncStatus('syncing');
+          setSyncMessage('Перенос в Офлайн...');
 
-      setSyncStatus('syncing');
-      setSyncMessage('Перенос в Офлайн...');
+          Promise.all([
+            fetch(`/api/boards/${targetBoard.id}/columns`).then(r => r.json()),
+            fetch(`/api/tasks?board_id=${targetBoard.id}`).then(r => r.json())
+          ])
+            .then(([cols, ts]) => {
+              const offlineCols = Array.isArray(cols) ? cols : [];
+              const offlineTasks = Array.isArray(ts) ? ts : [];
 
-      Promise.all([
-        fetch(`/api/boards/${targetBoard.id}/columns`).then(r => r.json()),
-        fetch(`/api/tasks?board_id=${targetBoard.id}`).then(r => r.json())
-      ])
-        .then(([cols, ts]) => {
-          const offlineCols = Array.isArray(cols) ? cols : [];
-          const offlineTasks = Array.isArray(ts) ? ts : [];
+              saveOfflineBoardData(targetBoard.id, { columns: offlineCols, tasks: offlineTasks });
+              addOfflineBoard({ ...targetBoard, is_offline: true });
 
-          saveOfflineBoardData(targetBoard.id, { columns: offlineCols, tasks: offlineTasks });
-          addOfflineBoard({ ...targetBoard, is_offline: true });
-
-          fetch(`/api/boards/${targetBoard.id}`, { method: 'DELETE' })
-            .then(() => {
-              setSyncStatus('synced');
-              setSyncMessage('💾 Доска переведена в Офлайн');
-              fetchBoards();
+              fetch(`/api/boards/${targetBoard.id}`, { method: 'DELETE' })
+                .then(() => {
+                  setSyncStatus('synced');
+                  setSyncMessage('💾 Доска переведена в Офлайн');
+                  fetchBoards();
+                })
+                .catch(console.error);
             })
-            .catch(console.error);
-        })
-        .catch(() => {
-          setSyncStatus('error');
-          setSyncMessage('Ошибка перевода в офлайн');
-        });
-
+            .catch(() => {
+              setSyncStatus('error');
+              setSyncMessage('Ошибка перевода в офлайн');
+            });
+        }
+      });
     } else {
       // OFFLINE -> ONLINE
-      const confirmSwitch = window.confirm(
-        `Переключить доску "${targetBoard.name}" в Онлайн-режим?\n\nДанные из вашего браузера будут загружены на сервер и синхронизированы с базой данных.`
-      );
-      if (!confirmSwitch) return;
+      askConfirmation({
+        title: 'Переключить в Онлайн-режим?',
+        message: `Данные доски "${targetBoard.name}" будут загружены на сервер и синхронизированы с базой данных.`,
+        confirmText: 'Перевести в Онлайн',
+        confirmStyle: 'primary',
+        onConfirm: () => {
+          setSyncStatus('syncing');
+          setSyncMessage('Синхронизация с сервером...');
 
-      setSyncStatus('syncing');
-      setSyncMessage('Синхронизация с сервером...');
+          const offlineData = getOfflineBoardData(targetBoard.id);
 
-      const offlineData = getOfflineBoardData(targetBoard.id);
-
-      fetch('/api/boards/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          board: targetBoard,
-          columns: offlineData.columns,
-          tasks: offlineData.tasks
-        })
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data && data.success) {
-            deleteOfflineBoard(targetBoard.id);
-            setSyncStatus('synced');
-            setSyncMessage('🌐 Доска переведена в Онлайн');
-            fetch('/api/boards')
-              .then(res => res.json())
-              .then(serverBoards => {
-                const offlineList = getOfflineBoards();
-                const combined = [...(Array.isArray(serverBoards) ? serverBoards : []), ...offlineList];
-                setBoards(combined);
-                selectBoard(data.boardId, combined.find(b => String(b.id) === String(data.boardId)));
-              });
-          } else {
-            throw new Error(data.error || 'Ошибка импорта');
-          }
-        })
-        .catch(err => {
-          setSyncStatus('error');
-          setSyncMessage('Ошибка перевода в онлайн');
-        });
+          fetch('/api/boards/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              board: targetBoard,
+              columns: offlineData.columns,
+              tasks: offlineData.tasks
+            })
+          })
+            .then(r => r.json())
+            .then(data => {
+              if (data && data.success) {
+                deleteOfflineBoard(targetBoard.id);
+                setSyncStatus('synced');
+                setSyncMessage('🌐 Доска переведена в Онлайн');
+                fetch('/api/boards')
+                  .then(res => res.json())
+                  .then(serverBoards => {
+                    const offlineList = getOfflineBoards();
+                    const combined = [...(Array.isArray(serverBoards) ? serverBoards : []), ...offlineList];
+                    setBoards(combined);
+                    selectBoard(data.boardId, combined.find(b => String(b.id) === String(data.boardId)));
+                  });
+              } else {
+                throw new Error(data.error || 'Ошибка импорта');
+              }
+            })
+            .catch(err => {
+              setSyncStatus('error');
+              setSyncMessage('Ошибка перевода в онлайн');
+            });
+        }
+      });
     }
   };
 
@@ -311,32 +342,38 @@ export default function App() {
   };
 
   const handleDeleteTask = (taskId) => {
-    if (!window.confirm('Удалить эту задачу?')) return;
+    askConfirmation({
+      title: 'Удалить эту задачу?',
+      message: 'Вы уверены, что хотите безвозвратно удалить эту задачу? Это действие нельзя отменить.',
+      confirmText: 'Удалить задачу',
+      confirmStyle: 'danger',
+      onConfirm: () => {
+        const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
+        const updatedTasks = tasks.filter(t => t.id !== taskId);
+        setTasks(updatedTasks);
 
-    const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-    const updatedTasks = tasks.filter(t => t.id !== taskId);
-    setTasks(updatedTasks);
+        if (activeBoard && activeBoard.is_offline) {
+          saveOfflineBoardData(currentBoardId, { columns, tasks: updatedTasks });
+          setSyncStatus('synced');
+          setSyncMessage('💾 Задача удалена');
+          return;
+        }
 
-    if (activeBoard && activeBoard.is_offline) {
-      saveOfflineBoardData(currentBoardId, { columns, tasks: updatedTasks });
-      setSyncStatus('synced');
-      setSyncMessage('💾 Задача удалена');
-      return;
-    }
+        setSyncStatus('syncing');
+        setSyncMessage('Синхронизация...');
 
-    setSyncStatus('syncing');
-    setSyncMessage('Синхронизация...');
-
-    fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
-      .then(() => {
-        setSyncStatus('synced');
-        setSyncMessage('Задача удалена');
-      })
-      .catch(() => {
-        setSyncStatus('error');
-        setSyncMessage('Ошибка удаления');
-        fetchBoardTasks(currentBoardId);
-      });
+        fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+          .then(() => {
+            setSyncStatus('synced');
+            setSyncMessage('Задача удалена');
+          })
+          .catch(() => {
+            setSyncStatus('error');
+            setSyncMessage('Ошибка удаления');
+            fetchBoardTasks(currentBoardId);
+          });
+      }
+    });
   };
 
   const clearDwellTimer = () => {
@@ -602,25 +639,73 @@ export default function App() {
   };
 
   const handleDeleteColumn = (columnId) => {
-    if (!window.confirm('Удалить эту колонку? Все задачи в ней будут удалены!')) return;
-    const updatedCols = columns.filter(c => c.id !== columnId);
-    setColumns(updatedCols);
+    askConfirmation({
+      title: 'Удалить эту колонку?',
+      message: 'Вы уверены, что хотите удалить эту колонку? Все задачи в ней будут безвозвратно удалены!',
+      confirmText: 'Удалить колонку',
+      confirmStyle: 'danger',
+      onConfirm: () => {
+        const updatedCols = columns.filter(c => c.id !== columnId);
+        setColumns(updatedCols);
 
-    const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
+        const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
 
-    if (activeBoard && activeBoard.is_offline) {
-      saveOfflineBoardData(currentBoardId, { columns: updatedCols, tasks });
-      setSyncStatus('synced');
-      setSyncMessage('💾 Колонка удалена');
-      return;
-    }
+        if (activeBoard && activeBoard.is_offline) {
+          saveOfflineBoardData(currentBoardId, { columns: updatedCols, tasks });
+          setSyncStatus('synced');
+          setSyncMessage('💾 Колонка удалена');
+          return;
+        }
 
-    fetch(`/api/columns/${columnId}`, { method: 'DELETE' })
-      .then(() => {
-        setSyncStatus('synced');
-        setSyncMessage('Колонка удалена');
-      })
-      .catch(console.error);
+        fetch(`/api/columns/${columnId}`, { method: 'DELETE' })
+          .then(() => {
+            setSyncStatus('synced');
+            setSyncMessage('Колонка удалена');
+          })
+          .catch(console.error);
+      }
+    });
+  };
+
+  const handleDeleteBoard = (boardToDelete) => {
+    if (!boardToDelete) return;
+
+    askConfirmation({
+      title: `Удалить доску "${boardToDelete.name}"?`,
+      message: 'Вы уверены, что хотите безвозвратно удалить эту доску? Все задачи и колонки этой доски будут удалены.',
+      confirmText: 'Удалить доску',
+      confirmStyle: 'danger',
+      onConfirm: () => {
+        setSyncStatus('syncing');
+        setSyncMessage('Удаление доски...');
+
+        if (boardToDelete.is_offline) {
+          deleteOfflineBoard(boardToDelete.id);
+          setSyncStatus('synced');
+          setSyncMessage('💾 Доска удалена');
+          const updatedOfflineList = getOfflineBoards();
+          setBoards(updatedOfflineList);
+          if (updatedOfflineList.length > 0) {
+            selectBoard(updatedOfflineList[0].id, updatedOfflineList[0]);
+          } else {
+            setCurrentBoardId(null);
+            setColumns([]);
+            setTasks([]);
+          }
+        } else {
+          fetch(`/api/boards/${boardToDelete.id}`, { method: 'DELETE' })
+            .then(() => {
+              setSyncStatus('synced');
+              setSyncMessage('Доска удалена');
+              fetchBoards();
+            })
+            .catch(() => {
+              setSyncStatus('error');
+              setSyncMessage('Ошибка удаления доски');
+            });
+        }
+      }
+    });
   };
 
   const handleLogout = () => {
@@ -709,6 +794,7 @@ export default function App() {
           }}
           onToggleBoardMode={handleToggleBoardMode}
           onOpenSyncModal={(b) => setSyncBoardModal(b)}
+          onDeleteBoard={handleDeleteBoard}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           isMobileOpen={isMobileDrawerOpen}
@@ -881,6 +967,17 @@ export default function App() {
           onToggleBoardMode={handleToggleBoardMode}
         />
       )}
+
+      <ConfirmModal
+        isOpen={confirmModalState.isOpen}
+        title={confirmModalState.title}
+        message={confirmModalState.message}
+        confirmText={confirmModalState.confirmText}
+        cancelText={confirmModalState.cancelText}
+        confirmStyle={confirmModalState.confirmStyle}
+        onConfirm={confirmModalState.onConfirm}
+        onCancel={() => setConfirmModalState(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
