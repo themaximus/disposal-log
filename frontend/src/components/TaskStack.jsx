@@ -22,7 +22,9 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
       }}
     >
       <div className="stack-header-bar">
-        <span className="stack-badge-pill">📚 Стопка ({tasks.length})</span>
+        <span className="stack-badge-pill" title={`Стопка из ${tasks.length} задач`}>
+          📚 {tasks.length}
+        </span>
         <button
           className="btn-unlink-stack"
           title="Разгруппировать стопку"
@@ -31,11 +33,20 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
             onUnlinkGroup(groupId);
           }}
         >
-          🔓 Разгруппировать
+          🔓 <span className="unlink-text">Разгруппировать</span>
         </button>
       </div>
 
-      <div className="stack-deck-wrapper" style={{ position: 'relative', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+      <div
+        className="stack-deck-wrapper"
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '100%',
+          height: '185px',
+          boxSizing: 'border-box'
+        }}
+      >
         {reversedTasks.map((task, index) => {
           const isVisible = index >= startVisibleIndex;
           if (!isVisible) return null;
@@ -49,9 +60,10 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
               className="stack-card-layer"
               style={{
                 position: offsetIndex > 0 ? 'absolute' : 'relative',
-                top: offsetIndex > 0 ? `${offsetPx}px` : undefined,
-                left: offsetIndex > 0 ? `${offsetPx}px` : undefined,
+                top: offsetIndex > 0 ? `${offsetPx}px` : 0,
+                left: offsetIndex > 0 ? `${offsetPx}px` : 0,
                 width: offsetIndex > 0 ? `calc(100% - ${offsetPx}px)` : '100%',
+                height: '185px',
                 boxSizing: 'border-box',
                 zIndex: index + 1
               }}
