@@ -58,42 +58,26 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setIsUploading(true);
     const googleToken = currentUser && currentUser.google_access_token;
 
-    if (googleToken) {
-      try {
-        const uploadedUrls = [];
-        for (let i = 0; i < files.length; i++) {
-          const driveUrl = await uploadFileDirectToGoogleDrive(files[i], googleToken);
-          uploadedUrls.push(driveUrl);
-        }
-        setImages(prev => [...prev, ...uploadedUrls]);
-        setIsUploading(false);
-        return;
-      } catch (err) {
-        console.error('Direct Google Drive upload failed, falling back:', err);
+    if (!googleToken) {
+      window.location.href = '/api/auth/google-drive';
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const uploadedUrls = [];
+      for (let i = 0; i < files.length; i++) {
+        const driveUrl = await uploadFileDirectToGoogleDrive(files[i], googleToken);
+        uploadedUrls.push(driveUrl);
       }
+      setImages(prev => [...prev, ...uploadedUrls]);
+    } catch (err) {
+      console.error('Direct Google Drive upload error:', err);
+    } finally {
+      setIsUploading(false);
     }
-
-    // Fallback if no google token
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append('images', files[i]);
-    }
-
-    fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.urls && Array.isArray(data.urls)) {
-          setImages(prev => [...prev, ...data.urls]);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setIsUploading(false));
   };
 
   const handleRemoveImage = (index) => {
@@ -264,7 +248,42 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
           <div className="form-group">
             <label>Медиафайлы (Изображения и Видео MP4/WebM)</label>
             
-            {currentUser && !currentUser.google_access_token && (
+            {currentUser && currentUser.google_access_token ? (
+              <div style={{
+                background: 'rgba(46, 160, 67, 0.1)',
+                border: '1px solid rgba(46, 160, 67, 0.3)',
+                borderRadius: '8px',
+                padding: '0.65rem 0.9rem',
+                marginBottom: '0.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.5rem'
+              }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--github-green-text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: '#2ea043' }}>check_circle</span>
+                  Google Диск подключен. Все медиафайлы хранятся в нём.
+                </div>
+                <a
+                  href="https://drive.google.com/drive/my-drive"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    fontSize: '0.78rem',
+                    color: 'var(--github-blue-text)',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.95rem' }}>open_in_new</span>
+                  Мой Диск
+                </a>
+              </div>
+            ) : currentUser ? (
               <div style={{
                 background: 'rgba(56, 139, 253, 0.08)',
                 border: '1px solid rgba(56, 139, 253, 0.25)',
@@ -305,7 +324,7 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
                   Подключить
                 </a>
               </div>
-            )}
+            ) : null}
 
             <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
               <input

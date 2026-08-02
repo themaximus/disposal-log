@@ -207,13 +207,9 @@ const upload = multer({
     }
 });
 
-// Standalone Media Upload API Endpoint
-app.post('/api/upload', sessionMiddleware, requireUser, upload.array('images', 10), (req, res) => {
-    if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ error: 'Файлы не загружены' });
-    }
-    const urls = req.files.map(f => `/uploads/${f.filename}`);
-    res.json({ success: true, urls });
+// Standalone Media Upload API Endpoint (Server Volume disk upload DISABLED)
+app.post('/api/upload', (req, res) => {
+    res.status(400).json({ error: 'Хранение файлов на сервере отключено. Пожалуйста, подключите ваш Google Диск для сохранения медиафайлов.' });
 });
 
 // Periodic Cleanup of Expired Sessions
