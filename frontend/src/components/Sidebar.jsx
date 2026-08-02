@@ -151,7 +151,7 @@ export default function Sidebar({
         <div className="sidebar-boards-header">
           {!isCollapsed && (
             <span className="sidebar-heading">
-              {currentUser ? 'МОИ ДОСКИ' : 'ГОСТЕВАЯ ДОСКА'}
+              {currentUser ? 'МОИ ДОСКИ' : 'ЛОКАЛЬНЫЕ ДОСКИ'}
             </span>
           )}
         </div>

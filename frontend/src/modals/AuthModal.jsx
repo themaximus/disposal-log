@@ -9,9 +9,9 @@ export default function AuthModal({ onClose, onOpenGuestMode }) {
         <div className="modal-header" style={{ justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.15rem' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '1.3rem', color: 'var(--github-blue-text)' }}>
-              {viewMode === 'guest_info' ? 'bolt' : 'key'}
+              {viewMode === 'guest_info' ? 'devices_off' : 'key'}
             </span>
-            {viewMode === 'guest_info' ? 'Гостевой режим' : 'Вход в аккаунт'}
+            {viewMode === 'guest_info' ? 'Работа без аккаунта' : 'Вход в аккаунт'}
           </h2>
           <button className="btn-close" onClick={onClose}>✕</button>
         </div>
@@ -48,10 +48,9 @@ export default function AuthModal({ onClose, onOpenGuestMode }) {
 
               <button
                 className="btn btn-secondary"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', fontWeight: 600 }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem', fontWeight: 600 }}
                 onClick={() => setViewMode('guest_info')}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--github-yellow)' }}>bolt</span>
                 Продолжить без аккаунта
               </button>
             </div>
@@ -59,13 +58,13 @@ export default function AuthModal({ onClose, onOpenGuestMode }) {
         ) : (
           <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: 0, lineHeight: 1.45 }}>
-              В Гостевом режиме все доски и задачи работают <strong>локально в браузере (localStorage)</strong>.
+              При работе без аккаунта все доски и задачи сохраняются <strong>локально в браузере (localStorage)</strong>.
             </p>
 
             {/* Pros Box */}
             <div style={{ background: 'rgba(46, 160, 67, 0.08)', border: '1px solid rgba(46, 160, 67, 0.25)', borderRadius: '8px', padding: '0.85rem' }}>
               <div style={{ color: 'var(--github-green-text)', fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                Плюсы гостевого режима:
+                Плюсы работы без аккаунта:
               </div>
               <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.82rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
                 <li>Мгновенный старт без ввода паролей</li>
@@ -89,14 +88,13 @@ export default function AuthModal({ onClose, onOpenGuestMode }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.4rem' }}>
               <button
                 className="btn btn-primary"
-                style={{ background: 'var(--github-green)', borderColor: 'var(--github-green-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', fontWeight: 700 }}
+                style={{ background: 'var(--github-green)', borderColor: 'var(--github-green-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem', fontWeight: 700 }}
                 onClick={() => {
                   onClose();
                   if (typeof onOpenGuestMode === 'function') onOpenGuestMode();
                 }}
               >
-                <span className="material-symbols-outlined">rocket_launch</span>
-                Начать в Гостевом режиме
+                Продолжить без аккаунта
               </button>
 
               <button

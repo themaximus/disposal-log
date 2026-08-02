@@ -34,7 +34,6 @@ export default function LandingHero({ currentUser, onOpenAuth, onOpenWorkspace, 
                   Войти в Учётную Запись
                 </button>
                 <button className="btn-hero-secondary" onClick={onOpenAuth}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px', color: 'var(--github-yellow)' }}>bolt</span>
                   Продолжить без аккаунта
                 </button>
               </div>
