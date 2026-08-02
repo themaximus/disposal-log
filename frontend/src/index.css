@@ -767,48 +767,43 @@ body {
 .board[data-card-mode="3"] .card-banner { display: none; }
 .board[data-card-mode="3"] .card-footer { margin-top: 0.35rem; }
 
-/* Physical Card Deck 3D Stacking System */
+/* Stack Container (Original Diagonal 3D Card Deck Stacking) */
 .stack-container {
     position: relative;
     width: 100%;
-    margin-bottom: 1.2rem;
-    padding-top: 1rem;
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.stack-container .task-card {
-    position: relative;
-    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+.stack-card-layer {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.stack-card-layer .task-card {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
     margin-bottom: 0 !important;
 }
 
-.stack-container .task-card:not(:first-of-type) {
-    margin-top: -65px !important;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.4);
+.stack-card-layer:hover {
+    transform: translateY(-12px) scale(1.02) !important;
+    z-index: 500 !important;
 }
 
-.stack-container .task-card:hover {
-    transform: translateY(-16px) scale(1.02) !important;
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(56, 139, 253, 0.5) !important;
-    z-index: 100 !important;
+.stack-card-layer:hover .task-card {
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(56, 139, 253, 0.6) !important;
 }
 
 .stack-badge-bar {
-    position: absolute;
-    top: -6px;
-    right: 8px;
-    z-index: 150;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: #1f6feb;
+    background: var(--github-blue);
     color: #ffffff;
     padding: 0.25rem 0.65rem;
     border-radius: 12px;
     font-size: 0.72rem;
     font-weight: 700;
     box-shadow: 0 4px 12px rgba(31, 111, 235, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .btn-unlink-stack {
@@ -820,10 +815,7 @@ body {
     line-height: 1;
     opacity: 0.85;
 }
-
-.btn-unlink-stack:hover {
-    opacity: 1;
-}
+.btn-unlink-stack:hover { opacity: 1; }
 
 .card-banner {
     width: 100%;

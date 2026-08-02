@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import TaskCard from './TaskCard';
+import TaskStack from './TaskStack';
 
 export default function Column({ column, groupedItems, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -49,29 +50,17 @@ export default function Column({ column, groupedItems, onEditColumn, onDeleteCol
           {groupedItems.map(item => {
             if (item.isStack) {
               return (
-                <div key={`stack-${item.groupId}`} className="stack-container">
-                  <div className="stack-badge-bar">
-                    <span>📚 Стопка ({item.tasks.length})</span>
-                    <button
-                      className="btn-unlink-stack"
-                      title="Рассгруппировать стопку"
-                      onClick={() => onUnlinkGroup(item.groupId)}
-                    >
-                      🔓
-                    </button>
-                  </div>
-                  {item.tasks.map((task, idx) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onEdit={onEditTask}
-                      onDelete={onDeleteTask}
-                      onDragStart={onDragStartTask}
-                      onDragOver={onDragOverTask}
-                      onDrop={onDropTask}
-                    />
-                  ))}
-                </div>
+                <TaskStack
+                  key={`stack-${item.groupId}`}
+                  groupId={item.groupId}
+                  tasks={item.tasks}
+                  onEditTask={onEditTask}
+                  onDeleteTask={onDeleteTask}
+                  onUnlinkGroup={onUnlinkGroup}
+                  onDragStartTask={onDragStartTask}
+                  onDragOverTask={onDragOverTask}
+                  onDropTask={onDropTask}
+                />
               );
             }
 
@@ -82,7 +71,7 @@ export default function Column({ column, groupedItems, onEditColumn, onDeleteCol
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
                 onDragStart={onDragStartTask}
-                onDragOver={onDragOverTask}
+                onDragOverTask={onDragOverTask}
                 onDrop={onDropTask}
               />
             );
