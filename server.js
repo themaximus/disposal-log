@@ -114,7 +114,7 @@ function sessionMiddleware(req, res, next) {
         return next();
     }
 
-    db.get(`SELECT s.token, s.expires_at, u.id, u.email, u.name, u.avatar_url, u.provider FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?`, [token], (err, row) => {
+    db.get(`SELECT s.token, s.expires_at, u.id, u.email, u.name, u.avatar_url, u.provider, u.google_access_token FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?`, [token], (err, row) => {
         if (err || !row || new Date(row.expires_at) < new Date()) {
             req.user = null;
         } else {
@@ -123,7 +123,8 @@ function sessionMiddleware(req, res, next) {
                 email: row.email,
                 name: row.name,
                 avatar_url: row.avatar_url,
-                provider: row.provider
+                provider: row.provider,
+                google_access_token: row.google_access_token
             };
         }
         next();
