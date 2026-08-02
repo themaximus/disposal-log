@@ -1252,6 +1252,37 @@ body {
     color: var(--text-main);
 }
 
+/* Add New Column Card Component */
+.add-column-wrapper {
+    min-width: 280px;
+    width: 280px;
+    flex-shrink: 0;
+}
+
+.btn-add-new-column {
+    width: 100%;
+    height: 48px;
+    background: rgba(22, 27, 34, 0.7);
+    border: 1px dashed var(--github-border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+.btn-add-new-column:hover {
+    background: var(--github-surface);
+    border-color: var(--github-blue-hover);
+    color: var(--github-blue-text);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 /* Drag Over Stacking Target Visual Indicator */
 .task-card.drag-over-target {
     border: 2px dashed #58a6ff !important;

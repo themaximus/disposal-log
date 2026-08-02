@@ -89,13 +89,6 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
         <button className="btn btn-secondary" onClick={onOpenSettings} title="Настройки TG и Системы">
           <span className="material-symbols-outlined" style={{ fontSize: '1.15rem' }}>settings</span>
         </button>
-
-        {currentTab === 'workspace' && (
-          <button className="btn btn-primary" onClick={onAddTask}>
-            <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', marginRight: '4px' }}>add</span>
-            Добавить задачу
-          </button>
-        )}
       </div>
     </header>
   );

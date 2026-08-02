@@ -4,81 +4,63 @@ import Sidebar from './components/Sidebar';
 import Column from './components/Column';
 import LandingHero from './components/LandingHero';
 import SyncToast from './components/SyncToast';
-import TaskModal from './modals/TaskModal';
-import BoardModal from './modals/BoardModal';
-import ShareModal from './modals/ShareModal';
+
 import AuthModal from './modals/AuthModal';
 import ProfileModal from './modals/ProfileModal';
 import SettingsModal from './modals/SettingsModal';
+import TaskModal from './modals/TaskModal';
+import BoardModal from './modals/BoardModal';
 import ColumnModal from './modals/ColumnModal';
+import ShareModal from './modals/ShareModal';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentTab, setCurrentTab] = useState('landing');
-  const [viewMode, setViewMode] = useState(1); // Card Density Mode (1: Detailed, 2: Compact, 3: Minimalist)
+  const [viewMode, setViewMode] = useState(1);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   const [boards, setBoards] = useState([]);
   const [currentBoardId, setCurrentBoardId] = useState(null);
   const [columns, setColumns] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Sync Toast State
-  const [syncStatus, setSyncStatus] = useState(null);
-  const [syncMessage, setSyncMessage] = useState('');
+  const [syncStatus, setSyncStatus] = useState('synced');
+  const [syncMessage, setSyncMessage] = useState('Всё синхронизировано');
 
-  // Drag & Drop State
-  const [draggedTask, setDraggedTask] = useState(null);
-
-  // Modal States
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [shareBoardModal, setShareBoardModal] = useState(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
   const [columnToEdit, setColumnToEdit] = useState(null);
 
-  useEffect(() => {
-    // Check URL parameters for session token
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionToken = urlParams.get('session');
-    if (sessionToken) {
-      document.cookie = `session_token=${sessionToken}; path=/; max-age=2592000; SameSite=Lax`;
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
+  const [draggedTaskId, setDraggedTaskId] = useState(null);
 
-    // Fetch Current User
+  useEffect(() => {
     fetch('/api/auth/me')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (data && (data.id || data.user)) {
-          const userObj = data.id ? data : data.user;
-          setCurrentUser(userObj);
-          setCurrentTab('workspace');
+      .then(res => res.json())
+      .then(user => {
+        if (user) {
+          setCurrentUser(user);
           fetchBoards();
-        } else {
-          setCurrentUser(null);
-          setCurrentTab('landing');
         }
       })
-      .catch(() => {
-        setCurrentUser(null);
-        setCurrentTab('landing');
-      });
+      .catch(console.error);
   }, []);
 
   const fetchBoards = () => {
     fetch('/api/boards')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setBoards(data);
-          selectBoard(data[0].id);
-        } else {
-          setBoards([]);
-          setTasks([]);
+          if (data.length > 0 && !currentBoardId) {
+            selectBoard(data[0].id);
+          }
         }
       })
       .catch(console.error);
@@ -86,177 +68,199 @@ export default function App() {
 
   const selectBoard = (boardId) => {
     setCurrentBoardId(boardId);
-    fetchTasksForBoard(boardId);
+    fetchBoardColumns(boardId);
+    fetchBoardTasks(boardId);
   };
 
-  const fetchTasksForBoard = (boardId) => {
-    setColumns([
-      { id: 1, column_key: 'todo', title: 'Предстоящие', color: '#f85149' },
-      { id: 2, column_key: 'in_progress', title: 'В работе', color: '#d29922' },
-      { id: 3, column_key: 'done', title: 'Реализованные', color: '#2ea043' }
-    ]);
+  const fetchBoardColumns = (boardId) => {
+    fetch(`/api/boards/${boardId}/columns`)
+      .then(res => res.json())
+      .then(cols => {
+        if (Array.isArray(cols)) {
+          setColumns(cols);
+        }
+      })
+      .catch(console.error);
+  };
 
+  const fetchBoardTasks = (boardId) => {
     fetch(`/api/tasks?board_id=${boardId}`)
       .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setTasks(data);
-        } else {
-          setTasks([]);
+      .then(taskData => {
+        if (Array.isArray(taskData)) {
+          setTasks(taskData);
         }
       })
       .catch(console.error);
   };
 
   const handleSelectTab = (tab) => {
+    setCurrentTab(tab);
     if (tab === 'workspace' && !currentUser) {
       setIsAuthModalOpen(true);
-      return;
     }
-    setCurrentTab(tab);
   };
 
-  // Group tasks into Stacks
-  const getGroupedItemsForColumn = (colKey) => {
-    const colTasks = tasks.filter(t => (t.status || 'todo') === colKey);
-    const grouped = [];
-    const processedGroups = new Set();
-
-    colTasks.forEach(t => {
-      if (t.group_id) {
-        if (!processedGroups.has(t.group_id)) {
-          processedGroups.add(t.group_id);
-          const stackTasks = colTasks.filter(st => st.group_id === t.group_id);
-          if (stackTasks.length > 1) {
-            grouped.push({ isStack: true, groupId: t.group_id, tasks: stackTasks });
-          } else {
-            grouped.push({ isStack: false, task: t });
-          }
-        }
-      } else {
-        grouped.push({ isStack: false, task: t });
-      }
-    });
-
-    return grouped;
-  };
-
-  // Drag & Drop Handlers
-  const handleDragStartTask = (e, task) => {
-    setDraggedTask(task);
-  };
-
-  const handleDragOverTask = (e, task) => {
-    e.preventDefault();
-  };
-
-  const handleDropTask = (e, targetTask) => {
-    e.preventDefault();
-    if (!draggedTask || draggedTask.id === targetTask.id) return;
-
-    // Check if dragging ONTO target task to create/join stack
-    const targetGroupId = targetTask.group_id || `group_${Date.now()}`;
-
-    setTasks(prev => prev.map(t => {
-      if (t.id === draggedTask.id || t.id === targetTask.id) {
-        return { ...t, status: targetTask.status, group_id: targetGroupId };
-      }
-      return t;
-    }));
-
-    setSyncStatus('syncing');
-    setSyncMessage('Создание стопки...');
-
-    fetch(`/api/tasks/${draggedTask.id}/group`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target_id: targetTask.id })
-    }).finally(() => {
-      setSyncStatus('success');
-      setSyncMessage('Стопка сформирована');
-      setTimeout(() => setSyncStatus(null), 2000);
-    });
-  };
-
-  const handleUnlinkGroup = (groupId) => {
-    setTasks(prev => prev.map(t => t.group_id === groupId ? { ...t, group_id: null } : t));
-    fetch(`/api/tasks/group/${groupId}/unlink`, { method: 'PUT' });
-  };
-
-  const handleDropColumn = (e, columnKey) => {
-    e.preventDefault();
-    if (!draggedTask) return;
-    moveTaskStatus(draggedTask.id, columnKey);
-  };
-
-  const moveTaskStatus = (taskId, newStatus) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-
-    setSyncStatus('syncing');
-    setSyncMessage('Сохранение...');
-
-    fetch(`/api/tasks/${taskId}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    })
-      .then(res => {
-        if (res.ok) {
-          setSyncStatus('success');
-          setSyncMessage('Сохранено');
-          setTimeout(() => setSyncStatus(null), 2000);
-        } else {
-          setSyncStatus('error');
-          setSyncMessage('Ошибка сохранения');
-          setTimeout(() => setSyncStatus(null), 3000);
-        }
-      })
-      .catch(() => {
-        setSyncStatus('error');
-        setSyncMessage('Ошибка сети');
-        setTimeout(() => setSyncStatus(null), 3000);
-      });
-  };
-
-  // Task Save & Delete
   const handleSaveTask = (taskData) => {
     setSyncStatus('syncing');
-    setSyncMessage('Сохранение...');
+    setSyncMessage('Сохранение задачи...');
 
     if (taskData.id) {
       fetch(`/api/tasks/${taskData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(taskData)
-      }).then(() => {
-        fetchTasksForBoard(currentBoardId);
-        setIsTaskModalOpen(false);
-        setSyncStatus('success');
-        setSyncMessage('Задача обновлена');
-        setTimeout(() => setSyncStatus(null), 2000);
-      });
+      })
+        .then(res => res.json())
+        .then(() => {
+          setSyncStatus('synced');
+          setSyncMessage('Задача обновлена');
+          setIsTaskModalOpen(false);
+          fetchBoardTasks(currentBoardId);
+        })
+        .catch(() => {
+          setSyncStatus('error');
+          setSyncMessage('Ошибка обновления');
+        });
     } else {
       fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskData)
-      }).then(() => {
-        fetchTasksForBoard(currentBoardId);
-        setIsTaskModalOpen(false);
-        setSyncStatus('success');
-        setSyncMessage('Задача создана');
-        setTimeout(() => setSyncStatus(null), 2000);
-      });
+        body: JSON.stringify({ ...taskData, board_id: currentBoardId })
+      })
+        .then(res => res.json())
+        .then(() => {
+          setSyncStatus('synced');
+          setSyncMessage('Задача создана');
+          setIsTaskModalOpen(false);
+          fetchBoardTasks(currentBoardId);
+        })
+        .catch(() => {
+          setSyncStatus('error');
+          setSyncMessage('Ошибка создания');
+        });
     }
   };
 
   const handleDeleteTask = (taskId) => {
     if (!window.confirm('Удалить эту задачу?')) return;
-    setTasks(prev => prev.filter(t => t.id !== taskId));
-    fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+    setSyncStatus('syncing');
+    fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+      .then(() => {
+        setSyncStatus('synced');
+        setSyncMessage('Задача удалена');
+        fetchBoardTasks(currentBoardId);
+      })
+      .catch(() => {
+        setSyncStatus('error');
+        setSyncMessage('Ошибка удаления');
+      });
   };
 
-  const handleSaveBoard = (boardData) => {
+  const handleDragStartTask = (e, task) => {
+    setDraggedTaskId(task.id);
+    e.dataTransfer.setData('text/plain', String(task.id));
+  };
+
+  const handleDragOverTask = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDropTask = (e, targetTask) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedTaskId || draggedTaskId === targetTask.id) return;
+
+    setSyncStatus('syncing');
+    setSyncMessage('Создание стопки задач...');
+
+    fetch(`/api/tasks/${draggedTaskId}/group`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_id: targetTask.id })
+    })
+      .then(res => res.json())
+      .then(() => {
+        setSyncStatus('synced');
+        setSyncMessage('Стопка создана');
+        setDraggedTaskId(null);
+        fetchBoardTasks(currentBoardId);
+      })
+      .catch(() => {
+        setSyncStatus('error');
+        setSyncMessage('Ошибка группировки');
+      });
+  };
+
+  const handleUnlinkGroup = (groupId) => {
+    setSyncStatus('syncing');
+    setSyncMessage('Разгруппировка стопки...');
+
+    fetch(`/api/tasks/group/${groupId}/unlink`, { method: 'PUT' })
+      .then(() => {
+        setSyncStatus('synced');
+        setSyncMessage('Стопка разгруппирована');
+        fetchBoardTasks(currentBoardId);
+      })
+      .catch(() => {
+        setSyncStatus('error');
+        setSyncMessage('Ошибка разгруппировки');
+      });
+  };
+
+  const handleDropColumn = (e, columnKey) => {
+    e.preventDefault();
+    if (!draggedTaskId) return;
+
+    const task = tasks.find(t => t.id === draggedTaskId);
+    if (!task || task.status === columnKey) return;
+
+    setSyncStatus('syncing');
+    setSyncMessage(`Перемещение в "${columnKey}"...`);
+
+    fetch(`/api/tasks/${draggedTaskId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: columnKey })
+    })
+      .then(() => {
+        setSyncStatus('synced');
+        setSyncMessage('Статус обновлен');
+        setDraggedTaskId(null);
+        fetchBoardTasks(currentBoardId);
+      })
+      .catch(() => {
+        setSyncStatus('error');
+        setSyncMessage('Ошибка перемещения');
+      });
+  };
+
+  const getGroupedItemsForColumn = (columnKey) => {
+    const colTasks = tasks.filter(t => (t.status || 'todo') === columnKey);
+    const groups = {};
+    const standalone = [];
+
+    colTasks.forEach(task => {
+      if (task.group_id) {
+        if (!groups[task.group_id]) groups[task.group_id] = [];
+        groups[task.group_id].push(task);
+      } else {
+        standalone.push(task);
+      }
+    });
+
+    const items = [];
+    Object.keys(groups).forEach(groupId => {
+      items.push({ isStack: true, groupId, tasks: groups[groupId] });
+    });
+    standalone.forEach(task => {
+      items.push({ isStack: false, task });
+    });
+
+    return items;
+  };
+
+  const handleCreateBoard = (boardData) => {
     fetch('/api/boards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -271,13 +275,37 @@ export default function App() {
   };
 
   const handleSaveColumn = (colData) => {
-    setColumns(prev => prev.map(c => c.id === colData.id ? { ...c, ...colData } : c));
+    if (colData.id) {
+      fetch(`/api/columns/${colData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(colData)
+      });
+      setColumns(prev => prev.map(c => c.id === colData.id ? { ...c, ...colData } : c));
+    } else {
+      fetch(`/api/boards/${currentBoardId}/columns`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(colData)
+      })
+        .then(res => res.json())
+        .then(newCol => {
+          if (newCol && newCol.id) {
+            setColumns(prev => [...prev, newCol]);
+          }
+        })
+        .catch(console.error);
+    }
     setIsColumnModalOpen(false);
   };
 
   const handleDeleteColumn = (colId) => {
     if (!window.confirm('Удалить эту колонку?')) return;
-    setColumns(prev => prev.filter(c => c.id !== colId));
+    fetch(`/api/columns/${colId}`, { method: 'DELETE' })
+      .then(() => {
+        setColumns(prev => prev.filter(c => c.id !== colId));
+      })
+      .catch(console.error);
   };
 
   const handleLogout = () => {
@@ -323,7 +351,6 @@ export default function App() {
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
-        onAddTask={() => { setTaskToEdit(null); setIsTaskModalOpen(true); }}
         onLogout={handleLogout}
       />
 
@@ -363,6 +390,21 @@ export default function App() {
                 onDropColumn={handleDropColumn}
               />
             ))}
+
+            {/* Quick Add New Column Card */}
+            <div className="add-column-wrapper">
+              <button
+                type="button"
+                className="btn-add-new-column"
+                onClick={() => {
+                  setColumnToEdit(null);
+                  setIsColumnModalOpen(true);
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>add</span>
+                Добавить колонку
+              </button>
+            </div>
           </main>
         </div>
       )}
@@ -381,15 +423,6 @@ export default function App() {
         <SettingsModal onClose={() => setIsSettingsModalOpen(false)} />
       )}
 
-      {isColumnModalOpen && (
-        <ColumnModal
-          columnToEdit={columnToEdit}
-          boardId={currentBoardId}
-          onClose={() => setIsColumnModalOpen(false)}
-          onSave={handleSaveColumn}
-        />
-      )}
-
       {isTaskModalOpen && (
         <TaskModal
           taskToEdit={taskToEdit}
@@ -402,7 +435,16 @@ export default function App() {
       {isBoardModalOpen && (
         <BoardModal
           onClose={() => setIsBoardModalOpen(false)}
-          onSave={handleSaveBoard}
+          onSave={handleCreateBoard}
+        />
+      )}
+
+      {isColumnModalOpen && (
+        <ColumnModal
+          columnToEdit={columnToEdit}
+          boardId={currentBoardId}
+          onClose={() => setIsColumnModalOpen(false)}
+          onSave={handleSaveColumn}
         />
       )}
 

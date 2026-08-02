@@ -150,7 +150,7 @@ export default function Column({ column, groupedItems, viewMode, onAddTask, onEd
             onClick={() => onAddTask(column.column_key)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>add</span>
-            Добавить карточку
+            Добавить задачу
           </button>
         )}
       </div>
