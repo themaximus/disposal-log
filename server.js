@@ -1241,7 +1241,7 @@ app.put('/api/tasks/:id/unlink', sessionMiddleware, requireUser, (req, res) => {
 app.delete('/api/tasks/:id', sessionMiddleware, requireUser, (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
-    db.run("DELETE FROM tasks WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], function(err) {
+    db.run("UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
     });
