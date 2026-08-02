@@ -9,7 +9,7 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
             <span style={{ fontSize: '1.4rem' }}>⚙️</span>
           </div>
           <div className="logo-text-group">
-            <h1 className="github-title" style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.5px' }}>PULSE</h1>
+            <h1 className="github-title">PULSE</h1>
             <div className="system-status">
               <span className="status-dot"></span>
               <span>Task Control // Dev Studio</span>
@@ -17,31 +17,32 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
           </div>
         </div>
 
-        <nav className="nav-tabs-group">
+        {/* Standalone Header Navigation Buttons */}
+        <div className="nav-buttons-standalone">
           <button
-            className={`nav-tab-btn ${currentTab === 'landing' ? 'active' : ''}`}
+            className={`btn ${currentTab === 'landing' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => onSelectTab('landing')}
           >
             Главная
           </button>
           <button
-            className={`nav-tab-btn ${currentTab === 'workspace' ? 'active' : ''}`}
+            className={`btn ${currentTab === 'workspace' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => onSelectTab('workspace')}
           >
             Задачи
           </button>
-        </nav>
+        </div>
       </div>
 
       <div className="header-controls">
         {currentTab === 'workspace' && (
-          <div className="view-modes">
+          <div className="view-modes" title="Режим отображения карточек (1: Детальный, 2: Компактный, 3: Минималистичный)">
             {[1, 2, 3].map(m => (
               <button
                 key={m}
                 className={`btn-view ${viewMode === m ? 'active' : ''}`}
                 onClick={() => onChangeViewMode(m)}
-                title={`${m} колонок`}
+                title={`Режим карточек: ${m === 1 ? 'Подробный' : (m === 2 ? 'Компактный' : 'Минималистичный')}`}
               >
                 {m}
               </button>
@@ -77,7 +78,7 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
             </button>
           </div>
         ) : (
-          <button className="btn btn-primary btn-sm" onClick={onOpenAuth}>
+          <button className="btn btn-primary" onClick={onOpenAuth}>
             Войти
           </button>
         )}

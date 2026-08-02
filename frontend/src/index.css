@@ -51,6 +51,23 @@
     padding: 0;
 }
 
+/* Custom GitHub Dark Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--github-canvas);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--github-border);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #8b949e;
+}
+
 body {
     font-family: var(--font-family);
     background: var(--github-canvas);
@@ -86,7 +103,7 @@ body {
 .header-left {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
 .header-logo {
@@ -128,7 +145,14 @@ body {
     100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); }
 }
 
-/* View Modes Switcher (1, 2, 3) */
+/* Standalone Header Navigation Buttons */
+.nav-buttons-standalone {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* View Modes Switcher (1, 2, 3 Card Modes) */
 .view-modes {
     display: flex;
     background: var(--github-canvas);
@@ -156,38 +180,6 @@ body {
 .btn-view.active {
     background: var(--github-subtle);
     color: var(--github-blue-text);
-    border: 1px solid var(--github-border);
-}
-
-/* Nav Tabs */
-.nav-tabs-group {
-    display: flex;
-    align-items: center;
-    background: var(--github-canvas);
-    padding: 0.2rem;
-    border-radius: 8px;
-    border: 1px solid var(--github-border);
-}
-
-.nav-tab-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    padding: 0.35rem 0.85rem;
-    border-radius: 6px;
-    font-size: 0.84rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.nav-tab-btn:hover {
-    color: var(--text-main);
-}
-
-.nav-tab-btn.active {
-    background: var(--github-subtle);
-    color: #ffffff;
     border: 1px solid var(--github-border);
 }
 
@@ -676,7 +668,7 @@ body {
 
 /* Kanban Board & Columns */
 .board {
-    display: grid;
+    display: flex;
     gap: 1.25rem;
     flex: 1;
     overflow-x: auto;
@@ -761,6 +753,47 @@ body {
 .task-card[data-diff="1"] { border-left: 4px solid var(--diff-1); }
 .task-card[data-diff="2"] { border-left: 4px solid var(--diff-2); }
 .task-card[data-diff="3"] { border-left: 4px solid var(--diff-3); }
+
+/* Card Density View Modes */
+/* Mode 1: Detailed View Mode (Full Cards with photos & desc) */
+.board[data-card-mode="1"] .card-desc { display: block; }
+.board[data-card-mode="1"] .card-banner { display: block; }
+
+/* Mode 2: Compact View Mode (Title, stars, badges) */
+.board[data-card-mode="2"] .task-card { padding: 0.55rem 0.65rem; }
+.board[data-card-mode="2"] .card-desc { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.78rem; }
+.board[data-card-mode="2"] .card-banner { max-height: 70px; }
+
+/* Mode 3: Minimal Stacking View Mode (Ultra compact list items) */
+.board[data-card-mode="3"] .task-card { padding: 0.4rem 0.6rem; }
+.board[data-card-mode="3"] .card-desc { display: none; }
+.board[data-card-mode="3"] .card-banner { display: none; }
+.board[data-card-mode="3"] .card-footer { margin-top: 0.35rem; }
+
+/* Stack Container (Card Group Stacks) */
+.stack-container {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: rgba(22, 27, 34, 0.6);
+    border: 1px dashed rgba(56, 139, 253, 0.4);
+    padding: 0.4rem;
+    border-radius: 10px;
+    gap: 0.4rem;
+}
+
+.stack-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(56, 139, 253, 0.15);
+    color: #58a6ff;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
 
 .card-banner {
     width: 100%;

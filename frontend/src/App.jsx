@@ -14,8 +14,8 @@ import ColumnModal from './modals/ColumnModal';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [currentTab, setCurrentTab] = useState('landing'); // Defaults to 'landing' for guest protection
-  const [viewMode, setViewMode] = useState(3);
+  const [currentTab, setCurrentTab] = useState('landing');
+  const [viewMode, setViewMode] = useState(1); // Card Density Mode (1: Detailed, 2: Compact, 3: Minimalist)
   const [boards, setBoards] = useState([]);
   const [currentBoardId, setCurrentBoardId] = useState(null);
   const [columns, setColumns] = useState([]);
@@ -56,7 +56,7 @@ export default function App() {
         if (data && (data.id || data.user)) {
           const userObj = data.id ? data : data.user;
           setCurrentUser(userObj);
-          setCurrentTab('workspace'); // Open workspace automatically for logged-in user
+          setCurrentTab('workspace');
           fetchBoards();
         } else {
           setCurrentUser(null);
@@ -108,13 +108,37 @@ export default function App() {
       .catch(console.error);
   };
 
-  // Tab Switcher Guard: Require Auth for 'workspace'
   const handleSelectTab = (tab) => {
     if (tab === 'workspace' && !currentUser) {
       setIsAuthModalOpen(true);
       return;
     }
     setCurrentTab(tab);
+  };
+
+  // Group tasks into Stacks
+  const getGroupedItemsForColumn = (colKey) => {
+    const colTasks = tasks.filter(t => (t.status || 'todo') === colKey);
+    const grouped = [];
+    const processedGroups = new Set();
+
+    colTasks.forEach(t => {
+      if (t.group_id) {
+        if (!processedGroups.has(t.group_id)) {
+          processedGroups.add(t.group_id);
+          const stackTasks = colTasks.filter(st => st.group_id === t.group_id);
+          if (stackTasks.length > 1) {
+            grouped.push({ isStack: true, groupId: t.group_id, tasks: stackTasks });
+          } else {
+            grouped.push({ isStack: false, task: t });
+          }
+        }
+      } else {
+        grouped.push({ isStack: false, task: t });
+      }
+    });
+
+    return grouped;
   };
 
   // Drag & Drop Handlers
@@ -129,7 +153,34 @@ export default function App() {
   const handleDropTask = (e, targetTask) => {
     e.preventDefault();
     if (!draggedTask || draggedTask.id === targetTask.id) return;
-    moveTaskStatus(draggedTask.id, targetTask.status);
+
+    // Check if dragging ONTO target task to create/join stack
+    const targetGroupId = targetTask.group_id || `group_${Date.now()}`;
+
+    setTasks(prev => prev.map(t => {
+      if (t.id === draggedTask.id || t.id === targetTask.id) {
+        return { ...t, status: targetTask.status, group_id: targetGroupId };
+      }
+      return t;
+    }));
+
+    setSyncStatus('syncing');
+    setSyncMessage('Создание стопки...');
+
+    fetch(`/api/tasks/${draggedTask.id}/group`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_id: targetTask.id })
+    }).finally(() => {
+      setSyncStatus('success');
+      setSyncMessage('Стопка сформирована');
+      setTimeout(() => setSyncStatus(null), 2000);
+    });
+  };
+
+  const handleUnlinkGroup = (groupId) => {
+    setTasks(prev => prev.map(t => t.group_id === groupId ? { ...t, group_id: null } : t));
+    fetch(`/api/tasks/group/${groupId}/unlink`, { method: 'PUT' });
   };
 
   const handleDropColumn = (e, columnKey) => {
@@ -142,7 +193,7 @@ export default function App() {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
 
     setSyncStatus('syncing');
-    setSyncMessage('Сохранение изменений...');
+    setSyncMessage('Сохранение...');
 
     fetch(`/api/tasks/${taskId}/status`, {
       method: 'PUT',
@@ -277,26 +328,17 @@ export default function App() {
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />
 
-          <main
-            className="board"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${viewMode}, minmax(320px, 1fr))`,
-              gap: '1.25rem',
-              flex: 1,
-              overflowX: 'auto',
-              padding: '1.25rem 2rem'
-            }}
-          >
-            {columns.slice(0, viewMode).map(col => (
+          <main className="board" data-card-mode={viewMode}>
+            {columns.map(col => (
               <Column
                 key={col.id}
                 column={col}
-                tasks={tasks.filter(t => (t.status || 'todo') === col.column_key)}
+                groupedItems={getGroupedItemsForColumn(col.column_key)}
                 onEditColumn={(col) => { setColumnToEdit(col); setIsColumnModalOpen(true); }}
                 onDeleteColumn={handleDeleteColumn}
                 onEditTask={(task) => { setTaskToEdit(task); setIsTaskModalOpen(true); }}
                 onDeleteTask={handleDeleteTask}
+                onUnlinkGroup={handleUnlinkGroup}
                 onDragStartTask={handleDragStartTask}
                 onDragOverTask={handleDragOverTask}
                 onDropTask={handleDropTask}
