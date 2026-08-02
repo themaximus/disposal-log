@@ -585,6 +585,11 @@ export default function App() {
         setCurrentUser(null);
         setBoards([]);
         setCurrentBoardId(null);
+        setColumns([]);
+        setTasks([]);
+        setCurrentTab('landing');
+        setSyncStatus('synced');
+        setSyncMessage('Выполнен выход из аккаунта');
       })
       .catch(console.error);
   };
