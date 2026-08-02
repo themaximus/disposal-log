@@ -817,12 +817,17 @@ body {
     height: calc(100vh - 60px);
 }
 
+.workspace-wrapper.full-height {
+    height: 100vh !important;
+}
+
 .boards-sidebar {
     width: 260px;
     background: var(--github-surface);
     border-right: 1px solid var(--github-border);
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     transition: width 0.25s cubic-bezier(0.2, 0, 0, 1);
     overflow: hidden;
     flex-shrink: 0;
@@ -833,10 +838,23 @@ body {
     width: 60px !important;
 }
 
+.boards-sidebar.collapsed .sidebar-logo-text,
 .boards-sidebar.collapsed .sidebar-heading,
+.boards-sidebar.collapsed .sidebar-subheading,
 .boards-sidebar.collapsed .board-item-name,
-.boards-sidebar.collapsed .btn-new-board {
+.boards-sidebar.collapsed .btn-new-board,
+.boards-sidebar.collapsed .user-info-text {
     display: none !important;
+}
+
+.boards-sidebar.collapsed .sidebar-brand-header {
+    padding: 0.75rem 0.5rem;
+    justify-content: center;
+}
+
+.boards-sidebar.collapsed .sidebar-nav-btn {
+    justify-content: center;
+    padding: 0.55rem;
 }
 
 .boards-sidebar.collapsed .board-item {
@@ -847,13 +865,140 @@ body {
     justify-content: center !important;
 }
 
-.sidebar-header-bar {
+.boards-sidebar.collapsed .sidebar-footer {
+    padding: 0.65rem 0.4rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Sidebar Top Brand & Collapse Header */
+.sidebar-brand-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.85rem 1rem;
     border-bottom: 1px solid var(--github-border);
+}
+
+.sidebar-logo-block {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.sidebar-logo-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.btn-collapse-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
     cursor: pointer;
+    border-radius: 4px;
+    padding: 0.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+.btn-collapse-toggle:hover {
+    color: var(--text-main);
+    background: var(--github-subtle);
+}
+
+/* Sidebar Navigation Tabs */
+.sidebar-nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.6rem 0.6rem 0.3rem 0.6rem;
+}
+
+.sidebar-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sidebar-nav-btn:hover {
+    background: var(--github-canvas);
+    color: var(--text-main);
+}
+
+.sidebar-nav-btn.active {
+    background: rgba(56, 139, 253, 0.15);
+    border-color: rgba(56, 139, 253, 0.4);
+    color: var(--github-blue-text);
+}
+
+.sidebar-view-modes-box {
+    padding: 0.3rem 0.6rem 0.6rem 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sidebar-subheading {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.sidebar-divider {
+    border: none;
+    border-top: 1px solid var(--github-border);
+    margin: 0.2rem 0;
+}
+
+/* Sidebar Footer (Profile & Settings) */
+.sidebar-footer {
+    padding: 0.65rem 0.85rem;
+    border-top: 1px solid var(--github-border);
+    background: var(--github-surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.sidebar-user-widget {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+    flex: 1;
+    overflow: hidden;
+}
+
+.sidebar-user-widget:hover {
+    background: var(--github-canvas);
+}
+
+.btn-sidebar-login {
+    flex: 1;
+    justify-content: center;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.82rem;
+}
+
+.sidebar-settings-btn {
+    flex-shrink: 0;
 }
 
 /* Sidebar Folder Icon with Hover Animated Collapse Arrow Overlay */

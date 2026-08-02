@@ -356,26 +356,36 @@ export default function App() {
     <div className="app-container">
       <div className="animated-bg"></div>
 
-      <Header
-        currentUser={currentUser}
-        currentTab={currentTab}
-        viewMode={viewMode}
-        onSelectTab={handleSelectTab}
-        onChangeViewMode={(mode) => setViewMode(mode)}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
-        onOpenProfile={() => setIsProfileModalOpen(true)}
-        onOpenSettings={() => setIsSettingsModalOpen(true)}
-        onLogout={handleLogout}
-      />
-
       {currentTab === 'landing' ? (
-        <LandingHero
-          onOpenAuth={() => setIsAuthModalOpen(true)}
-          onOpenWorkspace={() => handleSelectTab('workspace')}
-        />
+        <>
+          <Header
+            currentUser={currentUser}
+            currentTab={currentTab}
+            viewMode={viewMode}
+            onSelectTab={handleSelectTab}
+            onChangeViewMode={(mode) => setViewMode(mode)}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            onLogout={handleLogout}
+          />
+          <LandingHero
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onOpenWorkspace={() => handleSelectTab('workspace')}
+          />
+        </>
       ) : (
-        <div className="workspace-wrapper">
+        <div className="workspace-wrapper full-height">
           <Sidebar
+            currentUser={currentUser}
+            currentTab={currentTab}
+            viewMode={viewMode}
+            onSelectTab={handleSelectTab}
+            onChangeViewMode={(mode) => setViewMode(mode)}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            onLogout={handleLogout}
             boards={boards}
             currentBoardId={currentBoardId}
             onSelectBoard={selectBoard}
