@@ -1171,7 +1171,13 @@ const distDir = path.join(__dirname, 'dist');
 const publicDir = path.join(__dirname, 'public');
 const staticDir = fs.existsSync(distDir) ? distDir : publicDir;
 
-app.use(express.static(staticDir));
+app.use(express.static(staticDir, {
+    etag: false,
+    maxAge: 0,
+    setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    }
+}));
 
 // Express 5.x catch-all route handler for SPA fallback
 app.get('*splat', (req, res, next) => {
