@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 import TaskStack from './TaskStack';
 
-export default function Column({ column, groupedItems, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
+export default function Column({ column, groupedItems, viewMode, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Total task count
@@ -46,7 +46,15 @@ export default function Column({ column, groupedItems, onEditColumn, onDeleteCol
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => onDropColumn(e, column.column_key)}
       >
-        <div className="task-list">
+        <div
+          className="task-list"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${viewMode || 1}, minmax(0, 1fr))`,
+            gap: '0.85rem',
+            alignItems: 'start'
+          }}
+        >
           {groupedItems.map(item => {
             if (item.isStack) {
               return (

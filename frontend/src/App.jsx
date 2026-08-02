@@ -333,6 +333,7 @@ export default function App() {
               <Column
                 key={col.id}
                 column={col}
+                viewMode={viewMode}
                 groupedItems={getGroupedItemsForColumn(col.column_key)}
                 onEditColumn={(col) => { setColumnToEdit(col); setIsColumnModalOpen(true); }}
                 onDeleteColumn={handleDeleteColumn}

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function TaskCard({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop }) {
+export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStart, onDragOver, onDrop }) {
   const diffStars = '★'.repeat(task.difficulty || 1) + '☆'.repeat(3 - (task.difficulty || 1));
   
   const validCover = (task.images && task.images.length > 0 && typeof task.images[0] === 'string' && task.images[0].startsWith('/uploads/'))
@@ -9,7 +9,7 @@ export default function TaskCard({ task, onEdit, onDelete, onDragStart, onDragOv
 
   return (
     <div
-      className="task-card"
+      className={`task-card ${isInStack ? 'in-stack' : ''}`}
       data-diff={task.difficulty || 1}
       draggable
       onDragStart={(e) => onDragStart(e, task)}

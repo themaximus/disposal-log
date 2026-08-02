@@ -17,7 +17,7 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
         position: 'relative',
         width: '100%',
         height: 'auto',
-        minHeight: '160px',
+        minHeight: '165px',
         marginBottom: `calc(1rem + ${maxOffsetPx}px)`,
         marginRight: `${maxOffsetPx}px`
       }}
@@ -60,11 +60,13 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
               top: offsetIndex > 0 ? `${offsetPx}px` : undefined,
               left: offsetIndex > 0 ? `${offsetPx}px` : undefined,
               width: '100%',
+              height: '100%',
               zIndex: index + 1
             }}
           >
             <TaskCard
               task={task}
+              isInStack={true}
               onEdit={onEditTask}
               onDelete={onDeleteTask}
               onDragStart={onDragStartTask}
