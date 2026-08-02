@@ -3,7 +3,9 @@ const router = express.Router();
 const BoardController = require('../controllers/BoardController');
 
 module.exports = function (sessionMiddleware, requireUser, upload) {
-    router.get('/', sessionMiddleware, requireUser, BoardController.getBoards);
+    // GET boards allows unauthenticated users (returns public/demo board instead of 401)
+    router.get('/', sessionMiddleware, BoardController.getBoards);
+    
     router.post('/', sessionMiddleware, requireUser, BoardController.createBoard);
     router.put('/:id', sessionMiddleware, requireUser, BoardController.updateBoard);
     router.post('/:id/icon', sessionMiddleware, requireUser, upload.single('icon'), BoardController.uploadIcon);
