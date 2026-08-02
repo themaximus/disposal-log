@@ -64,17 +64,40 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
 
     setIsUploading(true);
 
-    fetch('/api/upload', {
+    fetch('/api/upload/google-drive', {
       method: 'POST',
       body: formData
     })
       .then(res => res.json())
       .then(data => {
-        if (data.urls && Array.isArray(data.urls)) {
+        if (data.urls && Array.isArray(data.urls) && data.urls.length > 0) {
           setImages(prev => [...prev, ...data.urls]);
+          return;
         }
+        return fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+          .then(res => res.json())
+          .then(fallbackData => {
+            if (fallbackData.urls && Array.isArray(fallbackData.urls)) {
+              setImages(prev => [...prev, ...fallbackData.urls]);
+            }
+          });
       })
-      .catch(console.error)
+      .catch(() => {
+        fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+          .then(res => res.json())
+          .then(fallbackData => {
+            if (fallbackData.urls && Array.isArray(fallbackData.urls)) {
+              setImages(prev => [...prev, ...fallbackData.urls]);
+            }
+          })
+          .catch(console.error);
+      })
       .finally(() => setIsUploading(false));
   };
 

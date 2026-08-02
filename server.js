@@ -65,7 +65,11 @@ function fetchJson(url, options = {}, postData = null) {
     });
 }
 
-function createOrGetUser(provider, providerId, email, name, avatarUrl, callback) {
+function createOrGetUser(provider, providerId, email, name, avatarUrl, googleAccessToken, callback) {
+    if (typeof googleAccessToken === 'function') {
+        callback = googleAccessToken;
+        googleAccessToken = null;
+    }
     db.get(`SELECT * FROM users WHERE provider = ? AND provider_id = ?`, [provider, providerId], (err, row) => {
         if (err) return callback(err);
         const handleUser = (user) => {
@@ -77,14 +81,15 @@ function createOrGetUser(provider, providerId, email, name, avatarUrl, callback)
         };
 
         if (row) {
-            db.run(`UPDATE users SET email = ?, name = ?, avatar_url = ? WHERE id = ?`, [email, name, avatarUrl, row.id], () => {
-                handleUser({ ...row, email, name, avatar_url: avatarUrl });
+            db.run(`UPDATE users SET email = ?, name = ?, avatar_url = ?, google_access_token = COALESCE(?, google_access_token) WHERE id = ?`,
+                [email, name, avatarUrl, googleAccessToken, row.id], () => {
+                handleUser({ ...row, email, name, avatar_url: avatarUrl, google_access_token: googleAccessToken || row.google_access_token });
             });
         } else {
-            db.run(`INSERT INTO users (provider, provider_id, email, name, avatar_url) VALUES (?, ?, ?, ?, ?)`,
-                [provider, providerId, email, name, avatarUrl], function(err2) {
+            db.run(`INSERT INTO users (provider, provider_id, email, name, avatar_url, google_access_token) VALUES (?, ?, ?, ?, ?, ?)`,
+                [provider, providerId, email, name, avatarUrl, googleAccessToken], function(err2) {
                     if (err2) return callback(err2);
-                    handleUser({ id: this.lastID, provider, provider_id: providerId, email, name, avatar_url: avatarUrl });
+                    handleUser({ id: this.lastID, provider, provider_id: providerId, email, name, avatar_url: avatarUrl, google_access_token: googleAccessToken });
                 }
             );
         }
@@ -315,7 +320,7 @@ app.get(['/api/auth/google', '/auth/google'], (req, res) => {
     const clientId = getEnvVar('GOOGLE_CLIENT_ID');
     if (!clientId) return res.status(500).send('GOOGLE_CLIENT_ID не настроен в вашей панели Railway.');
     const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
-    const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email`;
+    const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.file&access_type=offline&prompt=consent`;
     res.redirect(googleUrl);
 });
 
@@ -354,7 +359,7 @@ app.get(['/api/auth/google/callback', '/auth/google/callback'], async (req, res)
         const avatarUrl = profile.picture || '';
         const providerId = String(profile.id);
 
-        createOrGetUser('google', providerId, email, name, avatarUrl, (err, user) => {
+        createOrGetUser('google', providerId, email, name, avatarUrl, accessToken, (err, user) => {
             if (err || !user) return res.redirect('/?auth_error=user_create_failed');
             createSession(user.id, (err, token) => {
                 if (err) return res.redirect('/?auth_error=session_failed');
@@ -363,8 +368,72 @@ app.get(['/api/auth/google/callback', '/auth/google/callback'], async (req, res)
             });
         });
     } catch(e) {
-        console.error('Google Auth Error:', e);
+        console.error('Google OAuth error:', e);
         res.redirect('/?auth_error=google_exception');
+    }
+});
+// Google Drive Direct Upload Endpoint
+app.post('/api/upload/google-drive', sessionMiddleware, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Войдите через Google для использования собственного Google Диска' });
+    }
+    const googleAccessToken = req.user.google_access_token;
+    if (!googleAccessToken) {
+        return res.status(400).json({ error: 'Подключите аккаунт Google для прямой загрузки на ваш Google Диск' });
+    }
+    if (!req.files || !req.files.images) {
+        return res.status(400).json({ error: 'Файлы не переданы' });
+    }
+
+    const files = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+    const uploadedUrls = [];
+
+    try {
+        for (const fileObj of files) {
+            const metadata = {
+                name: fileObj.name,
+                mimeType: fileObj.mimetype
+            };
+
+            const boundary = '-------314159265358979323846';
+            const delimiter = "\r\n--" + boundary + "\r\n";
+            const close_delim = "\r\n--" + boundary + "--";
+
+            const multipartRequestBody =
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                JSON.stringify(metadata) +
+                delimiter +
+                'Content-Type: ' + fileObj.mimetype + '\r\n' +
+                'Content-Transfer-Encoding: base64\r\n\r\n' +
+                fileObj.data.toString('base64') +
+                close_delim;
+
+            const uploadRes = await fetchJson('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${googleAccessToken}`,
+                    'Content-Type': `multipart/related; boundary=${boundary}`
+                }
+            }, multipartRequestBody);
+
+            const fileId = uploadRes.data?.id;
+            if (fileId) {
+                await fetchJson(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${googleAccessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }, JSON.stringify({ role: 'reader', type: 'anyone' }));
+
+                uploadedUrls.push(`https://lh3.googleusercontent.com/d/${fileId}`);
+            }
+        }
+        res.json({ urls: uploadedUrls });
+    } catch (err) {
+        console.error('Google Drive Direct Upload Error:', err);
+        res.status(500).json({ error: 'Ошибка сохранения на Google Диск' });
     }
 });
 

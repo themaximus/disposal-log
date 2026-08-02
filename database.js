@@ -33,6 +33,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
             if (!err) {
                 db.run(`ALTER TABLE users ADD COLUMN share_mode TEXT DEFAULT 'link'`, () => {});
                 db.run(`ALTER TABLE users ADD COLUMN share_token TEXT`, () => {});
+                db.run(`ALTER TABLE users ADD COLUMN google_access_token TEXT`, () => {});
             }
         });
 
