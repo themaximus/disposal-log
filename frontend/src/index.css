@@ -956,52 +956,59 @@ body {
     color: var(--github-blue-text);
 }
 
-/* Integrated View Modes Segmented Control */
-.sidebar-view-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 0.4rem;
-    padding: 0.35rem 0.5rem;
-    background: var(--github-canvas);
-    border: 1px solid var(--github-border);
-    border-radius: 6px;
+/* Collapsible Filter Dropdown Panel */
+.sidebar-filter-wrapper {
+    margin-top: 0.2rem;
 }
 
-.view-mode-label {
-    font-size: 0.74rem;
+.sidebar-filter-panel {
+    background: var(--github-surface);
+    border: 1px solid var(--github-border);
+    border-radius: 8px;
+    padding: 0.65rem;
+    margin-top: 0.35rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.filter-section-title {
+    font-size: 0.72rem;
     font-weight: 600;
     color: var(--text-muted);
+    display: block;
+    margin-bottom: 0.35rem;
 }
 
-.view-modes-segmented {
-    display: flex;
-    gap: 0.2rem;
+.view-modes-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
 }
 
-.btn-view-segment {
-    background: transparent;
-    border: none;
+.btn-view-panel {
+    background: var(--github-canvas);
+    border: 1px solid var(--github-border);
     color: var(--text-muted);
-    width: 24px;
-    height: 22px;
-    border-radius: 4px;
-    font-size: 0.76rem;
-    font-weight: 700;
+    border-radius: 6px;
+    padding: 0.35rem 0.2rem;
+    font-size: 0.72rem;
+    font-weight: 600;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    text-align: center;
     transition: all 0.15s ease;
 }
 
-.btn-view-segment:hover {
+.btn-view-panel:hover {
+    border-color: #8b949e;
     color: var(--text-main);
-    background: var(--github-subtle);
 }
 
-.btn-view-segment.active {
+.btn-view-panel.active {
     background: var(--github-blue);
+    border-color: var(--github-blue);
     color: #ffffff;
 }
 
@@ -1027,15 +1034,51 @@ body {
     text-transform: uppercase;
 }
 
-/* Footer Section Fixed at Bottom */
+/* Sidebar Footer (Settings ON TOP, Profile UNDERNEATH) */
 .sidebar-footer {
     padding: 0.65rem 0.75rem;
     border-top: 1px solid var(--github-border);
     background: var(--github-surface);
     display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.btn-sidebar-settings-full {
+    display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.45rem 0.65rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-sidebar-settings-full:hover {
+    background: var(--github-canvas);
+    color: var(--text-main);
+}
+
+.gear-icon {
+    font-size: 1.15rem;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.btn-sidebar-settings-full:hover .gear-icon,
+.sidebar-settings-btn:hover .gear-icon {
+    transform: rotate(60deg);
+    color: var(--github-blue-text);
+}
+
+.btn-sidebar-settings-full:active .gear-icon,
+.sidebar-settings-btn:active .gear-icon {
+    transform: rotate(120deg) scale(0.92);
 }
 
 .sidebar-user-widget {
@@ -1043,10 +1086,10 @@ body {
     align-items: center;
     gap: 0.55rem;
     cursor: pointer;
-    padding: 0.2rem 0.4rem;
+    padding: 0.35rem 0.5rem;
     border-radius: 6px;
     transition: background 0.15s ease;
-    flex: 1;
+    width: 100%;
     overflow: hidden;
 }
 

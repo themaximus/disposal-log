@@ -20,6 +20,7 @@ export default function Sidebar({
   onToggleCollapse
 }) {
   const [activeMenuBoardId, setActiveMenuBoardId] = useState(null);
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   const getAvatarUrl = (user) => {
     if (!user) return null;
@@ -30,14 +31,22 @@ export default function Sidebar({
 
   return (
     <aside className={`boards-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-      {/* Top Group: Logo, Nav, View Modes */}
+      {/* Top Group: Brand Header & Nav Tabs */}
       <div className="sidebar-top-group">
-        {/* Brand Header */}
+        {/* Brand Header with Clickable Folder & Phantom Arrow */}
         <div className="sidebar-brand-header">
           <div className="sidebar-logo-block">
-            <span className="material-symbols-outlined" style={{ color: 'var(--github-green-text)', fontSize: '1.35rem' }}>
-              rocket_launch
-            </span>
+            <div
+              className="sidebar-folder-wrapper"
+              onClick={onToggleCollapse}
+              title={isCollapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар'}
+            >
+              <span className="material-symbols-outlined sidebar-icon">folder</span>
+              <span className="material-symbols-outlined sidebar-hover-arrow">
+                {isCollapsed ? 'chevron_right' : 'chevron_left'}
+              </span>
+            </div>
+
             {!isCollapsed && (
               <div className="sidebar-logo-text">
                 <span className="github-title" style={{ fontSize: '1rem', letterSpacing: '0.5px' }}>PULSE</span>
@@ -47,16 +56,6 @@ export default function Sidebar({
               </div>
             )}
           </div>
-
-          <button
-            className="btn-collapse-toggle"
-            onClick={onToggleCollapse}
-            title={isCollapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар'}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>
-              {isCollapsed ? 'chevron_right' : 'chevron_left'}
-            </span>
-          </button>
         </div>
 
         {/* Primary Nav Tabs */}
@@ -79,33 +78,50 @@ export default function Sidebar({
             {!isCollapsed && <span>Задачи</span>}
           </button>
 
-          {/* Integrated View Modes Switcher */}
+          {/* Collapsible Filter / View Modes Dropdown Panel */}
           {currentTab === 'workspace' && (
-            <div className="sidebar-view-row">
-              {!isCollapsed && <span className="view-mode-label">Вид сетки:</span>}
-              <div className="view-modes-segmented">
-                <button
-                  className={`btn-view-segment ${viewMode === 1 ? 'active' : ''}`}
-                  onClick={() => onChangeViewMode(1)}
-                  title="1 карточка в ряд"
-                >
-                  1
-                </button>
-                <button
-                  className={`btn-view-segment ${viewMode === 2 ? 'active' : ''}`}
-                  onClick={() => onChangeViewMode(2)}
-                  title="2 карточки в ряд"
-                >
-                  2
-                </button>
-                <button
-                  className={`btn-view-segment ${viewMode === 3 ? 'active' : ''}`}
-                  onClick={() => onChangeViewMode(3)}
-                  title="3 карточки в ряд"
-                >
-                  3
-                </button>
-              </div>
+            <div className="sidebar-filter-wrapper" style={{ position: 'relative' }}>
+              <button
+                className={`sidebar-nav-btn ${isFilterPanelOpen ? 'active' : ''}`}
+                onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                title="Вид и Фильтры"
+              >
+                <span className="material-symbols-outlined">tune</span>
+                {!isCollapsed && <span>Вид и Фильтры</span>}
+                {!isCollapsed && (
+                  <span className="material-symbols-outlined" style={{ marginLeft: 'auto', fontSize: '0.9rem' }}>
+                    {isFilterPanelOpen ? 'expand_less' : 'expand_more'}
+                  </span>
+                )}
+              </button>
+
+              {isFilterPanelOpen && (
+                <div className="sidebar-filter-panel">
+                  <div className="filter-panel-section">
+                    <span className="filter-section-title">Количество карточек в ряд:</span>
+                    <div className="view-modes-panel-grid">
+                      <button
+                        className={`btn-view-panel ${viewMode === 1 ? 'active' : ''}`}
+                        onClick={() => onChangeViewMode(1)}
+                      >
+                        1 столбик
+                      </button>
+                      <button
+                        className={`btn-view-panel ${viewMode === 2 ? 'active' : ''}`}
+                        onClick={() => onChangeViewMode(2)}
+                      >
+                        2 столбика
+                      </button>
+                      <button
+                        className={`btn-view-panel ${viewMode === 3 ? 'active' : ''}`}
+                        onClick={() => onChangeViewMode(3)}
+                      >
+                        3 столбика
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -232,8 +248,19 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* Bottom Fixed Footer: Profile & Settings */}
+      {/* Bottom Fixed Footer: Settings Gear ON TOP, Profile UNDERNEATH */}
       <div className="sidebar-footer">
+        {/* Settings Button on Top */}
+        <button
+          className="btn-sidebar-settings-full"
+          onClick={onOpenSettings}
+          title="Настройки TG и Системы"
+        >
+          <span className="material-symbols-outlined gear-icon">settings</span>
+          {!isCollapsed && <span>Настройки системы</span>}
+        </button>
+
+        {/* User Profile Widget Underneath */}
         {currentUser ? (
           <div className="sidebar-user-widget" onClick={onOpenProfile} title="Профиль пользователя">
             <div className="user-avatar-wrapper" style={{ width: '28px', height: '28px' }}>
@@ -256,10 +283,6 @@ export default function Sidebar({
             {!isCollapsed && <span>Войти</span>}
           </button>
         )}
-
-        <button className="btn-icon sidebar-settings-btn" onClick={onOpenSettings} title="Настройки TG и Системы">
-          <span className="material-symbols-outlined" style={{ fontSize: '1.15rem' }}>settings</span>
-        </button>
       </div>
     </aside>
   );
