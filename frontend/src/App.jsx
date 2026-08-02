@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Column from './components/Column';
+import LandingHero from './components/LandingHero';
 import SyncToast from './components/SyncToast';
 import TaskModal from './modals/TaskModal';
 import BoardModal from './modals/BoardModal';
 import ShareModal from './modals/ShareModal';
+import AuthModal from './modals/AuthModal';
+import ProfileModal from './modals/ProfileModal';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentTab, setCurrentTab] = useState('workspace'); // 'landing' | 'workspace'
   const [boards, setBoards] = useState([]);
   const [currentBoardId, setCurrentBoardId] = useState(null);
   const [columns, setColumns] = useState([]);
@@ -27,12 +31,18 @@ export default function App() {
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [shareBoardModal, setShareBoardModal] = useState(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   useEffect(() => {
     // Fetch Current User
     fetch('/api/auth/me')
       .then(res => res.ok ? res.json() : null)
-      .then(user => setCurrentUser(user))
+      .then(user => {
+        if (user) {
+          setCurrentUser(user);
+        }
+      })
       .catch(() => setCurrentUser(null));
 
     // Fetch Boards
@@ -59,7 +69,6 @@ export default function App() {
   };
 
   const fetchTasksForBoard = (boardId) => {
-    // Default columns
     setColumns([
       { id: 1, column_key: 'todo', title: 'Предстоящие', color: '#f85149' },
       { id: 2, column_key: 'in_progress', title: 'В работе', color: '#d29922' },
@@ -88,8 +97,6 @@ export default function App() {
   const handleDropTask = (e, targetTask) => {
     e.preventDefault();
     if (!draggedTask || draggedTask.id === targetTask.id) return;
-    
-    // Move dragged task to target's status
     moveTaskStatus(draggedTask.id, targetTask.status);
   };
 
@@ -100,7 +107,6 @@ export default function App() {
   };
 
   const moveTaskStatus = (taskId, newStatus) => {
-    // Optimistic UI Update
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
 
     setSyncStatus('syncing');
@@ -129,13 +135,12 @@ export default function App() {
       });
   };
 
-  // Task Creation & Editing
+  // Task Save & Delete
   const handleSaveTask = (taskData) => {
     setSyncStatus('syncing');
     setSyncMessage('Сохранение...');
 
     if (taskData.id) {
-      // Edit
       fetch(`/api/tasks/${taskData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -148,7 +153,6 @@ export default function App() {
         setTimeout(() => setSyncStatus(null), 2000);
       });
     } else {
-      // Create
       fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -169,7 +173,6 @@ export default function App() {
     fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
   };
 
-  // Board Creation
   const handleSaveBoard = (boardData) => {
     fetch('/api/boards', {
       method: 'POST',
@@ -190,39 +193,57 @@ export default function App() {
 
       <Header
         currentUser={currentUser}
+        currentTab={currentTab}
+        onSelectTab={(tab) => setCurrentTab(tab)}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
         onAddTask={() => { setTaskToEdit(null); setIsTaskModalOpen(true); }}
-        onOpenProfile={() => alert(`Профиль: ${currentUser?.name || currentUser?.email}`)}
       />
 
-      <div className="workspace-wrapper">
-        <Sidebar
-          boards={boards}
-          currentBoardId={currentBoardId}
-          onSelectBoard={selectBoard}
-          onCreateBoard={() => setIsBoardModalOpen(true)}
-          onOpenShare={(b) => setShareBoardModal(b)}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      {currentTab === 'landing' ? (
+        <LandingHero
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+          onOpenWorkspace={() => setCurrentTab('workspace')}
         />
+      ) : (
+        <div className="workspace-wrapper">
+          <Sidebar
+            boards={boards}
+            currentBoardId={currentBoardId}
+            onSelectBoard={selectBoard}
+            onCreateBoard={() => setIsBoardModalOpen(true)}
+            onOpenShare={(b) => setShareBoardModal(b)}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          />
 
-        <main className="board">
-          {columns.map(col => (
-            <Column
-              key={col.id}
-              column={col}
-              tasks={tasks.filter(t => (t.status || 'todo') === col.column_key)}
-              onEditTask={(task) => { setTaskToEdit(task); setIsTaskModalOpen(true); }}
-              onDeleteTask={handleDeleteTask}
-              onDragStartTask={handleDragStartTask}
-              onDragOverTask={handleDragOverTask}
-              onDropTask={handleDropTask}
-              onDropColumn={handleDropColumn}
-            />
-          ))}
-        </main>
-      </div>
+          <main className="board">
+            {columns.map(col => (
+              <Column
+                key={col.id}
+                column={col}
+                tasks={tasks.filter(t => (t.status || 'todo') === col.column_key)}
+                onEditTask={(task) => { setTaskToEdit(task); setIsTaskModalOpen(true); }}
+                onDeleteTask={handleDeleteTask}
+                onDragStartTask={handleDragStartTask}
+                onDragOverTask={handleDragOverTask}
+                onDropTask={handleDropTask}
+                onDropColumn={handleDropColumn}
+              />
+            ))}
+          </main>
+        </div>
+      )}
 
       <SyncToast status={syncStatus} message={syncMessage} />
+
+      {isAuthModalOpen && (
+        <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+      )}
+
+      {isProfileModalOpen && (
+        <ProfileModal user={currentUser} onClose={() => setIsProfileModalOpen(false)} />
+      )}
 
       {isTaskModalOpen && (
         <TaskModal

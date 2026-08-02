@@ -1,10 +1,10 @@
 import React from 'react';
 
-export default function Header({ currentUser, onAddTask, onOpenProfile }) {
+export default function Header({ currentUser, currentTab, onSelectTab, onOpenAuth, onOpenProfile, onAddTask }) {
   return (
     <header className="header">
       <div className="header-left">
-        <div className="header-logo">
+        <div className="header-logo" onClick={() => onSelectTab('landing')} style={{ cursor: 'pointer' }}>
           <div className="logo-icon-wrapper">
             <span style={{ fontSize: '1.4rem' }}>⚙️</span>
           </div>
@@ -17,6 +17,21 @@ export default function Header({ currentUser, onAddTask, onOpenProfile }) {
               <span>Dev Studio Active</span>
             </div>
           </div>
+        </div>
+
+        <div className="nav-tabs-group">
+          <button
+            className={`nav-tab-btn ${currentTab === 'landing' ? 'active' : ''}`}
+            onClick={() => onSelectTab('landing')}
+          >
+            Главная
+          </button>
+          <button
+            className={`nav-tab-btn ${currentTab === 'workspace' ? 'active' : ''}`}
+            onClick={() => onSelectTab('workspace')}
+          >
+            Задачи
+          </button>
         </div>
       </div>
 
@@ -32,18 +47,20 @@ export default function Header({ currentUser, onAddTask, onOpenProfile }) {
             </div>
             <div className="user-info-text">
               <span className="user-name-text">{currentUser.name || currentUser.email}</span>
-              <span className="user-provider-badge">{currentUser.provider || 'GitHub'}</span>
+              <span className="user-provider-badge">{currentUser.provider === 'github' ? 'GitHub' : 'Google'}</span>
             </div>
           </div>
         ) : (
-          <a href="/auth/github" className="btn btn-secondary btn-small">
-            🔑 Войти через GitHub
-          </a>
+          <button className="btn btn-secondary btn-small" onClick={onOpenAuth}>
+            🔑 Войти
+          </button>
         )}
 
-        <button className="btn btn-primary" onClick={onAddTask}>
-          + Добавить задачу
-        </button>
+        {currentTab === 'workspace' && (
+          <button className="btn btn-primary" onClick={onAddTask}>
+            + Добавить задачу
+          </button>
+        )}
       </div>
     </header>
   );
