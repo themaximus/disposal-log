@@ -98,8 +98,9 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
     e.preventDefault();
     if (!title.trim()) return;
     onSave({
-      id: taskToEdit ? taskToEdit.id : null,
+      id: taskToEdit && taskToEdit.id ? taskToEdit.id : null,
       board_id: boardId,
+      status: taskToEdit && taskToEdit.status ? taskToEdit.status : undefined,
       title,
       description,
       difficulty,

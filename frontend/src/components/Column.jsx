@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 import TaskStack from './TaskStack';
 
-export default function Column({ column, groupedItems, viewMode, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
+export default function Column({ column, groupedItems, viewMode, onAddTask, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Total task count
@@ -15,7 +15,17 @@ export default function Column({ column, groupedItems, viewMode, onEditColumn, o
           {column.title} <span className="count">{totalCount}</span>
         </h2>
         
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+          {typeof onAddTask === 'function' && (
+            <button
+              className="btn-dots-menu"
+              onClick={() => onAddTask(column.column_key)}
+              title={`Добавить задачу в "${column.title}"`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>add</span>
+            </button>
+          )}
+
           <button
             className="btn-dots-menu"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -131,6 +141,18 @@ export default function Column({ column, groupedItems, viewMode, onEditColumn, o
             );
           })}
         </div>
+
+        {/* Linear/Trello-style quick add task row at bottom of column */}
+        {typeof onAddTask === 'function' && (
+          <button
+            type="button"
+            className="btn-quick-add-task-col"
+            onClick={() => onAddTask(column.column_key)}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>add</span>
+            Добавить карточку
+          </button>
+        )}
       </div>
     </section>
   );

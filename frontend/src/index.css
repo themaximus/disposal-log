@@ -1053,7 +1053,7 @@ body {
     position: relative;
     border: 1px solid var(--github-border);
     transition: all 0.2s ease;
-    cursor: grab;
+    cursor: pointer;
     width: 100%;
     box-sizing: border-box;
 }
@@ -1218,29 +1218,38 @@ body {
     opacity: 0.6;
 }
 
-/* Quick Add Checklist Button on Card */
-.btn-add-checklist-card {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    background: transparent;
-    border: 1px dashed var(--github-border);
-    color: var(--text-muted);
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 0.55rem;
-    transition: all 0.15s ease;
-    width: fit-content;
+/* Card Actions Hover-Only Visibility for UI Hygiene */
+.card-actions {
+    opacity: 0;
+    transition: opacity 0.15s ease;
 }
 
-.btn-add-checklist-card:hover {
-    border-color: var(--github-blue-hover);
-    color: var(--github-blue-text);
-    background: rgba(56, 139, 253, 0.08);
+.task-card:hover .card-actions {
+    opacity: 1;
+}
+
+/* Linear / Trello Quick Add Task Button at Bottom of Column */
+.btn-quick-add-task-col {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.65rem;
+    background: transparent;
+    border: 1px dashed transparent;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-quick-add-task-col:hover {
+    background: var(--github-canvas);
+    border-color: var(--github-border);
+    color: var(--text-main);
 }
 
 /* Drag Over Stacking Target Visual Indicator */

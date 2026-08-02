@@ -294,6 +294,22 @@ export default function App() {
       });
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+        return;
+      }
+      if ((e.key === 'c' || e.key === 'C' || e.key === 'n' || e.key === 'N') && currentTab === 'workspace') {
+        e.preventDefault();
+        setTaskToEdit(null);
+        setIsTaskModalOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentTab]);
+
   return (
     <div className="app-container">
       <div className="animated-bg"></div>
@@ -335,6 +351,7 @@ export default function App() {
                 column={col}
                 viewMode={viewMode}
                 groupedItems={getGroupedItemsForColumn(col.column_key)}
+                onAddTask={(colKey) => { setTaskToEdit({ status: colKey }); setIsTaskModalOpen(true); }}
                 onEditColumn={(col) => { setColumnToEdit(col); setIsColumnModalOpen(true); }}
                 onDeleteColumn={handleDeleteColumn}
                 onEditTask={(task) => { setTaskToEdit(task); setIsTaskModalOpen(true); }}

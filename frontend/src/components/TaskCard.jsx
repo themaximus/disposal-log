@@ -58,6 +58,11 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
       className={`task-card ${isInStack ? 'in-stack' : ''} ${isDragOver ? 'drag-over-target' : ''}`}
       data-diff={task.difficulty || 1}
       draggable
+      onClick={(e) => {
+        if (!e.target.closest('button, input, label, a')) {
+          onEdit(task);
+        }
+      }}
       onDragStart={(e) => {
         if (typeof onDragStart === 'function') onDragStart(e, task);
       }}
@@ -190,11 +195,11 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
             <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>calendar_today</span>
             {task.created_at ? new Date(task.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Сегодня'}
           </span>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <button className="btn-icon edit" onClick={() => onEdit(task)} title="Редактировать">
+          <div className="card-actions" style={{ display: 'flex', gap: '0.4rem' }}>
+            <button className="btn-icon edit" onClick={(e) => { e.stopPropagation(); onEdit(task); }} title="Редактировать">
               <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>edit</span>
             </button>
-            <button className="btn-icon delete" onClick={() => onDelete(task.id)} title="Удалить">
+            <button className="btn-icon delete" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} title="Удалить">
               <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>delete</span>
             </button>
           </div>
