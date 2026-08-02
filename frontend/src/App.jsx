@@ -215,13 +215,12 @@ export default function App() {
 
   const handleLogout = () => {
     fetch('/api/auth/logout', { method: 'POST' })
-      .then(() => {
+      .finally(() => {
+        document.cookie = 'session_token=; path=/; max-age=0';
         setCurrentUser(null);
         setIsProfileModalOpen(false);
-        window.location.reload();
-      })
-      .catch(() => {
-        window.location.href = '/api/auth/logout';
+        setCurrentTab('landing');
+        setIsAuthModalOpen(true);
       });
   };
 
