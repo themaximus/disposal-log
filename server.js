@@ -1021,6 +1021,20 @@ app.delete('/api/tasks/:id', sessionMiddleware, requireUser, (req, res) => {
     });
 });
 
+// Serve static frontend assets (dist for Vite React, fallback to public)
+const distDir = path.join(__dirname, 'dist');
+if (fs.existsSync(distDir)) {
+    app.use(express.static(distDir));
+    app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/uploads')) {
+            return next();
+        }
+        res.sendFile(path.join(distDir, 'index.html'));
+    });
+} else {
+    app.use(express.static(path.join(__dirname, 'public')));
+}
+
 // Health check
 app.get('/health', (req, res) => {
     res.status(200).send('OK');
