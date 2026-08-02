@@ -74,7 +74,7 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
 
   return (
     <div className="modal-overlay active">
-      <div className="modal" style={{ maxWidth: '520px' }}>
+      <div className="modal" style={{ maxWidth: '500px' }}>
         <div className="modal-header">
           <h2>{taskToEdit ? 'Редактировать Механику' : 'Новая Механика'}</h2>
           <button className="btn-close" onClick={onClose}>✕</button>
@@ -103,39 +103,40 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
 
           <div className="form-group">
             <label>Медиафайлы (Изображения и Видео MP4/WebM)</label>
-            <input
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              onChange={handleFileUpload}
-              style={{ fontSize: '0.8rem' }}
-            />
-            {isUploading && <span style={{ fontSize: '0.75rem', color: '#58a6ff' }}>Загрузка файлов...</span>}
+            
+            <label className="custom-upload-zone">
+              <input
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+              />
+              <div className="upload-zone-content">
+                <span className="upload-icon">📁</span>
+                <div>
+                  <span className="upload-title">
+                    {isUploading ? 'Загрузка файлов...' : 'Выбрать или перетащить медиафайлы'}
+                  </span>
+                  <span className="upload-subtitle">Поддерживаются PNG, JPG, MP4, WebM</span>
+                </div>
+              </div>
+            </label>
 
             {images.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.6rem' }}>
+              <div className="media-preview-grid">
                 {images.map((imgUrl, idx) => (
-                  <div key={idx} style={{ position: 'relative', width: '70px', height: '50px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--github-border)' }}>
+                  <div key={idx} className="media-preview-item">
                     {isVideoUrl(imgUrl) ? (
-                      <video src={imgUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <video src={imgUrl} />
                     ) : (
-                      <img src={imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={imgUrl} alt="Preview" />
                     )}
                     <button
                       type="button"
+                      className="btn-remove-media"
                       onClick={() => handleRemoveImage(idx)}
-                      style={{
-                        position: 'absolute',
-                        top: '2px', right: '2px',
-                        background: 'rgba(0,0,0,0.7)',
-                        color: '#f85149',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '16px', height: '16px',
-                        fontSize: '10px',
-                        cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}
+                      title="Удалить файл"
                     >
                       ✕
                     </button>
@@ -147,18 +148,19 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
 
           <div className="form-group">
             <label>Сложность (Звёзды)</label>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div className="star-rating-picker">
               {[1, 2, 3].map(d => (
-                <label key={d} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem' }}>
-                  <input
-                    type="radio"
-                    name="diff"
-                    value={d}
-                    checked={difficulty === d}
-                    onChange={() => setDifficulty(d)}
-                  />
-                  {'★'.repeat(d)}
-                </label>
+                <button
+                  key={d}
+                  type="button"
+                  className={`star-picker-btn ${difficulty === d ? 'active' : ''}`}
+                  onClick={() => setDifficulty(d)}
+                >
+                  <span className="star-icons">{'★'.repeat(d)}</span>
+                  <span className="star-label">
+                    {d === 1 ? 'Низкая' : d === 2 ? 'Средняя' : 'Высокая'}
+                  </span>
+                </button>
               ))}
             </div>
           </div>

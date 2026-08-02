@@ -5,10 +5,14 @@ export default function Sidebar({ boards, currentBoardId, onSelectBoard, onCreat
     <aside className={`boards-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header-bar" onClick={onToggleCollapse} title="Свернуть / Развернуть сайдбар">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span className="sidebar-icon">📁</span>
+          <div className="sidebar-folder-wrapper">
+            <span className="sidebar-icon">📁</span>
+            <span className="sidebar-hover-arrow">
+              {isCollapsed ? '▶' : '◀'}
+            </span>
+          </div>
           <span className="sidebar-heading" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Мои Доски</span>
         </div>
-        <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>{isCollapsed ? '▶' : '◀'}</span>
       </div>
 
       <div className="sidebar-content">

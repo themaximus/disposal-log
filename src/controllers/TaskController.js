@@ -21,14 +21,18 @@ class TaskController {
     }
 
     static createTask(req, res) {
-        const { title, description, difficulty, tags, parent_id, board_id, status } = req.body;
+        const { title, description, difficulty, tags, images, parent_id, board_id, status, group_id } = req.body;
         const userId = req.user.id;
-        let images = [];
-        if (req.files && req.files.length > 0) {
-            images = req.files.map(f => `/uploads/${f.filename}`);
+        
+        let finalImages = [];
+        if (Array.isArray(images)) {
+            finalImages = images;
+        } else if (req.files && req.files.length > 0) {
+            finalImages = req.files.map(f => `/uploads/${f.filename}`);
         }
-        const imagesJson = JSON.stringify(images);
-        const tagsJson = tags || '[]';
+
+        const imagesJson = JSON.stringify(finalImages);
+        const tagsJson = typeof tags === 'string' ? tags : JSON.stringify(tags || []);
         const initialStatus = status || (parent_id ? 'locked' : 'todo');
 
         TaskRepository.create({
@@ -41,10 +45,65 @@ class TaskController {
             tagsJson,
             status: initialStatus,
             position: 9999,
-            parentId: parent_id || null
+            parentId: parent_id || null,
+            groupId: group_id || null
         }, (err, taskId) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true, id: taskId });
+        });
+    }
+
+    static updateTask(req, res) {
+        const taskId = req.params.id;
+        const userId = req.user.id;
+        const { title, description, difficulty, tags, images, status, group_id } = req.body;
+
+        const imagesJson = images ? JSON.stringify(images) : undefined;
+        const tagsJson = tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : undefined;
+
+        TaskRepository.update(taskId, userId, {
+            title,
+            description,
+            difficulty: difficulty ? parseInt(difficulty) : undefined,
+            imagesJson,
+            tagsJson,
+            status,
+            groupId: group_id
+        }, (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
+    }
+
+    static groupTask(req, res) {
+        const taskId = parseInt(req.params.id);
+        const { target_id } = req.body;
+        const userId = req.user.id;
+
+        TaskRepository.findById(target_id, (err, targetTask) => {
+            if (err || !targetTask) return res.status(404).json({ error: 'Target task not found' });
+
+            const groupId = targetTask.group_id || `group_${Date.now()}`;
+            const targetStatus = targetTask.status;
+
+            // Update target task group_id if it wasn't grouped yet
+            TaskRepository.setGroupId(target_id, userId, groupId, null, () => {
+                // Update dragged task group_id & status to match target task
+                TaskRepository.setGroupId(taskId, userId, groupId, targetStatus, (err2) => {
+                    if (err2) return res.status(500).json({ error: err2.message });
+                    res.json({ success: true, group_id: groupId });
+                });
+            });
+        });
+    }
+
+    static unlinkGroup(req, res) {
+        const groupId = req.params.groupId;
+        const userId = req.user.id;
+
+        TaskRepository.unlinkGroup(groupId, userId, (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
         });
     }
 

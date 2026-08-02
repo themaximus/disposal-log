@@ -22,11 +22,11 @@ class TaskRepository {
     }
 
     static create(taskData, callback) {
-        const { userId, boardId, columnId, title, description, imagesJson, difficulty, tagsJson, status, position, parentId } = taskData;
+        const { userId, boardId, columnId, title, description, imagesJson, difficulty, tagsJson, status, position, parentId, groupId } = taskData;
         db.run(
-            `INSERT INTO tasks (user_id, board_id, column_id, title, description, images_json, difficulty, tags_json, status, position, parent_id) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, boardId, columnId || null, title, description || '', imagesJson || '[]', difficulty || 1, tagsJson || '[]', status || 'todo', position || 9999, parentId || null],
+            `INSERT INTO tasks (user_id, board_id, column_id, title, description, images_json, difficulty, tags_json, status, position, parent_id, group_id) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, boardId, columnId || null, title, description || '', imagesJson || '[]', difficulty || 1, tagsJson || '[]', status || 'todo', position || 9999, parentId || null, groupId || null],
             function (err) {
                 callback(err, this ? this.lastID : null);
             }
@@ -48,6 +48,30 @@ class TaskRepository {
                 group_id = COALESCE(?, group_id) 
              WHERE id = ? AND user_id = ?`,
             [title, description, imagesJson, difficulty, tagsJson, status, position, parentId, groupId, id, userId],
+            callback
+        );
+    }
+
+    static setGroupId(id, userId, groupId, status, callback) {
+        if (status) {
+            db.run(
+                "UPDATE tasks SET group_id = ?, status = ? WHERE id = ? AND user_id = ?",
+                [groupId, status, id, userId],
+                callback
+            );
+        } else {
+            db.run(
+                "UPDATE tasks SET group_id = ? WHERE id = ? AND user_id = ?",
+                [groupId, id, userId],
+                callback
+            );
+        }
+    }
+
+    static unlinkGroup(groupId, userId, callback) {
+        db.run(
+            "UPDATE tasks SET group_id = NULL WHERE group_id = ? AND user_id = ?",
+            [groupId, userId],
             callback
         );
     }
