@@ -9,6 +9,7 @@ export default function Sidebar({
   onOpenAuth,
   onOpenProfile,
   onOpenSettings,
+  onOpenTrash,
   onLogout,
   boards,
   currentBoardId,
@@ -328,8 +329,21 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* Bottom Fixed Footer: Settings Gear ON TOP (only for logged in users), Profile UNDERNEATH */}
+      {/* Bottom Fixed Footer: Trash & Settings & Profile */}
       <div className="sidebar-footer">
+        {/* Trash Button */}
+        {currentUser && (
+          <button
+            className="btn-sidebar-settings-full"
+            onClick={onOpenTrash}
+            title="Корзина удаленных задач (30 дней)"
+            style={{ marginBottom: '0.35rem' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#f85149' }}>delete</span>
+            {!isCollapsed && <span>Корзина задач</span>}
+          </button>
+        )}
+
         {/* Settings Button on Top */}
         {currentUser && (
           <button

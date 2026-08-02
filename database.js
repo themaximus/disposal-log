@@ -124,6 +124,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 db.run(`ALTER TABLE tasks ADD COLUMN parent_id INTEGER`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN group_id TEXT`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN subtasks_json TEXT`, () => {});
+                db.run(`ALTER TABLE tasks ADD COLUMN deleted_at DATETIME`, () => {});
             }
         });
 

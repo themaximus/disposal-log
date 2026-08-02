@@ -1000,20 +1000,20 @@ app.get('/api/tasks', sessionMiddleware, (req, res) => {
         db.run("UPDATE tasks SET board_id = ? WHERE (user_id = ? OR user_id IS NULL) AND board_id IS NULL", [boardId, userId]);
     }
 
-    let query = "SELECT * FROM tasks WHERE (user_id = 1 OR user_id IS NULL) ORDER BY status DESC, position ASC, created_at DESC";
+    let query = "SELECT * FROM tasks WHERE (user_id = 1 OR user_id IS NULL) AND deleted_at IS NULL ORDER BY status DESC, position ASC, created_at DESC";
     let params = [];
     
     if (userId) {
         if (boardId) {
-            query = "SELECT * FROM tasks WHERE (user_id = ? OR user_id IS NULL) AND (board_id = ? OR board_id IS NULL) ORDER BY position ASC, created_at DESC";
+            query = "SELECT * FROM tasks WHERE (user_id = ? OR user_id IS NULL) AND (board_id = ? OR board_id IS NULL) AND deleted_at IS NULL ORDER BY position ASC, created_at DESC";
             params = [userId, boardId];
         } else {
-            query = "SELECT * FROM tasks WHERE user_id = ? ORDER BY position ASC, created_at DESC";
+            query = "SELECT * FROM tasks WHERE user_id = ? AND deleted_at IS NULL ORDER BY position ASC, created_at DESC";
             params = [userId];
         }
     } else {
         if (boardId) {
-            query = "SELECT * FROM tasks WHERE (board_id = ? OR board_id IS NULL) ORDER BY position ASC, created_at DESC";
+            query = "SELECT * FROM tasks WHERE (board_id = ? OR board_id IS NULL) AND deleted_at IS NULL ORDER BY position ASC, created_at DESC";
             params = [boardId];
         }
     }
@@ -1028,10 +1028,85 @@ app.get('/api/tasks', sessionMiddleware, (req, res) => {
             
             if (r.tags_json) { try { r.tags = JSON.parse(r.tags_json); } catch(e) { r.tags = []; } }
             else { r.tags = []; }
+
+            if (r.subtasks_json) { try { r.subtasks = JSON.parse(r.subtasks_json); } catch(e) { r.subtasks = []; } }
+            else { r.subtasks = []; }
         });
         res.json(rows);
     });
 });
+
+// Trash Tasks API (Tasks deleted within last 30 days)
+app.get('/api/tasks/trash', sessionMiddleware, requireUser, (req, res) => {
+    const boardId = req.query.board_id;
+    const userId = req.user.id;
+    let query = "SELECT * FROM tasks WHERE (user_id = ? OR user_id IS NULL) AND deleted_at IS NOT NULL";
+    let params = [userId];
+    if (boardId) {
+        query += " AND (board_id = ? OR board_id IS NULL)";
+        params.push(boardId);
+    }
+    query += " ORDER BY deleted_at DESC";
+
+    db.all(query, params, (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        rows = rows || [];
+        rows.forEach(r => {
+            if (r.images_json) { try { r.images = JSON.parse(r.images_json); } catch(e) { r.images = []; } }
+            else if (r.image_url) { r.images = [r.image_url]; }
+            else { r.images = []; }
+
+            if (r.subtasks_json) { try { r.subtasks = JSON.parse(r.subtasks_json); } catch(e) { r.subtasks = []; } }
+            else { r.subtasks = []; }
+        });
+        res.json(rows);
+    });
+});
+
+// Restore Task from Trash
+app.put('/api/tasks/:id/restore', sessionMiddleware, requireUser, (req, res) => {
+    const taskId = req.params.id;
+    const userId = req.user.id;
+    db.run("UPDATE tasks SET deleted_at = NULL WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [taskId, userId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// Permanent Delete Task
+app.delete('/api/tasks/:id/permanent', sessionMiddleware, requireUser, (req, res) => {
+    const taskId = req.params.id;
+    const userId = req.user.id;
+    db.run("DELETE FROM tasks WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [taskId, userId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// Force Empty Trash
+app.post('/api/tasks/trash/empty', sessionMiddleware, requireUser, (req, res) => {
+    const userId = req.user.id;
+    const boardId = req.body.board_id;
+    let query = "DELETE FROM tasks WHERE (user_id = ? OR user_id IS NULL) AND deleted_at IS NOT NULL";
+    let params = [userId];
+    if (boardId) {
+        query += " AND (board_id = ? OR board_id IS NULL)";
+        params.push(boardId);
+    }
+    db.run(query, params, function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, count: this.changes });
+    });
+});
+
+// Automatic 30-Day Trash Purge Worker
+function autoPurgeOldTrash() {
+    db.run("DELETE FROM tasks WHERE deleted_at <= DATETIME('now', '-30 days')", (err) => {
+        if (err) console.error('Auto purge trash error:', err.message);
+    });
+}
+autoPurgeOldTrash();
+setInterval(autoPurgeOldTrash, 24 * 60 * 60 * 1000);
 
 app.post('/api/tasks', sessionMiddleware, requireUser, upload.array('images', 5), (req, res) => {
     const { title, description, difficulty, tags, parent_id, board_id, status, images: bodyImages, subtasks: bodySubtasks } = req.body;

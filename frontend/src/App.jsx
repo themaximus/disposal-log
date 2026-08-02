@@ -15,6 +15,7 @@ import ManageColumnsModal from './modals/ManageColumnsModal';
 import ShareModal from './modals/ShareModal';
 import BoardSyncModal from './modals/BoardSyncModal';
 import ConfirmModal from './modals/ConfirmModal';
+import TrashModal from './modals/TrashModal';
 
 import {
   getOfflineBoards,
@@ -42,6 +43,7 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
@@ -781,6 +783,7 @@ export default function App() {
           onOpenAuth={() => setIsAuthModalOpen(true)}
           onOpenProfile={() => setIsProfileModalOpen(true)}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
+          onOpenTrash={() => setIsTrashModalOpen(true)}
           onLogout={handleLogout}
           boards={boards}
           currentBoardId={currentBoardId}
@@ -881,6 +884,15 @@ export default function App() {
 
       {isSettingsModalOpen && (
         <SettingsModal onClose={() => setIsSettingsModalOpen(false)} />
+      )}
+
+      {isTrashModalOpen && (
+        <TrashModal
+          boardId={currentBoardId}
+          currentUser={currentUser}
+          onClose={() => setIsTrashModalOpen(false)}
+          onTaskRestored={() => fetchBoardTasks(currentBoardId)}
+        />
       )}
 
       {isTaskModalOpen && (
