@@ -50,18 +50,17 @@ export default function Column({ column, groupedItems, onEditColumn, onDeleteCol
             if (item.isStack) {
               return (
                 <div key={`stack-${item.groupId}`} className="stack-container">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="stack-badge">📚 Стопка ({item.tasks.length} механики)</span>
+                  <div className="stack-badge-bar">
+                    <span>📚 Стопка ({item.tasks.length})</span>
                     <button
-                      className="btn-icon"
-                      style={{ width: '22px', height: '22px', fontSize: '0.65rem' }}
+                      className="btn-unlink-stack"
                       title="Рассгруппировать стопку"
                       onClick={() => onUnlinkGroup(item.groupId)}
                     >
                       🔓
                     </button>
                   </div>
-                  {item.tasks.map(task => (
+                  {item.tasks.map((task, idx) => (
                     <TaskCard
                       key={task.id}
                       task={task}
