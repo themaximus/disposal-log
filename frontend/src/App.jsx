@@ -76,10 +76,16 @@ export default function App() {
       });
   }, []);
 
-  const initGuestMode = () => {
+  const initGuestMode = (shouldSwitchTab = false) => {
     const guestBoard = getGuestBoard();
     setBoards([guestBoard]);
-    selectBoard(GUEST_BOARD_ID, guestBoard);
+    setCurrentBoardId(GUEST_BOARD_ID);
+    const offlineData = getOfflineBoardData(GUEST_BOARD_ID);
+    setColumns(offlineData.columns || []);
+    setTasks(offlineData.tasks || []);
+    if (shouldSwitchTab) {
+      setCurrentTab('workspace');
+    }
   };
 
   const fetchBoards = () => {
@@ -141,8 +147,7 @@ export default function App() {
 
   const handleSelectTab = (tab) => {
     if (tab === 'workspace' && !currentUser) {
-      initGuestMode();
-      setCurrentTab('workspace');
+      initGuestMode(true);
       return;
     }
     setCurrentTab(tab);
@@ -730,7 +735,7 @@ export default function App() {
           onClose={() => setIsAuthModalOpen(false)}
           onOpenGuestMode={() => {
             setIsAuthModalOpen(false);
-            handleSelectTab('workspace');
+            initGuestMode(true);
           }}
         />
       )}

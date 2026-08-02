@@ -33,9 +33,9 @@ export default function LandingHero({ currentUser, onOpenAuth, onOpenWorkspace, 
                   <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>key</span>
                   Войти в Учётную Запись
                 </button>
-                <button className="btn-hero-secondary" onClick={onOpenWorkspace}>
+                <button className="btn-hero-secondary" onClick={onOpenAuth}>
                   <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px', color: 'var(--github-yellow)' }}>bolt</span>
-                  Попробовать Гостевой Режим
+                  Продолжить без аккаунта
                 </button>
               </div>
             </div>
