@@ -1021,12 +1021,17 @@ app.delete('/api/tasks/:id', sessionMiddleware, requireUser, (req, res) => {
     });
 });
 
+// Health check endpoint (MUST be before any static wildcard routes)
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
 // Serve static frontend assets (dist for Vite React, fallback to public)
 const distDir = path.join(__dirname, 'dist');
 if (fs.existsSync(distDir)) {
     app.use(express.static(distDir));
     app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/uploads')) {
+        if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/uploads') || req.path === '/health') {
             return next();
         }
         res.sendFile(path.join(distDir, 'index.html'));
@@ -1034,11 +1039,6 @@ if (fs.existsSync(distDir)) {
 } else {
     app.use(express.static(path.join(__dirname, 'public')));
 }
-
-// Health check
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${port}`);

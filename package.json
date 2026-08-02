@@ -5,8 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "vite",
     "build": "vite build",
+    "postinstall": "npm run build",
+    "dev": "vite",
     "preview": "vite preview",
     "sync": "node sync.js"
   },
