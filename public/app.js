@@ -952,8 +952,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let hoverTarget = null;
     let hoverZone = null; // 'center' or 'edge'
 
-    // Make task lists valid drop targets
-    [listTodo, listInProgress, listDone].forEach(list => {
+    function bindDropTargetEvents(list) {
+        if (!list) return;
         list.addEventListener('dragover', (e) => {
             e.preventDefault(); // Necessary to allow dropping
             // Add a visual indicator if empty column
@@ -1018,11 +1018,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     await updatePositions(sourceList);
                 }
                 checkOwnerStatus();
-    fetchTasks();
+                fetchTasks();
             }
             clearHoverState();
         });
-    });
+    }
+
+    // Dynamic drop target binding is handled inside renderDynamicColumns
 
     async function updatePositions(listEl) {
         if (!listEl) return;
@@ -1382,13 +1384,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateCounters() {
-        const cTodo = listTodo.querySelectorAll('.task-card').length;
-        const cInProg = listInProgress.querySelectorAll('.task-card').length;
-        const cDone = listDone.querySelectorAll('.task-card').length;
-        
-        if (countTodo) countTodo.textContent = cTodo;
-        if (countInProgress) countInProgress.textContent = cInProg;
-        if (countDone) countDone.textContent = cDone;
+        let cTodo = 0, cInProg = 0, cDone = 0;
+        document.querySelectorAll('#dynamic-columns-container .column').forEach(col => {
+            const statusKey = col.id.replace('column-', '');
+            const count = col.querySelectorAll('.task-card').length;
+            const countEl = col.querySelector(`#count-${statusKey}`);
+            if (countEl) countEl.textContent = count;
+            
+            if (statusKey === 'todo') cTodo = count;
+            else if (statusKey === 'in_progress') cInProg = count;
+            else if (statusKey === 'done') cDone = count;
+        });
         
         // Update Mobile counters
         const setElText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
