@@ -1,27 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,200..900;1,200..900&family=Inter:wght@400;500;600;700&display=swap');
 
+/* GitHub Official Design Tokens (Extracted via Dembrandt from github.com) */
 :root {
-    /* GitHub Design Tokens */
+    /* Brand & Canvases */
     --github-canvas: #0d1117;
     --github-surface: #161b22;
     --github-subtle: #21262d;
     --github-border: #30363d;
     --github-border-muted: #21262d;
 
+    /* GitHub Green (Action Buttons & Primary Highlights) */
     --github-green: #238636;
     --github-green-hover: #2ea44f;
     --github-green-text: #3fb950;
     
+    /* GitHub Blue (Links, Accent Badges & Active States) */
     --github-blue: #1f6feb;
     --github-blue-hover: #388bfd;
     --github-blue-text: #58a6ff;
     
+    /* GitHub Amber / Yellow (Warnings & Medium Difficulty) */
     --github-yellow: #d29922;
     --github-yellow-text: #f0883e;
 
+    /* GitHub Red (Danger, Close & High Difficulty) */
     --github-red: #da3633;
     --github-red-text: #f85149;
 
+    /* Text System */
     --text-main: #f0f6fc;
     --text-muted: #8b949e;
     --text-dim: #484f58;
@@ -42,7 +48,8 @@
     --diff-2: #d29922;
     --diff-3: #f85149;
 
-    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    /* Typography from Dembrandt extraction */
+    --font-family: 'Mona Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
 }
 
 * {
