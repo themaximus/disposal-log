@@ -1034,20 +1034,31 @@ app.get('/api/tasks', sessionMiddleware, (req, res) => {
 });
 
 app.post('/api/tasks', sessionMiddleware, requireUser, upload.array('images', 5), (req, res) => {
-    const { title, description, difficulty, tags, parent_id, board_id, status } = req.body;
+    const { title, description, difficulty, tags, parent_id, board_id, status, images: bodyImages, subtasks: bodySubtasks } = req.body;
     const userId = req.user.id;
-    let images = [];
+    let images = Array.isArray(bodyImages) ? bodyImages : [];
     if (req.files && req.files.length > 0) {
         images = req.files.map(f => `/uploads/${f.filename}`);
     }
     const imagesJson = JSON.stringify(images);
-    const tagsJson = tags || '[]';
+    const subtasksJson = JSON.stringify(Array.isArray(bodySubtasks) ? bodySubtasks : []);
+    const tagsJson = typeof tags === 'string' ? tags : JSON.stringify(Array.isArray(tags) ? tags : []);
     
     const initialStatus = status || (parent_id ? 'locked' : 'todo');
-    const query = `INSERT INTO tasks (user_id, board_id, title, description, images_json, difficulty, tags_json, status, position, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 9999, ?)`;
-    db.run(query, [userId, board_id || null, title, description, imagesJson, difficulty || 1, tagsJson, initialStatus, parent_id || null], function(err) {
+    const query = `INSERT INTO tasks (user_id, board_id, title, description, images_json, subtasks_json, difficulty, tags_json, status, position, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 9999, ?)`;
+    db.run(query, [userId, board_id || null, title, description, imagesJson, subtasksJson, difficulty || 1, tagsJson, initialStatus, parent_id || null], function(err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, id: this.lastID });
+        const createdId = this.lastID;
+        db.get("SELECT * FROM tasks WHERE id = ?", [createdId], (err2, createdTask) => {
+            if (createdTask) {
+                try { createdTask.images = JSON.parse(createdTask.images_json || '[]'); } catch(e) { createdTask.images = []; }
+                try { createdTask.subtasks = JSON.parse(createdTask.subtasks_json || '[]'); } catch(e) { createdTask.subtasks = []; }
+                try { createdTask.tags = JSON.parse(createdTask.tags_json || '[]'); } catch(e) { createdTask.tags = []; }
+                res.json(createdTask);
+            } else {
+                res.json({ success: true, id: createdId });
+            }
+        });
     });
 });
 

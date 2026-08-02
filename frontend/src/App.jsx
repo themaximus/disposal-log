@@ -329,10 +329,9 @@ export default function App() {
           setSyncMessage('Задача создана');
           setIsTaskModalOpen(false);
           if (newTask && newTask.id) {
-            setTasks(prev => [...prev, newTask]);
-          } else {
-            fetchBoardTasks(currentBoardId);
+            setTasks(prev => [...prev.filter(t => t.id !== newTask.id), newTask]);
           }
+          fetchBoardTasks(currentBoardId);
         })
         .catch(() => {
           setSyncStatus('error');
