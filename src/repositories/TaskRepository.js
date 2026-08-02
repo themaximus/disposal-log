@@ -6,17 +6,26 @@ class TaskRepository {
     }
 
     static findByBoardAndUser(boardId, userId, callback) {
-        if (!userId) {
-            return callback(null, []);
-        }
-
-        let query = "SELECT * FROM tasks WHERE user_id = ? ORDER BY position ASC, created_at DESC";
-        let params = [userId];
+        let query = "SELECT * FROM tasks WHERE (user_id = ? OR user_id IS NULL) AND deleted_at IS NULL ORDER BY position ASC, created_at DESC";
+        let params = [userId || 1];
 
         if (boardId) {
-            query = "SELECT * FROM tasks WHERE user_id = ? AND board_id = ? ORDER BY position ASC, created_at DESC";
-            params = [userId, boardId];
+            query = "SELECT * FROM tasks WHERE (user_id = ? OR user_id IS NULL) AND (board_id = ? OR board_id IS NULL) AND deleted_at IS NULL ORDER BY position ASC, created_at DESC";
+            params = [userId || 1, boardId];
         }
+
+        db.all(query, params, callback);
+    }
+
+    static findTrashByBoardAndUser(boardId, userId, callback) {
+        let query = "SELECT * FROM tasks WHERE (user_id = ? OR user_id IS NULL) AND deleted_at IS NOT NULL";
+        let params = [userId || 1];
+
+        if (boardId) {
+            query += " AND (board_id = ? OR board_id IS NULL)";
+            params.push(boardId);
+        }
+        query += " ORDER BY deleted_at DESC";
 
         db.all(query, params, callback);
     }
@@ -47,7 +56,7 @@ class TaskRepository {
                 parent_id = COALESCE(?, parent_id), 
                 group_id = COALESCE(?, group_id),
                 subtasks_json = COALESCE(?, subtasks_json)
-             WHERE id = ? AND user_id = ?`,
+             WHERE id = ? AND (user_id = ? OR user_id IS NULL)`,
             [title, description, imagesJson, difficulty, tagsJson, status, position, parentId, groupId, subtasksJson, id, userId],
             callback
         );
@@ -55,7 +64,7 @@ class TaskRepository {
 
     static updateSubtasks(id, userId, subtasksJson, callback) {
         db.run(
-            "UPDATE tasks SET subtasks_json = ? WHERE id = ? AND user_id = ?",
+            "UPDATE tasks SET subtasks_json = ? WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
             [subtasksJson, id, userId],
             callback
         );
@@ -64,13 +73,13 @@ class TaskRepository {
     static setGroupId(id, userId, groupId, status, callback) {
         if (status) {
             db.run(
-                "UPDATE tasks SET group_id = ?, status = ? WHERE id = ? AND user_id = ?",
+                "UPDATE tasks SET group_id = ?, status = ? WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
                 [groupId, status, id, userId],
                 callback
             );
         } else {
             db.run(
-                "UPDATE tasks SET group_id = ? WHERE id = ? AND user_id = ?",
+                "UPDATE tasks SET group_id = ? WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
                 [groupId, id, userId],
                 callback
             );
@@ -79,7 +88,7 @@ class TaskRepository {
 
     static unlinkGroup(groupId, userId, callback) {
         db.run(
-            "UPDATE tasks SET group_id = NULL WHERE group_id = ? AND user_id = ?",
+            "UPDATE tasks SET group_id = NULL WHERE group_id = ? AND (user_id = ? OR user_id IS NULL)",
             [groupId, userId],
             callback
         );
@@ -88,14 +97,32 @@ class TaskRepository {
     static updateStatus(id, userId, status, callback) {
         const completedAt = status === 'done' ? new Date().toISOString() : null;
         db.run(
-            "UPDATE tasks SET status = ?, completed_at = ? WHERE id = ? AND user_id = ?",
+            "UPDATE tasks SET status = ?, completed_at = ? WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
             [status, completedAt, id, userId],
             callback
         );
     }
 
     static delete(id, userId, callback) {
-        db.run("DELETE FROM tasks WHERE id = ? AND user_id = ?", [id, userId], callback);
+        db.run("UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], callback);
+    }
+
+    static restore(id, userId, callback) {
+        db.run("UPDATE tasks SET deleted_at = NULL WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], callback);
+    }
+
+    static permanentDelete(id, userId, callback) {
+        db.run("DELETE FROM tasks WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [id, userId], callback);
+    }
+
+    static emptyTrash(boardId, userId, callback) {
+        let query = "DELETE FROM tasks WHERE (user_id = ? OR user_id IS NULL) AND deleted_at IS NOT NULL";
+        let params = [userId];
+        if (boardId) {
+            query += " AND (board_id = ? OR board_id IS NULL)";
+            params.push(boardId);
+        }
+        db.run(query, params, callback);
     }
 }
 

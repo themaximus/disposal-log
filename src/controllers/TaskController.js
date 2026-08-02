@@ -23,6 +23,25 @@ class TaskController {
         });
     }
 
+    static getTrash(req, res) {
+        const boardId = req.query.board_id;
+        const userId = req.user ? req.user.id : null;
+
+        TaskRepository.findTrashByBoardAndUser(boardId, userId, (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            rows = rows || [];
+            rows.forEach(r => {
+                if (r.images_json) { try { r.images = JSON.parse(r.images_json); } catch(e) { r.images = []; } }
+                else if (r.image_url) { r.images = [r.image_url]; }
+                else { r.images = []; }
+
+                if (r.subtasks_json) { try { r.subtasks = JSON.parse(r.subtasks_json); } catch(e) { r.subtasks = []; } }
+                else { r.subtasks = []; }
+            });
+            res.json(rows);
+        });
+    }
+
     static createTask(req, res) {
         const { title, description, difficulty, tags, images, parent_id, board_id, status, group_id, subtasks } = req.body;
         const userId = req.user.id;
@@ -54,7 +73,15 @@ class TaskController {
             subtasksJson
         }, (err, taskId) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true, id: taskId });
+            TaskRepository.findById(taskId, (err2, createdTask) => {
+                if (createdTask) {
+                    try { createdTask.images = JSON.parse(createdTask.images_json || '[]'); } catch(e) { createdTask.images = []; }
+                    try { createdTask.subtasks = JSON.parse(createdTask.subtasks_json || '[]'); } catch(e) { createdTask.subtasks = []; }
+                    res.json(createdTask);
+                } else {
+                    res.json({ success: true, id: taskId });
+                }
+            });
         });
     }
 
@@ -135,6 +162,28 @@ class TaskController {
 
     static deleteTask(req, res) {
         TaskRepository.delete(req.params.id, req.user.id, (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
+    }
+
+    static restoreTask(req, res) {
+        TaskRepository.restore(req.params.id, req.user.id, (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
+    }
+
+    static permanentDeleteTask(req, res) {
+        TaskRepository.permanentDelete(req.params.id, req.user.id, (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
+    }
+
+    static emptyTrash(req, res) {
+        const boardId = req.body.board_id;
+        TaskRepository.emptyTrash(boardId, req.user.id, (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true });
         });
