@@ -202,6 +202,15 @@ const upload = multer({
     }
 });
 
+// Standalone Media Upload API Endpoint
+app.post('/api/upload', sessionMiddleware, requireUser, upload.array('images', 10), (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'Файлы не загружены' });
+    }
+    const urls = req.files.map(f => `/uploads/${f.filename}`);
+    res.json({ success: true, urls });
+});
+
 // Periodic Cleanup of Expired Sessions
 function cleanupExpiredSessions() {
     db.run("DELETE FROM sessions WHERE expires_at <= CURRENT_TIMESTAMP", (err) => {

@@ -1006,7 +1006,7 @@ body {
 
 .column-body {
     background: var(--github-surface);
-    border-radius: 0 6px 6px 6px;
+    border-radius: 0 0 8px 8px;
     border: 1px solid var(--github-border);
     flex: 1;
     padding: 0.85rem 0.4rem 0.85rem 0.85rem;

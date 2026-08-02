@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStart, onDragOver, onDrop }) {
+export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStart, onDragOverTask, onDragOver, onDrop }) {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const diffStars = '★'.repeat(task.difficulty || 1) + '☆'.repeat(3 - (task.difficulty || 1));
@@ -22,21 +22,25 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
   const mediaList = getMediaList();
   const firstMedia = mediaList.length > 0 ? mediaList[0] : null;
 
+  const dragOverHandler = onDragOverTask || onDragOver;
+
   return (
     <div
       className={`task-card ${isInStack ? 'in-stack' : ''} ${isDragOver ? 'drag-over-target' : ''}`}
       data-diff={task.difficulty || 1}
       draggable
-      onDragStart={(e) => onDragStart(e, task)}
+      onDragStart={(e) => {
+        if (typeof onDragStart === 'function') onDragStart(e, task);
+      }}
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragOver(true);
-        onDragOver(e, task);
+        if (typeof dragOverHandler === 'function') dragOverHandler(e, task);
       }}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={(e) => {
         setIsDragOver(false);
-        onDrop(e, task);
+        if (typeof onDrop === 'function') onDrop(e, task);
       }}
     >
       {isDragOver && (
