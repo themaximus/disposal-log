@@ -183,7 +183,7 @@ export default function TrashModal({ boardId, currentUser, onClose, onRestoreTas
                   whiteSpace: 'nowrap'
                 }}
               >
-                🔥 Очистить корзину ({trashedTasks.length})
+                Очистить корзину ({trashedTasks.length})
               </button>
             )}
           </div>
@@ -258,7 +258,7 @@ export default function TrashModal({ boardId, currentUser, onClose, onRestoreTas
                         }}
                         title="Удалить навсегда из базы и Google Диска"
                       >
-                        🗑️ Насовсем
+                        ✕
                       </button>
                     </div>
                   </div>
