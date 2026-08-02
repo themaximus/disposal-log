@@ -1343,27 +1343,34 @@ body.is-guest-view .task-card {
     background: rgba(255, 255, 255, 0.12);
 }
 
-.dropdown-menu {
+.floating-dropdown-menu {
     position: fixed;
     background: var(--github-surface);
     border: 1px solid var(--github-border);
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-    min-width: 175px;
-    z-index: 99999;
-    display: none;
+    border-radius: 10px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    min-width: 180px;
+    z-index: 999999;
+    display: flex;
     flex-direction: column;
-    padding: 0.35rem 0;
+    padding: 0.4rem 0;
     overflow: hidden;
+    animation: dropdownFadeIn 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.dropdown-menu.active {
-    display: flex;
+@keyframes dropdownFadeIn {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Collapsible Sidebar Mini Icons View */
 .boards-sidebar.collapsed {
-    width: 60px;
+    width: 64px;
+}
+
+.boards-sidebar.collapsed .sidebar-header-bar {
+    justify-content: center;
+    padding: 0.85rem 0;
 }
 
 .boards-sidebar.collapsed .sidebar-heading,
@@ -1374,16 +1381,136 @@ body.is-guest-view .task-card {
     display: none !important;
 }
 
+.boards-sidebar.collapsed .sidebar-content {
+    padding: 0.75rem 0.4rem;
+    align-items: center;
+}
+
+.boards-sidebar.collapsed .boards-list {
+    align-items: center;
+    width: 100%;
+}
+
 .boards-sidebar.collapsed .board-item {
-    padding: 0.5rem;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    margin: 0 auto 0.4rem auto;
+    border-radius: 10px;
     justify-content: center;
-    border-radius: 8px;
+    align-items: center;
+    border: 1px solid transparent;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.boards-sidebar.collapsed .board-item:hover {
+    background: var(--github-canvas);
+    border-color: var(--github-border);
+    transform: scale(1.08);
+}
+
+.boards-sidebar.collapsed .board-item.active {
+    background: rgba(56, 139, 253, 0.15);
+    border-color: rgba(56, 139, 253, 0.5);
+    box-shadow: 0 0 12px rgba(56, 139, 253, 0.2);
 }
 
 .boards-sidebar.collapsed .board-item-icon {
-    width: 26px;
-    height: 26px;
-    font-size: 1.2rem;
+    width: 28px;
+    height: 28px;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+/* Premium Option Cards (Replaces raw radio buttons) */
+.option-cards-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.option-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: var(--github-surface);
+    border: 1px dashed var(--github-border);
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    user-select: none;
+}
+
+.option-card:hover {
+    border-style: solid;
+    border-color: rgba(56, 139, 253, 0.4);
+    background: rgba(56, 139, 253, 0.05);
+}
+
+.option-card.active {
+    border-style: solid;
+    border-color: #388bfd;
+    background: rgba(56, 139, 253, 0.12);
+    box-shadow: 0 0 16px rgba(56, 139, 253, 0.2);
+}
+
+.option-card-icon {
+    font-size: 1.4rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--github-canvas);
+    border-radius: 8px;
+    border: 1px solid var(--github-border);
+    flex-shrink: 0;
+}
+
+.option-card.active .option-card-icon {
+    border-color: rgba(56, 139, 253, 0.5);
+    background: rgba(56, 139, 253, 0.2);
+}
+
+.option-card-content {
+    flex: 1;
+}
+
+.option-card-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 0.15rem;
+}
+
+.option-card-sub {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+}
+
+.option-card-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--github-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: transparent;
+    transition: all 0.2s ease;
+}
+
+.option-card.active .option-card-check {
+    border-color: #388bfd;
+    background: #388bfd;
+    color: #ffffff;
 }
 
 .sidebar-content {

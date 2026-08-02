@@ -550,12 +550,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Global click listener to close dropdown menus
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.dropdown-container')) {
-            document.querySelectorAll('.dropdown-menu.active').forEach(menu => menu.classList.remove('active'));
+    // Floating Dropdown Menu Handler
+    function showFloatingDropdown(triggerBtn, items) {
+        closeFloatingDropdown();
+
+        const menu = document.createElement('div');
+        menu.className = 'floating-dropdown-menu';
+        
+        items.forEach(item => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `dropdown-item ${item.danger ? 'danger' : ''}`;
+            btn.innerHTML = item.html;
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeFloatingDropdown();
+                item.onClick();
+            });
+            menu.appendChild(btn);
+        });
+
+        document.body.appendChild(menu);
+
+        const rect = triggerBtn.getBoundingClientRect();
+        const menuWidth = 180;
+        let left = Math.max(10, Math.min(rect.right - menuWidth, window.innerWidth - 190));
+        let top = rect.bottom + 6;
+
+        if (top + 120 > window.innerHeight) {
+            top = Math.max(10, rect.top - 120);
         }
-    });
+
+        menu.style.top = `${top}px`;
+        menu.style.left = `${left}px`;
+
+        setTimeout(() => {
+            document.addEventListener('click', closeFloatingDropdownOnClickOutside);
+        }, 10);
+    }
+
+    function closeFloatingDropdown() {
+        const existing = document.querySelector('.floating-dropdown-menu');
+        if (existing) existing.remove();
+        document.removeEventListener('click', closeFloatingDropdownOnClickOutside);
+    }
+
+    function closeFloatingDropdownOnClickOutside(e) {
+        if (!e.target.closest('.floating-dropdown-menu')) {
+            closeFloatingDropdown();
+        }
+    }
 
     function renderBoardsList(boards) {
         if (!boardsList) return;
@@ -575,11 +619,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="dropdown-container owner-only" style="margin-left: 0.3rem;">
                     <button type="button" class="btn-dots btn-board-dots" title="Опции доски">⋮</button>
-                    <div class="dropdown-menu">
-                        <button type="button" class="dropdown-item btn-menu-board-edit">✏️ Настройки</button>
-                        <button type="button" class="dropdown-item btn-menu-board-share">🔗 Доступ</button>
-                        ${boards.length > 1 ? '<button type="button" class="dropdown-item danger btn-menu-board-delete">🗑️ Удалить</button>' : ''}
-                    </div>
                 </div>
             `;
 
@@ -589,49 +628,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const btnDots = item.querySelector('.btn-board-dots');
-            const dropdownMenu = item.querySelector('.dropdown-menu');
-            if (btnDots && dropdownMenu) {
+            if (btnDots) {
                 btnDots.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const isActive = dropdownMenu.classList.contains('active');
-                    document.querySelectorAll('.dropdown-menu.active').forEach(m => m.classList.remove('active'));
-                    if (!isActive) {
-                        const rect = btnDots.getBoundingClientRect();
-                        dropdownMenu.style.top = `${rect.bottom + 4}px`;
-                        dropdownMenu.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - 185))}px`;
-                        dropdownMenu.classList.add('active');
+                    const menuItems = [
+                        { html: '✏️ Настройки', onClick: () => openBoardModal(boardItem) },
+                        { html: '🔗 Доступ', onClick: () => openBoardShareModal(boardItem) }
+                    ];
+                    if (boards.length > 1) {
+                        menuItems.push({
+                            html: '🗑️ Удалить',
+                            danger: true,
+                            onClick: async () => {
+                                if (confirm(`Удалить доску "${boardItem.name}" и все её задачи?`)) {
+                                    await authFetch(`/api/boards/${boardItem.id}`, { method: 'DELETE' });
+                                    currentBoardId = null;
+                                    fetchBoards();
+                                }
+                            }
+                        });
                     }
-                });
-            }
-
-            const btnEdit = item.querySelector('.btn-menu-board-edit');
-            if (btnEdit) {
-                btnEdit.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdownMenu.classList.remove('active');
-                    openBoardModal(boardItem);
-                });
-            }
-
-            const btnShare = item.querySelector('.btn-menu-board-share');
-            if (btnShare) {
-                btnShare.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdownMenu.classList.remove('active');
-                    openBoardShareModal(boardItem);
-                });
-            }
-
-            const btnDelete = item.querySelector('.btn-menu-board-delete');
-            if (btnDelete) {
-                btnDelete.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    dropdownMenu.classList.remove('active');
-                    if (confirm(`Удалить доску "${boardItem.name}" и все её задачи?`)) {
-                        await authFetch(`/api/boards/${boardItem.id}`, { method: 'DELETE' });
-                        currentBoardId = null;
-                        fetchBoards();
-                    }
+                    showFloatingDropdown(btnDots, menuItems);
                 });
             }
 
@@ -696,37 +713,25 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             const btnColDots = colEl.querySelector('.btn-col-dots');
-            const colDropdown = colEl.querySelector('.dropdown-menu');
-            if (btnColDots && colDropdown) {
+            if (btnColDots) {
                 btnColDots.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const isActive = colDropdown.classList.contains('active');
-                    document.querySelectorAll('.dropdown-menu.active').forEach(m => m.classList.remove('active'));
-                    if (!isActive) {
-                        const rect = btnColDots.getBoundingClientRect();
-                        colDropdown.style.top = `${rect.bottom + 4}px`;
-                        colDropdown.style.left = `${Math.max(10, Math.min(rect.right - 170, window.innerWidth - 185))}px`;
-                        colDropdown.classList.add('active');
+                    const menuItems = [
+                        { html: '✏️ Настроить имя/цвет', onClick: () => openColumnModal(col) }
+                    ];
+                    if (columns.length > 1) {
+                        menuItems.push({
+                            html: '🗑️ Удалить колонку',
+                            danger: true,
+                            onClick: async () => {
+                                if (confirm(`Удалить колонку "${col.title}"?`)) {
+                                    await authFetch(`/api/columns/${col.id}`, { method: 'DELETE' });
+                                    fetchColumnsAndTasks(currentBoardId);
+                                }
+                            }
+                        });
                     }
-                });
-            }
-
-            const btnEditCol = colEl.querySelector('.btn-menu-col-edit');
-            if (btnEditCol) {
-                btnEditCol.addEventListener('click', () => {
-                    colDropdown.classList.remove('active');
-                    openColumnModal(col);
-                });
-            }
-
-            const btnDeleteCol = colEl.querySelector('.btn-menu-col-delete');
-            if (btnDeleteCol) {
-                btnDeleteCol.addEventListener('click', async () => {
-                    colDropdown.classList.remove('active');
-                    if (confirm(`Удалить колонку "${col.title}"?`)) {
-                        await authFetch(`/api/columns/${col.id}`, { method: 'DELETE' });
-                        fetchColumnsAndTasks(currentBoardId);
-                    }
+                    showFloatingDropdown(btnColDots, menuItems);
                 });
             }
 
@@ -883,8 +888,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 const shareMode = data.shareMode || 'link';
                 
-                const radio = document.querySelector(`input[name="board_share_mode_radio"][value="${shareMode}"]`);
-                if (radio) radio.checked = true;
+                document.querySelectorAll('.option-card').forEach(card => {
+                    card.classList.toggle('active', card.dataset.mode === shareMode);
+                });
 
                 if (boardShareLinkInput) boardShareLinkInput.value = data.shareUrl;
 
@@ -930,14 +936,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.querySelectorAll('input[name="board_share_mode_radio"]').forEach(radio => {
-        radio.addEventListener('change', async (e) => {
+    document.querySelectorAll('.option-card').forEach(card => {
+        card.addEventListener('click', async () => {
             if (!activeShareBoardId) return;
-            const shareMode = e.target.value;
+            const mode = card.dataset.mode;
+            document.querySelectorAll('.option-card').forEach(c => c.classList.toggle('active', c === card));
             await authFetch(`/api/boards/${activeShareBoardId}/share/mode`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ shareMode })
+                body: JSON.stringify({ shareMode: mode })
             });
             loadBoardShareSettings(activeShareBoardId);
         });

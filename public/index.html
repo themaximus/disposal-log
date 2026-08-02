@@ -550,38 +550,42 @@
                     <span id="board-share-mode-badge" style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 12px; font-weight: 600;">По секретной ссылке</span>
                 </div>
 
-                <div class="share-modes-selector" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.85rem;">
-                    <label style="display: flex; align-items: flex-start; gap: 0.6rem; background: var(--github-surface); border: 1px solid var(--github-border); padding: 0.55rem 0.65rem; border-radius: 8px; cursor: pointer;">
-                        <input type="radio" name="board_share_mode_radio" value="private" style="margin-top: 0.15rem; accent-color: var(--github-blue);">
-                        <div>
-                            <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">🔒 Приватный доступ</div>
-                            <div style="font-size: 0.72rem; color: var(--text-muted);">Только вы имеете доступ к этой доске.</div>
+                <div class="option-cards-group" id="board-share-options-group">
+                    <div class="option-card" data-mode="link">
+                        <div class="option-card-icon">🔑</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">По секретной ссылке</div>
+                            <div class="option-card-sub">Доступен только обладателям уникальной ссылки (UUID)</div>
                         </div>
-                    </label>
+                        <div class="option-card-check">✓</div>
+                    </div>
 
-                    <label style="display: flex; align-items: flex-start; gap: 0.6rem; background: var(--github-surface); border: 1px solid var(--github-border); padding: 0.55rem 0.65rem; border-radius: 8px; cursor: pointer;">
-                        <input type="radio" name="board_share_mode_radio" value="link" checked style="margin-top: 0.15rem; accent-color: var(--github-blue);">
-                        <div>
-                            <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">🔑 По секретной ссылке</div>
-                            <div style="font-size: 0.72rem; color: var(--text-muted);">Доступен только обладателям уникальной ссылки (UUID).</div>
+                    <div class="option-card" data-mode="private">
+                        <div class="option-card-icon">🔒</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">Приватный доступ</div>
+                            <div class="option-card-sub">Только вы имеете доступ к этой доске</div>
                         </div>
-                    </label>
+                        <div class="option-card-check">✓</div>
+                    </div>
 
-                    <label style="display: flex; align-items: flex-start; gap: 0.6rem; background: var(--github-surface); border: 1px solid var(--github-border); padding: 0.55rem 0.65rem; border-radius: 8px; cursor: pointer;">
-                        <input type="radio" name="board_share_mode_radio" value="restricted" style="margin-top: 0.15rem; accent-color: var(--github-blue);">
-                        <div>
-                            <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">👥 Ограниченный (по E-mail)</div>
-                            <div style="font-size: 0.72rem; color: var(--text-muted);">Доступен только приглашенным пользователям.</div>
+                    <div class="option-card" data-mode="restricted">
+                        <div class="option-card-icon">👥</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">Ограниченный (по E-mail)</div>
+                            <div class="option-card-sub">Доступен только приглашенным пользователям</div>
                         </div>
-                    </label>
+                        <div class="option-card-check">✓</div>
+                    </div>
 
-                    <label style="display: flex; align-items: flex-start; gap: 0.6rem; background: var(--github-surface); border: 1px solid var(--github-border); padding: 0.55rem 0.65rem; border-radius: 8px; cursor: pointer;">
-                        <input type="radio" name="board_share_mode_radio" value="public" style="margin-top: 0.15rem; accent-color: var(--github-blue);">
-                        <div>
-                            <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-main);">🌐 Публичный (по ID)</div>
-                            <div style="font-size: 0.72rem; color: var(--text-muted);">Открыт абсолютно всем по ID этой доски.</div>
+                    <div class="option-card" data-mode="public">
+                        <div class="option-card-icon">🌐</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">Публичный (по ID)</div>
+                            <div class="option-card-sub">Открыт абсолютно всем по ID этой доски</div>
                         </div>
-                    </label>
+                        <div class="option-card-check">✓</div>
+                    </div>
                 </div>
 
                 <!-- Блок приглашенных E-mail пользователей -->
