@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStart, onDragOverTask, onDragOver, onDrop }) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [subtasks, setSubtasks] = useState(task.subtasks || []);
 
   const diffStars = '★'.repeat(task.difficulty || 1) + '☆'.repeat(3 - (task.difficulty || 1));
   
@@ -23,6 +24,23 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
   const firstMedia = mediaList.length > 0 ? mediaList[0] : null;
 
   const dragOverHandler = onDragOverTask || onDragOver;
+
+  // Toggle subtask directly from card
+  const handleToggleSubtask = (e, index) => {
+    e.stopPropagation();
+    const updated = subtasks.map((st, i) => i === index ? { ...st, completed: !st.completed } : st);
+    setSubtasks(updated);
+
+    fetch(`/api/tasks/${task.id}/subtasks`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subtasks: updated })
+    }).catch(console.error);
+  };
+
+  const completedSubtasks = subtasks.filter(st => st.completed).length;
+  const totalSubtasks = subtasks.length;
+  const subtaskPercent = totalSubtasks > 0 ? Math.round((completedSubtasks / totalSubtasks) * 100) : 0;
 
   return (
     <div
@@ -100,6 +118,69 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
 
         {task.description && (
           <p className="card-desc">{task.description}</p>
+        )}
+
+        {/* Sub-task Progress Badge & Bar */}
+        {totalSubtasks > 0 && (
+          <div className="card-subtasks-section" style={{ marginTop: '0.55rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+              <span className="subtask-badge-pill" style={{
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                color: completedSubtasks === totalSubtasks ? 'var(--github-green-text)' : 'var(--github-blue-text)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}>
+                ☑️ {completedSubtasks}/{totalSubtasks} ({subtaskPercent}%)
+              </span>
+            </div>
+            <div className="card-subtask-progress-track" style={{
+              height: '4px',
+              background: 'var(--github-canvas)',
+              borderRadius: '10px',
+              overflow: 'hidden',
+              border: '1px solid var(--github-border)'
+            }}>
+              <div style={{
+                height: '100%',
+                width: `${subtaskPercent}%`,
+                background: completedSubtasks === totalSubtasks ? 'var(--github-green-text)' : 'var(--github-blue)',
+                transition: 'width 0.3s ease'
+              }} />
+            </div>
+
+            {/* Quick interactive subtask items (Visible in non-stack or 1-column view) */}
+            {!isInStack && (
+              <div className="card-subtask-quick-list" style={{ marginTop: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                {subtasks.map((st, idx) => (
+                  <label
+                    key={st.id || idx}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      cursor: 'pointer',
+                      fontSize: '0.76rem',
+                      color: st.completed ? 'var(--text-muted)' : 'var(--text-main)',
+                      textDecoration: st.completed ? 'line-through' : 'none'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={st.completed}
+                      onChange={(e) => handleToggleSubtask(e, idx)}
+                      style={{ accentColor: 'var(--github-green)' }}
+                    />
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {st.text}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {task.tags && task.tags.length > 0 && (

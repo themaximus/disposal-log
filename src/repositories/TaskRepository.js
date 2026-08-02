@@ -22,11 +22,11 @@ class TaskRepository {
     }
 
     static create(taskData, callback) {
-        const { userId, boardId, columnId, title, description, imagesJson, difficulty, tagsJson, status, position, parentId, groupId } = taskData;
+        const { userId, boardId, columnId, title, description, imagesJson, difficulty, tagsJson, status, position, parentId, groupId, subtasksJson } = taskData;
         db.run(
-            `INSERT INTO tasks (user_id, board_id, column_id, title, description, images_json, difficulty, tags_json, status, position, parent_id, group_id) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, boardId, columnId || null, title, description || '', imagesJson || '[]', difficulty || 1, tagsJson || '[]', status || 'todo', position || 9999, parentId || null, groupId || null],
+            `INSERT INTO tasks (user_id, board_id, column_id, title, description, images_json, difficulty, tags_json, status, position, parent_id, group_id, subtasks_json) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, boardId, columnId || null, title, description || '', imagesJson || '[]', difficulty || 1, tagsJson || '[]', status || 'todo', position || 9999, parentId || null, groupId || null, subtasksJson || '[]'],
             function (err) {
                 callback(err, this ? this.lastID : null);
             }
@@ -34,7 +34,7 @@ class TaskRepository {
     }
 
     static update(id, userId, taskData, callback) {
-        const { title, description, imagesJson, difficulty, tagsJson, status, position, parentId, groupId } = taskData;
+        const { title, description, imagesJson, difficulty, tagsJson, status, position, parentId, groupId, subtasksJson } = taskData;
         db.run(
             `UPDATE tasks SET 
                 title = COALESCE(?, title), 
@@ -45,9 +45,18 @@ class TaskRepository {
                 status = COALESCE(?, status), 
                 position = COALESCE(?, position), 
                 parent_id = COALESCE(?, parent_id), 
-                group_id = COALESCE(?, group_id) 
+                group_id = COALESCE(?, group_id),
+                subtasks_json = COALESCE(?, subtasks_json)
              WHERE id = ? AND user_id = ?`,
-            [title, description, imagesJson, difficulty, tagsJson, status, position, parentId, groupId, id, userId],
+            [title, description, imagesJson, difficulty, tagsJson, status, position, parentId, groupId, subtasksJson, id, userId],
+            callback
+        );
+    }
+
+    static updateSubtasks(id, userId, subtasksJson, callback) {
+        db.run(
+            "UPDATE tasks SET subtasks_json = ? WHERE id = ? AND user_id = ?",
+            [subtasksJson, id, userId],
             callback
         );
     }

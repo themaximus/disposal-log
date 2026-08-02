@@ -15,13 +15,16 @@ class TaskController {
                 
                 if (r.tags_json) { try { r.tags = JSON.parse(r.tags_json); } catch(e) { r.tags = []; } }
                 else { r.tags = []; }
+
+                if (r.subtasks_json) { try { r.subtasks = JSON.parse(r.subtasks_json); } catch(e) { r.subtasks = []; } }
+                else { r.subtasks = []; }
             });
             res.json(rows);
         });
     }
 
     static createTask(req, res) {
-        const { title, description, difficulty, tags, images, parent_id, board_id, status, group_id } = req.body;
+        const { title, description, difficulty, tags, images, parent_id, board_id, status, group_id, subtasks } = req.body;
         const userId = req.user.id;
         
         let finalImages = [];
@@ -33,6 +36,7 @@ class TaskController {
 
         const imagesJson = JSON.stringify(finalImages);
         const tagsJson = typeof tags === 'string' ? tags : JSON.stringify(tags || []);
+        const subtasksJson = typeof subtasks === 'string' ? subtasks : JSON.stringify(subtasks || []);
         const initialStatus = status || (parent_id ? 'locked' : 'todo');
 
         TaskRepository.create({
@@ -46,7 +50,8 @@ class TaskController {
             status: initialStatus,
             position: 9999,
             parentId: parent_id || null,
-            groupId: group_id || null
+            groupId: group_id || null,
+            subtasksJson
         }, (err, taskId) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true, id: taskId });
@@ -56,10 +61,11 @@ class TaskController {
     static updateTask(req, res) {
         const taskId = req.params.id;
         const userId = req.user.id;
-        const { title, description, difficulty, tags, images, status, group_id } = req.body;
+        const { title, description, difficulty, tags, images, status, group_id, subtasks } = req.body;
 
         const imagesJson = images ? JSON.stringify(images) : undefined;
         const tagsJson = tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : undefined;
+        const subtasksJson = subtasks ? (typeof subtasks === 'string' ? subtasks : JSON.stringify(subtasks)) : undefined;
 
         TaskRepository.update(taskId, userId, {
             title,
@@ -68,8 +74,21 @@ class TaskController {
             imagesJson,
             tagsJson,
             status,
-            groupId: group_id
+            groupId: group_id,
+            subtasksJson
         }, (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
+    }
+
+    static updateSubtasks(req, res) {
+        const taskId = req.params.id;
+        const userId = req.user.id;
+        const { subtasks } = req.body;
+        const subtasksJson = JSON.stringify(subtasks || []);
+
+        TaskRepository.updateSubtasks(taskId, userId, subtasksJson, (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true });
         });
@@ -86,9 +105,7 @@ class TaskController {
             const groupId = targetTask.group_id || `group_${Date.now()}`;
             const targetStatus = targetTask.status;
 
-            // Update target task group_id if it wasn't grouped yet
             TaskRepository.setGroupId(target_id, userId, groupId, null, () => {
-                // Update dragged task group_id & status to match target task
                 TaskRepository.setGroupId(taskId, userId, groupId, targetStatus, (err2) => {
                     if (err2) return res.status(500).json({ error: err2.message });
                     res.json({ success: true, group_id: groupId });

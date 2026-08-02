@@ -108,7 +108,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
             tags_json TEXT,
             position INTEGER DEFAULT 0,
             parent_id INTEGER,
-            group_id TEXT
+            group_id TEXT,
+            subtasks_json TEXT
         )`, (err) => {
             if (!err) {
                 db.run(`ALTER TABLE tasks ADD COLUMN user_id INTEGER`, () => {});
@@ -121,6 +122,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 db.run(`ALTER TABLE tasks ADD COLUMN position INTEGER DEFAULT 0`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN parent_id INTEGER`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN group_id TEXT`, () => {});
+                db.run(`ALTER TABLE tasks ADD COLUMN subtasks_json TEXT`, () => {});
             }
         });
 

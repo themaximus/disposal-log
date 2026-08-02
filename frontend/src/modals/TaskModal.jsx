@@ -5,6 +5,8 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState(1);
   const [images, setImages] = useState([]);
+  const [subtasks, setSubtasks] = useState([]);
+  const [newSubtaskText, setNewSubtaskText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   const isVideoUrl = (url) => typeof url === 'string' && /\.(mp4|webm|mov|ogg)$/i.test(url);
@@ -27,6 +29,17 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
         existingMedia = [taskToEdit.image_url];
       }
       setImages(existingMedia);
+
+      let existingSubtasks = [];
+      if (Array.isArray(taskToEdit.subtasks)) {
+        existingSubtasks = taskToEdit.subtasks;
+      } else if (typeof taskToEdit.subtasks_json === 'string') {
+        try {
+          const parsed = JSON.parse(taskToEdit.subtasks_json);
+          if (Array.isArray(parsed)) existingSubtasks = parsed;
+        } catch(e) {}
+      }
+      setSubtasks(existingSubtasks);
     }
   }, [taskToEdit]);
 
@@ -59,6 +72,28 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleAddSubtask = () => {
+    if (!newSubtaskText.trim()) return;
+    const newItem = {
+      id: `st_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      text: newSubtaskText.trim(),
+      completed: false
+    };
+    setSubtasks(prev => [...prev, newItem]);
+    setNewSubtaskText('');
+  };
+
+  const handleToggleSubtask = (index) => {
+    setSubtasks(prev => prev.map((st, i) => i === index ? { ...st, completed: !st.completed } : st));
+  };
+
+  const handleRemoveSubtask = (index) => {
+    setSubtasks(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const completedCount = subtasks.filter(st => st.completed).length;
+  const progressPercent = subtasks.length > 0 ? Math.round((completedCount / subtasks.length) * 100) : 0;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -68,13 +103,14 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
       title,
       description,
       difficulty,
-      images
+      images,
+      subtasks
     });
   };
 
   return (
     <div className="modal-overlay active">
-      <div className="modal" style={{ maxWidth: '500px' }}>
+      <div className="modal" style={{ maxWidth: '520px' }}>
         <div className="modal-header">
           <h2>{taskToEdit ? 'Редактировать Механику' : 'Новая Механика'}</h2>
           <button className="btn-close" onClick={onClose}>✕</button>
@@ -99,6 +135,98 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
               onChange={e => setDescription(e.target.value)}
               placeholder="Подробное ТЗ механики..."
             />
+          </div>
+
+          {/* Sub-tasks Checklists Section */}
+          <div className="form-group">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <label style={{ margin: 0 }}>📋 Чек-лист Подзадач</label>
+              {subtasks.length > 0 && (
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--github-blue-text)' }}>
+                  {completedCount} из {subtasks.length} ({progressPercent}%)
+                </span>
+              )}
+            </div>
+
+            {subtasks.length > 0 && (
+              <div className="subtask-progress-bar-wrapper" style={{ height: '5px', background: 'var(--github-canvas)', borderRadius: '10px', overflow: 'hidden', marginBottom: '0.6rem', border: '1px solid var(--github-border)' }}>
+                <div
+                  className="subtask-progress-fill"
+                  style={{
+                    height: '100%',
+                    width: `${progressPercent}%`,
+                    background: progressPercent === 100 ? 'var(--github-green-text)' : 'var(--github-blue)',
+                    transition: 'width 0.3s ease'
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="subtask-input-group" style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
+              <input
+                type="text"
+                value={newSubtaskText}
+                onChange={e => setNewSubtaskText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask(); } }}
+                placeholder="Добавить пункт чек-листа (например: Настроить коллайдеры)..."
+                style={{ flex: 1, padding: '0.45rem 0.65rem', fontSize: '0.82rem' }}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleAddSubtask}
+                style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
+              >
+                + Пункт
+              </button>
+            </div>
+
+            {subtasks.length > 0 && (
+              <div className="subtasks-editor-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '140px', overflowY: 'auto' }}>
+                {subtasks.map((st, idx) => (
+                  <div
+                    key={st.id || idx}
+                    className="subtask-editor-item"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: 'var(--github-canvas)',
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: '6px',
+                      border: '1px solid var(--github-border)'
+                    }}
+                  >
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1, overflow: 'hidden' }}>
+                      <input
+                        type="checkbox"
+                        checked={st.completed}
+                        onChange={() => handleToggleSubtask(idx)}
+                        style={{ accentColor: 'var(--github-green)' }}
+                      />
+                      <span style={{
+                        fontSize: '0.82rem',
+                        color: st.completed ? 'var(--text-muted)' : 'var(--text-main)',
+                        textDecoration: st.completed ? 'line-through' : 'none',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {st.text}
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSubtask(idx)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--github-red-text)', cursor: 'pointer', fontSize: '0.75rem', padding: '0.1rem 0.3rem' }}
+                      title="Удалить пункт"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
