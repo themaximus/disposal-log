@@ -1,9 +1,9 @@
 import React from 'react';
 
-export default function LandingHero({ currentUser, onOpenAuth, onOpenWorkspace }) {
+export default function LandingHero({ currentUser, onOpenAuth, onOpenWorkspace, onCreateBoard }) {
   return (
-    <section className="hero-section">
-      <div className="hero-container">
+    <section className="hero-section-wrapper">
+      <div className="hero-container-inner">
         <div className="hero-badge">
           <span className="hero-pulse-dot"></span>
           <span>DEV STUDIO KANBAN ENGINE 2.0</span>
@@ -17,20 +17,54 @@ export default function LandingHero({ currentUser, onOpenAuth, onOpenWorkspace }
           Организуйте бэклог геймдева, отслеживайте сложность задач, распределяйте процессы по колонкам и делитесь досками в один клик.
         </p>
 
-        <div className="hero-actions">
-          <button className="btn-hero-primary" onClick={onOpenWorkspace}>
-            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>rocket_launch</span>
-            Открыть Доску Задач
-          </button>
-          
-          {!currentUser && (
-            <button className="btn-hero-secondary" onClick={onOpenAuth}>
-              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>key</span>
-              Войти в Учётную Запись
-            </button>
+        {/* Primary Welcome Box */}
+        <div className="hero-welcome-card">
+          {!currentUser ? (
+            <div className="welcome-card-content">
+              <div className="welcome-card-header">
+                <span className="material-symbols-outlined welcome-icon">login</span>
+                <div>
+                  <h3 className="welcome-title">Начните работу прямо сейчас</h3>
+                  <p className="welcome-desc">Войдите в учётную запись для работы в онлайн-режиме или используйте локальные офлайн-доски.</p>
+                </div>
+              </div>
+              <div className="hero-actions">
+                <button className="btn-hero-primary" onClick={onOpenAuth}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>key</span>
+                  Войти в Учётную Запись
+                </button>
+                <button className="btn-hero-secondary" onClick={onOpenWorkspace}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>space_dashboard</span>
+                  Открыть Доски Задач
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="welcome-card-content">
+              <div className="welcome-card-header">
+                <span className="material-symbols-outlined welcome-icon" style={{ color: 'var(--github-green-text)' }}>waving_hand</span>
+                <div>
+                  <h3 className="welcome-title">С возвращением, {currentUser.name || currentUser.username || 'Разработчик'}! 👋</h3>
+                  <p className="welcome-desc">Ваши рабочие пространства и задачи синхронизированы и готовы к работе.</p>
+                </div>
+              </div>
+              <div className="hero-actions">
+                <button className="btn-hero-primary" onClick={onOpenWorkspace}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>rocket_launch</span>
+                  Перейти к Задачам
+                </button>
+                {typeof onCreateBoard === 'function' && (
+                  <button className="btn-hero-secondary" onClick={onCreateBoard}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', marginRight: '6px' }}>add</span>
+                    Создать Доску
+                  </button>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
+        {/* Feature Cards Grid */}
         <div className="hero-features-grid">
           <div className="feature-card">
             <div className="feature-icon">
@@ -39,26 +73,29 @@ export default function LandingHero({ currentUser, onOpenAuth, onOpenWorkspace }
             <div className="feature-title">Мульти-Доски</div>
             <div className="feature-desc">Создавайте отдельные пространства для разных фич и подсистем игры.</div>
           </div>
+
           <div className="feature-card">
             <div className="feature-icon">
-              <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: 'var(--github-green-text)' }}>vpn_key</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: 'var(--github-green-text)' }}>cloud_sync</span>
             </div>
-            <div className="feature-title">Гибкие Права</div>
-            <div className="feature-desc">Настраивайте доступ по приватной ссылке, e-mail или создавайте публичные доски.</div>
+            <div className="feature-title">Онлайн & Офлайн</div>
+            <div className="feature-desc">Переключайте доски между сервером и локальным хранилищем браузера в один клик.</div>
           </div>
+
           <div className="feature-card">
             <div className="feature-icon">
               <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: 'var(--github-yellow)' }}>grade</span>
             </div>
             <div className="feature-title">Сложность Механик</div>
-            <div className="feature-desc">Оценивайте трудоёмкость фич от 1 до 3 звёзд с цветом акцента.</div>
+            <div className="feature-desc">Оценивайте трудоёмкость фич от 1 до 3 звёзд с индивидуальными акцентами.</div>
           </div>
+
           <div className="feature-card">
             <div className="feature-icon">
-              <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: 'var(--github-blue-text)' }}>send</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: 'var(--github-blue-text)' }}>layers</span>
             </div>
-            <div className="feature-title">Telegram Уведомления</div>
-            <div className="feature-desc">Автоматическая синхронизация апдейтов в игровой Telegram-канал.</div>
+            <div className="feature-title">Умные Стопки</div>
+            <div className="feature-desc">Удерживайте карточку 2 секунды при перетаскивании для удобного объединения в стопку.</div>
           </div>
         </div>
       </div>

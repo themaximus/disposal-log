@@ -90,6 +90,7 @@ export default function App() {
   const selectBoard = (boardId, boardObj) => {
     const targetBoard = boardObj || boards.find(b => String(b.id) === String(boardId));
     setCurrentBoardId(boardId);
+    setCurrentTab('workspace');
 
     if (targetBoard && targetBoard.is_offline) {
       const offlineData = getOfflineBoardData(boardId);
@@ -596,65 +597,41 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {currentTab === 'landing' && (
-        <>
-          <Sidebar
-            currentUser={currentUser}
-            currentTab={currentTab}
-            viewMode={viewMode}
-            onSelectTab={handleSelectTab}
-            onChangeViewMode={(mode) => setViewMode(mode)}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            onOpenProfile={() => setIsProfileModalOpen(true)}
-            onOpenSettings={() => setIsSettingsModalOpen(true)}
-            onLogout={handleLogout}
-            boards={boards}
-            currentBoardId={currentBoardId}
-            onSelectBoard={selectBoard}
-            onCreateBoard={() => setIsBoardModalOpen(true)}
-            onOpenShare={(b) => setShareBoardModal(b)}
-            onOpenManageColumns={(b) => {
-              setManageColumnsBoard(b);
-              setIsManageColumnsModalOpen(true);
-            }}
-            onToggleBoardMode={handleToggleBoardMode}
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          />
+      <div className="workspace-wrapper full-height">
+        <Sidebar
+          currentUser={currentUser}
+          currentTab={currentTab}
+          viewMode={viewMode}
+          onSelectTab={handleSelectTab}
+          onChangeViewMode={(mode) => setViewMode(mode)}
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          onLogout={handleLogout}
+          boards={boards}
+          currentBoardId={currentBoardId}
+          onSelectBoard={selectBoard}
+          onCreateBoard={() => setIsBoardModalOpen(true)}
+          onOpenShare={(b) => setShareBoardModal(b)}
+          onOpenManageColumns={(b) => {
+            setManageColumnsBoard(b);
+            setIsManageColumnsModalOpen(true);
+          }}
+          onToggleBoardMode={handleToggleBoardMode}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
+
+        {currentTab === 'landing' && (
           <LandingHero
             currentUser={currentUser}
             onOpenAuth={() => setIsAuthModalOpen(true)}
             onOpenWorkspace={() => handleSelectTab('workspace')}
-          />
-        </>
-      )}
-
-      {currentTab === 'workspace' && (
-        <div className="workspace-wrapper full-height">
-          <Sidebar
-            currentUser={currentUser}
-            currentTab={currentTab}
-            viewMode={viewMode}
-            onSelectTab={handleSelectTab}
-            onChangeViewMode={(mode) => setViewMode(mode)}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            onOpenProfile={() => setIsProfileModalOpen(true)}
-            onOpenSettings={() => setIsSettingsModalOpen(true)}
-            onLogout={handleLogout}
-            boards={boards}
-            currentBoardId={currentBoardId}
-            onSelectBoard={selectBoard}
             onCreateBoard={() => setIsBoardModalOpen(true)}
-            onOpenShare={(b) => setShareBoardModal(b)}
-            onOpenManageColumns={(b) => {
-              setManageColumnsBoard(b);
-              setIsManageColumnsModalOpen(true);
-            }}
-            onToggleBoardMode={handleToggleBoardMode}
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />
+        )}
 
+        {currentTab === 'workspace' && (
           <main className="board" data-card-mode={viewMode}>
             {columns.map(col => (
               <Column
@@ -677,8 +654,8 @@ export default function App() {
               />
             ))}
           </main>
-        </div>
-      )}
+        )}
+      </div>
 
       <SyncToast status={syncStatus} message={syncMessage} />
 

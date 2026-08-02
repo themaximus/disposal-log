@@ -428,6 +428,74 @@ body {
     margin-bottom: 2rem;
 }
 
+/* Hero Section inside Sidebar Workspace Layout */
+.hero-section-wrapper {
+    flex: 1;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--bg-main);
+    display: flex;
+    justify-content: center;
+    padding: 3rem 2rem;
+    box-sizing: border-box;
+}
+
+.hero-container-inner {
+    max-width: 860px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.hero-welcome-card {
+    background: var(--github-surface);
+    border: 1px solid var(--github-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 100%;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+}
+
+.welcome-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.welcome-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+}
+
+.welcome-icon {
+    font-size: 2.2rem;
+    color: var(--github-blue-text);
+}
+
+.welcome-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.25rem;
+}
+
+.welcome-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.hero-welcome-card .hero-actions {
+    margin-bottom: 0;
+    justify-content: flex-start;
+}
+
 .hero-actions {
     display: flex;
     gap: 1rem;
