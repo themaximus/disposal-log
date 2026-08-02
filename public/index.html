@@ -180,44 +180,52 @@
         <button id="btn-guest-login-modal" class="btn btn-primary btn-sm">Войти и создать свою доску 🚀</button>
     </div>
 
-    <!-- Main Kanban Board -->
-    <main class="board" id="kanban-board-section">
-        <!-- Колонка 1: Предстоящие -->
-        <section class="column" id="column-todo">
-            <div class="column-header column-red">
-                <h2>Предстоящие <span class="count" id="count-todo">0</span></h2>
+    <!-- App Workspace Container (Sidebar + Board) -->
+    <div class="workspace-wrapper">
+        <!-- Collapsible Boards Sidebar -->
+        <aside class="boards-sidebar" id="boards-sidebar">
+            <div class="sidebar-header-bar">
+                <div class="sidebar-title-group">
+                    <span class="sidebar-icon">📁</span>
+                    <span class="sidebar-heading">Мои доски</span>
+                </div>
+                <button type="button" class="btn-sidebar-toggle" id="btn-toggle-sidebar" title="Свернуть/Развернуть сайдбар">◀</button>
             </div>
-            <div class="column-body">
-                <div class="task-list" id="list-todo" data-status="todo">
-                    <!-- Задачи будут здесь -->
+            
+            <div class="sidebar-content">
+                <button type="button" class="btn btn-secondary btn-block btn-new-board owner-only" id="btn-create-board" style="margin-bottom: 0.85rem; border-color: rgba(56,139,253,0.4); color: #58a6ff;">
+                    <span>＋ Создать доску</span>
+                </button>
+                <div class="boards-list" id="boards-list">
+                    <!-- Доски загружаются динамически через JS -->
                 </div>
             </div>
-        </section>
+        </aside>
 
-        <!-- Колонка 2: В работе -->
-        <section class="column" id="column-in-progress">
-            <div class="column-header column-orange">
-                <h2>В работе <span class="count" id="count-in-progress">0</span></h2>
-            </div>
-            <div class="column-body">
-                <div class="task-list" id="list-in-progress" data-status="in_progress">
-                    <!-- Задачи будут здесь -->
+        <!-- Main Workspace Area -->
+        <div class="workspace-main-area">
+            <!-- Header Bar for Active Board -->
+            <div class="board-top-bar" id="board-top-bar">
+                <div class="board-title-info">
+                    <h1 id="current-board-name" class="current-board-name">Основная доска</h1>
+                    <span id="current-board-desc" class="current-board-desc"></span>
+                </div>
+                <div class="board-top-actions">
+                    <button type="button" id="btn-add-column" class="btn btn-secondary btn-sm owner-only" style="border-color: rgba(56,139,253,0.4); color: #58a6ff;">
+                        <span>＋ Добавить колонку</span>
+                    </button>
                 </div>
             </div>
-        </section>
 
-        <!-- Колонка 3: Реализованные -->
-        <section class="column" id="column-done">
-            <div class="column-header column-green">
-                <h2>Реализованные <span class="count" id="count-done">0</span></h2>
-            </div>
-            <div class="column-body">
-                <div class="task-list" id="list-done" data-status="done">
-                    <!-- Задачи будут здесь -->
+            <!-- Main Dynamic Kanban Board -->
+            <main class="board" id="kanban-board-section">
+                <!-- Dynamic Columns Container -->
+                <div id="dynamic-columns-container" class="dynamic-columns-container" style="display: flex; gap: 1rem; width: 100%; min-height: 500px; overflow-x: auto; padding-bottom: 1rem;">
+                    <!-- Колонки рендерятся динамически -->
                 </div>
-            </div>
-        </section>
-    </main>
+            </main>
+        </div>
+    </div>
 
     <!-- Модальное окно: Вход Владельца -->
     <div class="modal-overlay" id="modal-auth">
@@ -542,6 +550,59 @@
                     <button type="button" class="btn btn-primary" id="btn-close-profile-ok">Закрыть</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Создание / Редактирование Доски -->
+    <div class="modal-overlay" id="modal-board">
+        <div class="modal" style="max-width: 420px;">
+            <div class="modal-header" style="justify-content: space-between;">
+                <h2 id="modal-board-title" style="font-size: 1.3rem; font-weight: 600;">Новая Доска</h2>
+                <button class="btn-close" id="btn-close-board-modal">✕</button>
+            </div>
+            <form id="form-board">
+                <input type="hidden" id="board-id-input">
+                <div class="form-group">
+                    <label for="board-name-input">Название доски</label>
+                    <input type="text" id="board-name-input" required placeholder="Например: Игровой движок / Дизайн" style="width: 100%; padding: 0.65rem; background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 6px; color: white;">
+                </div>
+                <div class="form-group">
+                    <label for="board-desc-input">Описание (необязательно)</label>
+                    <textarea id="board-desc-input" rows="3" placeholder="Краткое описание целей этой доски..." style="width: 100%; padding: 0.65rem; background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 6px; color: white;"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-board">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Добавление / Редактирование Колонки процессов -->
+    <div class="modal-overlay" id="modal-column">
+        <div class="modal" style="max-width: 380px;">
+            <div class="modal-header" style="justify-content: space-between;">
+                <h2 id="modal-column-title" style="font-size: 1.3rem; font-weight: 600;">Колонка процессов</h2>
+                <button class="btn-close" id="btn-close-column-modal">✕</button>
+            </div>
+            <form id="form-column">
+                <input type="hidden" id="column-id-input">
+                <div class="form-group">
+                    <label for="column-name-input">Название колонки</label>
+                    <input type="text" id="column-name-input" required placeholder="Например: В тестировании / Ревью" style="width: 100%; padding: 0.65rem; background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 6px; color: white;">
+                </div>
+                <div class="form-group">
+                    <label for="column-color-input">Цвет акцента колонки</label>
+                    <div style="display: flex; gap: 0.6rem; align-items: center;">
+                        <input type="color" id="column-color-input" value="#388bfd" style="width: 40px; height: 38px; padding: 0; border: none; background: transparent; cursor: pointer;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Выберите цвет полосы колонки</span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-column">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
         </div>
     </div>
 

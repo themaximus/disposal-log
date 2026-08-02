@@ -567,6 +567,133 @@ app.delete('/api/share/invite', sessionMiddleware, requireUser, (req, res) => {
     });
 });
 
+// Ensure Helper Functions for Default Board & Columns
+function ensureDefaultBoardAndColumns(userId, cb) {
+    db.get("SELECT * FROM boards WHERE user_id = ? ORDER BY id ASC LIMIT 1", [userId], (err, board) => {
+        if (err) return cb(err);
+        if (board) {
+            return ensureDefaultColumnsForBoard(board.id, (cErr, cols) => cb(null, board, cols));
+        }
+
+        db.run("INSERT INTO boards (user_id, name, description) VALUES (?, ?, ?)", [userId, 'Основная доска', 'Главный бэклог проекта'], function(bErr) {
+            if (bErr) return cb(bErr);
+            const newBoardId = this.lastID;
+            db.run("UPDATE tasks SET board_id = ? WHERE (user_id = ? OR user_id IS NULL) AND board_id IS NULL", [newBoardId, userId]);
+            ensureDefaultColumnsForBoard(newBoardId, (cErr, cols) => cb(null, { id: newBoardId, name: 'Основная доска', description: 'Главный бэклог проекта' }, cols));
+        });
+    });
+}
+
+function ensureDefaultColumnsForBoard(boardId, cb) {
+    db.all("SELECT * FROM columns WHERE board_id = ? ORDER BY position ASC", [boardId], (err, cols) => {
+        if (!err && cols && cols.length > 0) {
+            return cb(null, cols);
+        }
+        const defaultCols = [
+            { title: 'Предстоящие', key: 'todo', color: '#f85149', pos: 0 },
+            { title: 'В работе', key: 'in_progress', color: '#d29922', pos: 1 },
+            { title: 'Реализованные', key: 'done', color: '#2ea043', pos: 2 }
+        ];
+        db.serialize(() => {
+            const stmt = db.prepare("INSERT INTO columns (board_id, title, column_key, color, position) VALUES (?, ?, ?, ?, ?)");
+            defaultCols.forEach(c => stmt.run(boardId, c.title, c.key, c.color, c.pos));
+            stmt.finalize(() => {
+                db.all("SELECT * FROM columns WHERE board_id = ? ORDER BY position ASC", [boardId], (cErr, newCols) => {
+                    cb(cErr, newCols);
+                });
+            });
+        });
+    });
+}
+
+// Multi-Board API
+app.get('/api/boards', sessionMiddleware, requireUser, (req, res) => {
+    const userId = req.user.id;
+    ensureDefaultBoardAndColumns(userId, (err, defaultBoard) => {
+        if (err) return res.status(500).json({ error: err.message });
+        db.all("SELECT * FROM boards WHERE user_id = ? ORDER BY id ASC", [userId], (bErr, boards) => {
+            if (bErr) return res.status(500).json({ error: bErr.message });
+            res.json(boards || []);
+        });
+    });
+});
+
+app.post('/api/boards', sessionMiddleware, requireUser, (req, res) => {
+    const { name, description } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Укажите название доски' });
+    const userId = req.user.id;
+
+    db.run("INSERT INTO boards (user_id, name, description) VALUES (?, ?, ?)", [userId, name.trim(), description || ''], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        const boardId = this.lastID;
+        ensureDefaultColumnsForBoard(boardId, (cErr, cols) => {
+            res.json({ success: true, id: boardId, name: name.trim(), description: description || '', columns: cols });
+        });
+    });
+});
+
+app.put('/api/boards/:id', sessionMiddleware, requireUser, (req, res) => {
+    const boardId = req.params.id;
+    const { name, description } = req.body;
+    db.run("UPDATE boards SET name = ?, description = ? WHERE id = ? AND user_id = ?", [name, description, boardId, req.user.id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+app.delete('/api/boards/:id', sessionMiddleware, requireUser, (req, res) => {
+    const boardId = req.params.id;
+    db.run("DELETE FROM boards WHERE id = ? AND user_id = ?", [boardId, req.user.id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        db.run("DELETE FROM columns WHERE board_id = ?", [boardId]);
+        db.run("DELETE FROM tasks WHERE board_id = ?", [boardId]);
+        res.json({ success: true });
+    });
+});
+
+// Dynamic Columns API
+app.get('/api/boards/:boardId/columns', sessionMiddleware, (req, res) => {
+    const boardId = req.params.boardId;
+    ensureDefaultColumnsForBoard(boardId, (err, cols) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(cols || []);
+    });
+});
+
+app.post('/api/boards/:boardId/columns', sessionMiddleware, requireUser, (req, res) => {
+    const boardId = req.params.boardId;
+    const { title, color } = req.body;
+    if (!title || !title.trim()) return res.status(400).json({ error: 'Укажите название колонки' });
+    
+    const key = 'col_' + Date.now() + '_' + Math.round(Math.random() * 1000);
+    db.get("SELECT MAX(position) as maxPos FROM columns WHERE board_id = ?", [boardId], (err, row) => {
+        const nextPos = (row && row.maxPos !== null) ? row.maxPos + 1 : 0;
+        db.run("INSERT INTO columns (board_id, title, column_key, color, position) VALUES (?, ?, ?, ?, ?)", 
+            [boardId, title.trim(), key, color || '#388bfd', nextPos], function(cErr) {
+                if (cErr) return res.status(500).json({ error: cErr.message });
+                res.json({ id: this.lastID, board_id: boardId, title: title.trim(), column_key: key, color: color || '#388bfd', position: nextPos });
+        });
+    });
+});
+
+app.put('/api/columns/:id', sessionMiddleware, requireUser, (req, res) => {
+    const colId = req.params.id;
+    const { title, color, position } = req.body;
+    db.run("UPDATE columns SET title = COALESCE(?, title), color = COALESCE(?, color), position = COALESCE(?, position) WHERE id = ?",
+        [title, color, position, colId], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+    });
+});
+
+app.delete('/api/columns/:id', sessionMiddleware, requireUser, (req, res) => {
+    const colId = req.params.id;
+    db.run("DELETE FROM columns WHERE id = ?", [colId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
 // Public Board View Endpoint with Google Sheets Access Control Logic
 app.get('/api/public/board/:identifier', sessionMiddleware, (req, res) => {
     const identifier = req.params.identifier;
@@ -639,12 +766,18 @@ app.get('/api/public/board/:identifier', sessionMiddleware, (req, res) => {
 
 // Tasks API
 app.get('/api/tasks', sessionMiddleware, (req, res) => {
+    const boardId = req.query.board_id;
     let query = "SELECT * FROM tasks WHERE user_id = 1 OR user_id IS NULL ORDER BY status DESC, position ASC, created_at DESC";
     let params = [];
     
     if (req.user) {
-        query = "SELECT * FROM tasks WHERE user_id = ? ORDER BY status DESC, position ASC, created_at DESC";
-        params = [req.user.id];
+        if (boardId) {
+            query = "SELECT * FROM tasks WHERE user_id = ? AND board_id = ? ORDER BY position ASC, created_at DESC";
+            params = [req.user.id, boardId];
+        } else {
+            query = "SELECT * FROM tasks WHERE user_id = ? ORDER BY position ASC, created_at DESC";
+            params = [req.user.id];
+        }
     }
     
     db.all(query, params, (err, rows) => {
@@ -662,7 +795,7 @@ app.get('/api/tasks', sessionMiddleware, (req, res) => {
 });
 
 app.post('/api/tasks', sessionMiddleware, requireUser, upload.array('images', 5), (req, res) => {
-    const { title, description, difficulty, tags, parent_id } = req.body;
+    const { title, description, difficulty, tags, parent_id, board_id, status } = req.body;
     const userId = req.user.id;
     let images = [];
     if (req.files && req.files.length > 0) {
@@ -671,9 +804,9 @@ app.post('/api/tasks', sessionMiddleware, requireUser, upload.array('images', 5)
     const imagesJson = JSON.stringify(images);
     const tagsJson = tags || '[]';
     
-    const initialStatus = parent_id ? 'locked' : 'todo';
-    const query = `INSERT INTO tasks (user_id, title, description, images_json, difficulty, tags_json, status, position, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, 9999, ?)`;
-    db.run(query, [userId, title, description, imagesJson, difficulty || 1, tagsJson, initialStatus, parent_id || null], function(err) {
+    const initialStatus = status || (parent_id ? 'locked' : 'todo');
+    const query = `INSERT INTO tasks (user_id, board_id, title, description, images_json, difficulty, tags_json, status, position, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 9999, ?)`;
+    db.run(query, [userId, board_id || null, title, description, imagesJson, difficulty || 1, tagsJson, initialStatus, parent_id || null], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true, id: this.lastID });
     });

@@ -15,6 +15,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
     } else {
         console.log('Connected to SQLite database at:', dbPath);
 
+        db.run("PRAGMA journal_mode = WAL;");
+        db.run("PRAGMA foreign_keys = ON;");
+
         // Users table for Google & GitHub OAuth
         db.run(`CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,10 +54,34 @@ const db = new sqlite3.Database(dbPath, (err) => {
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )`);
 
+        // Boards table for multi-board support
+        db.run(`CREATE TABLE IF NOT EXISTS boards (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )`);
+
+        // Columns table for dynamic Kanban process columns
+        db.run(`CREATE TABLE IF NOT EXISTS columns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            board_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            column_key TEXT NOT NULL,
+            color TEXT DEFAULT '#388bfd',
+            position INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE
+        )`);
+
         // Tasks table
         db.run(`CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
+            board_id INTEGER,
+            column_id INTEGER,
             title TEXT NOT NULL,
             description TEXT,
             image_url TEXT,
@@ -72,6 +99,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         )`, (err) => {
             if (!err) {
                 db.run(`ALTER TABLE tasks ADD COLUMN user_id INTEGER`, () => {});
+                db.run(`ALTER TABLE tasks ADD COLUMN board_id INTEGER`, () => {});
+                db.run(`ALTER TABLE tasks ADD COLUMN column_id INTEGER`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN telegram_message_id INTEGER`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN images_json TEXT`, () => {});
                 db.run(`ALTER TABLE tasks ADD COLUMN telegram_message_ids_json TEXT`, () => {});

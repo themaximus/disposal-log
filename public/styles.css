@@ -1258,3 +1258,195 @@ body.is-guest-view .task-card {
     border-color: rgba(56, 139, 253, 0.3);
     font-weight: 600;
 }
+
+/* Workspace Wrapper & Collapsible Boards Sidebar */
+.workspace-wrapper {
+    display: flex;
+    width: 100%;
+    min-height: calc(100vh - 60px);
+}
+
+.boards-sidebar {
+    width: 260px;
+    background: var(--github-surface);
+    border-right: 1px solid var(--github-border);
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s cubic-bezier(0.2, 0, 0, 1);
+    overflow: hidden;
+    flex-shrink: 0;
+    z-index: 20;
+}
+
+.boards-sidebar.collapsed {
+    width: 52px;
+}
+
+.sidebar-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--github-border);
+    min-height: 52px;
+}
+
+.sidebar-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.sidebar-heading {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.btn-sidebar-toggle {
+    background: transparent;
+    border: 1px solid var(--github-border);
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+}
+
+.btn-sidebar-toggle:hover {
+    color: #fff;
+    background: var(--github-canvas);
+}
+
+.boards-sidebar.collapsed .sidebar-heading,
+.boards-sidebar.collapsed .sidebar-content {
+    display: none;
+}
+
+.boards-sidebar.collapsed .btn-sidebar-toggle {
+    transform: rotate(180deg);
+}
+
+.sidebar-content {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-y: auto;
+}
+
+.boards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.board-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.board-item:hover {
+    background: var(--github-canvas);
+    color: var(--text-main);
+}
+
+.board-item.active {
+    background: rgba(56, 139, 253, 0.12);
+    border-color: rgba(56, 139, 253, 0.3);
+    color: #58a6ff;
+    font-weight: 600;
+}
+
+.board-item-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.board-item-actions {
+    display: none;
+    gap: 0.2rem;
+}
+
+.board-item:hover .board-item-actions {
+    display: flex;
+}
+
+.board-item-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.2rem;
+}
+
+.board-item-btn:hover {
+    color: #fff;
+}
+
+/* Workspace Main Area & Active Board Bar */
+.workspace-main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.board-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid var(--github-border);
+    background: var(--github-bg);
+}
+
+.current-board-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.current-board-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.column-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.btn-col-action {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.2rem;
+    border-radius: 4px;
+}
+
+.btn-col-action:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+}

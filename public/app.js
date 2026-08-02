@@ -497,6 +497,284 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentTasks && currentTasks.length > 0) {
             renderTasks(currentTasks);
         }
+        fetchBoards();
+    }
+
+    // Multi-Board & Dynamic Columns State
+    let currentBoardId = null;
+    let currentBoards = [];
+    let currentColumns = [];
+
+    const boardsSidebar = document.getElementById('boards-sidebar');
+    const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+    const boardsList = document.getElementById('boards-list');
+    const btnCreateBoard = document.getElementById('btn-create-board');
+    const currentBoardName = document.getElementById('current-board-name');
+    const currentBoardDesc = document.getElementById('current-board-desc');
+    const dynamicColumnsContainer = document.getElementById('dynamic-columns-container');
+
+    // Sidebar Toggle Handler
+    if (btnToggleSidebar && boardsSidebar) {
+        const isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
+        boardsSidebar.classList.toggle('collapsed', isCollapsed);
+
+        btnToggleSidebar.addEventListener('click', () => {
+            const collapsed = boardsSidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebar_collapsed', collapsed ? 'true' : 'false');
+        });
+    }
+
+    async function fetchBoards() {
+        if (!currentUser && !isGuestView) return;
+        try {
+            const res = await authFetch('/api/boards');
+            if (res.ok) {
+                currentBoards = await res.json();
+                renderBoardsList(currentBoards);
+                if (currentBoards.length > 0) {
+                    if (!currentBoardId || !currentBoards.find(b => b.id === currentBoardId)) {
+                        selectBoard(currentBoards[0].id);
+                    } else {
+                        selectBoard(currentBoardId);
+                    }
+                }
+            }
+        } catch(e) {
+            console.error('Error fetching boards:', e);
+        }
+    }
+
+    function renderBoardsList(boards) {
+        if (!boardsList) return;
+        boardsList.innerHTML = '';
+        boards.forEach(boardItem => {
+            const item = document.createElement('div');
+            item.className = `board-item ${boardItem.id === currentBoardId ? 'active' : ''}`;
+            item.innerHTML = `
+                <span class="board-item-name" title="${boardItem.name}">📋 ${boardItem.name}</span>
+                <div class="board-item-actions owner-only">
+                    <button type="button" class="board-item-btn btn-edit-board" title="Редактировать">✏️</button>
+                    ${boards.length > 1 ? '<button type="button" class="board-item-btn btn-delete-board" title="Удалить">🗑️</button>' : ''}
+                </div>
+            `;
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.board-item-actions')) return;
+                selectBoard(boardItem.id);
+            });
+
+            const btnEdit = item.querySelector('.btn-edit-board');
+            if (btnEdit) {
+                btnEdit.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openBoardModal(boardItem);
+                });
+            }
+
+            const btnDelete = item.querySelector('.btn-delete-board');
+            if (btnDelete) {
+                btnDelete.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Удалить доску "${boardItem.name}" и все её задачи?`)) {
+                        await authFetch(`/api/boards/${boardItem.id}`, { method: 'DELETE' });
+                        currentBoardId = null;
+                        fetchBoards();
+                    }
+                });
+            }
+
+            boardsList.appendChild(item);
+        });
+    }
+
+    function selectBoard(boardId) {
+        currentBoardId = boardId;
+        const bObj = currentBoards.find(b => b.id === boardId);
+        if (bObj) {
+            if (currentBoardName) currentBoardName.textContent = bObj.name;
+            if (currentBoardDesc) currentBoardDesc.textContent = bObj.description || '';
+        }
+        renderBoardsList(currentBoards);
+        fetchColumnsAndTasks(boardId);
+    }
+
+    async function fetchColumnsAndTasks(boardId) {
+        try {
+            const colRes = await authFetch(`/api/boards/${boardId}/columns`);
+            if (colRes.ok) {
+                currentColumns = await colRes.json();
+                renderDynamicColumns(currentColumns);
+                fetchTasks();
+            }
+        } catch(e) {
+            console.error('Error fetching columns:', e);
+        }
+    }
+
+    function renderDynamicColumns(columns) {
+        if (!dynamicColumnsContainer) return;
+        dynamicColumnsContainer.innerHTML = '';
+
+        columns.forEach(col => {
+            const colEl = document.createElement('section');
+            colEl.className = 'column';
+            colEl.id = `column-${col.column_key}`;
+
+            colEl.innerHTML = `
+                <div class="column-header" style="border-top: 3px solid ${col.color || '#388bfd'};">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <h2>${col.title} <span class="count" id="count-${col.column_key}">0</span></h2>
+                        <div class="column-header-actions owner-only">
+                            <button type="button" class="btn-col-action btn-edit-col" title="Настройки колонки">✏️</button>
+                            ${columns.length > 1 ? '<button type="button" class="btn-col-action btn-delete-col" title="Удалить колонку">🗑️</button>' : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="column-body">
+                    <div class="task-list" id="list-${col.column_key}" data-status="${col.column_key}">
+                        <!-- Задачи -->
+                    </div>
+                </div>
+            `;
+
+            const btnEditCol = colEl.querySelector('.btn-edit-col');
+            if (btnEditCol) {
+                btnEditCol.addEventListener('click', () => openColumnModal(col));
+            }
+
+            const btnDeleteCol = colEl.querySelector('.btn-delete-col');
+            if (btnDeleteCol) {
+                btnDeleteCol.addEventListener('click', async () => {
+                    if (confirm(`Удалить колонку "${col.title}"?`)) {
+                        await authFetch(`/api/columns/${col.id}`, { method: 'DELETE' });
+                        fetchColumnsAndTasks(currentBoardId);
+                    }
+                });
+            }
+
+            const listEl = colEl.querySelector('.task-list');
+            bindDropTargetEvents(listEl);
+
+            dynamicColumnsContainer.appendChild(colEl);
+        });
+    }
+
+    // Modal Board Handlers
+    const modalBoardOverlay = document.getElementById('modal-board');
+    const formBoard = document.getElementById('form-board');
+    const boardIdInput = document.getElementById('board-id-input');
+    const boardNameInput = document.getElementById('board-name-input');
+    const boardDescInput = document.getElementById('board-desc-input');
+    const btnCloseBoardModal = document.getElementById('btn-close-board-modal');
+    const btnCancelBoard = document.getElementById('btn-cancel-board');
+
+    function openBoardModal(boardToEdit = null) {
+        if (boardToEdit) {
+            document.getElementById('modal-board-title').textContent = 'Редактировать доску';
+            boardIdInput.value = boardToEdit.id;
+            boardNameInput.value = boardToEdit.name;
+            boardDescInput.value = boardToEdit.description || '';
+        } else {
+            document.getElementById('modal-board-title').textContent = 'Новая Доска';
+            boardIdInput.value = '';
+            boardNameInput.value = '';
+            boardDescInput.value = '';
+        }
+        if (modalBoardOverlay) modalBoardOverlay.classList.add('active');
+    }
+
+    function closeBoardModal() {
+        if (modalBoardOverlay) modalBoardOverlay.classList.remove('active');
+    }
+
+    if (btnCreateBoard) btnCreateBoard.addEventListener('click', () => openBoardModal());
+    if (btnCloseBoardModal) btnCloseBoardModal.addEventListener('click', closeBoardModal);
+    if (btnCancelBoard) btnCancelBoard.addEventListener('click', closeBoardModal);
+
+    if (formBoard) {
+        formBoard.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = boardIdInput.value;
+            const name = boardNameInput.value.trim();
+            const description = boardDescInput.value.trim();
+
+            if (id) {
+                await authFetch(`/api/boards/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+            } else {
+                const res = await authFetch('/api/boards', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+                if (res.ok) {
+                    const newBoard = await res.json();
+                    currentBoardId = newBoard.id;
+                }
+            }
+            closeBoardModal();
+            fetchBoards();
+        });
+    }
+
+    // Modal Column Handlers
+    const modalColumnOverlay = document.getElementById('modal-column');
+    const formColumn = document.getElementById('form-column');
+    const columnIdInput = document.getElementById('column-id-input');
+    const columnNameInput = document.getElementById('column-name-input');
+    const columnColorInput = document.getElementById('column-color-input');
+    const btnCloseColumnModal = document.getElementById('btn-close-column-modal');
+    const btnCancelColumn = document.getElementById('btn-cancel-column');
+    const btnAddColumn = document.getElementById('btn-add-column');
+
+    function openColumnModal(columnToEdit = null) {
+        if (columnToEdit) {
+            document.getElementById('modal-column-title').textContent = 'Настроить колонку';
+            columnIdInput.value = columnToEdit.id;
+            columnNameInput.value = columnToEdit.title;
+            columnColorInput.value = columnToEdit.color || '#388bfd';
+        } else {
+            document.getElementById('modal-column-title').textContent = 'Новая колонка процессов';
+            columnIdInput.value = '';
+            columnNameInput.value = '';
+            columnColorInput.value = '#388bfd';
+        }
+        if (modalColumnOverlay) modalColumnOverlay.classList.add('active');
+    }
+
+    function closeColumnModal() {
+        if (modalColumnOverlay) modalColumnOverlay.classList.remove('active');
+    }
+
+    if (btnAddColumn) btnAddColumn.addEventListener('click', () => openColumnModal());
+    if (btnCloseColumnModal) btnCloseColumnModal.addEventListener('click', closeColumnModal);
+    if (btnCancelColumn) btnCancelColumn.addEventListener('click', closeColumnModal);
+
+    if (formColumn) {
+        formColumn.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = columnIdInput.value;
+            const title = columnNameInput.value.trim();
+            const color = columnColorInput.value;
+
+            if (id) {
+                await authFetch(`/api/columns/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, color })
+                });
+            } else {
+                await authFetch(`/api/boards/${currentBoardId}/columns`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, color })
+                });
+            }
+            closeColumnModal();
+            fetchColumnsAndTasks(currentBoardId);
+        });
     }
 
     const btnAddModal = document.getElementById('btn-add-task');
@@ -1050,6 +1328,10 @@ document.addEventListener('DOMContentLoaded', () => {
         currentExistingImages.forEach(img => {
             formData.append('existing_images', img);
         });
+
+        if (currentBoardId) {
+            formData.append('board_id', currentBoardId);
+        }
 
         const taskId = taskIdInput.value;
         const isEdit = !!taskId;
