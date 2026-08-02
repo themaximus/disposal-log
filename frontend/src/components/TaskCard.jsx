@@ -136,14 +136,15 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
           <p className="card-desc">{task.description}</p>
         )}
 
-        {/* Sub-task Dedicated Inner Container Box */}
-        {totalSubtasks > 0 ? (
+        {/* Sub-task Minimalistic & Subtle Box */}
+        {totalSubtasks > 0 && (
           <div className="card-subtasks-box">
             <div className="subtasks-box-header">
               <span className={`subtask-badge-pill ${completedSubtasks === totalSubtasks ? 'done' : ''}`}>
-                <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>checklist</span>
-                Чек-лист {completedSubtasks}/{totalSubtasks} ({subtaskPercent}%)
+                <span className="material-symbols-outlined" style={{ fontSize: '0.8rem' }}>checklist</span>
+                Чек-лист {completedSubtasks}/{totalSubtasks}
               </span>
+              <span className="subtask-percent-text">{subtaskPercent}%</span>
             </div>
             
             <div className="card-subtask-progress-track">
@@ -172,20 +173,6 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
               </div>
             )}
           </div>
-        ) : (
-          /* Button to add subtasks for tasks that don't have them yet */
-          <button
-            type="button"
-            className="btn-add-checklist-card"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(task);
-            }}
-            title="Добавить чек-лист подзадач"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>add_task</span>
-            Добавить чек-лист
-          </button>
         )}
 
         {task.tags && task.tags.length > 0 && (
