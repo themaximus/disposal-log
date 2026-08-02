@@ -77,12 +77,17 @@ export default function App() {
   }, []);
 
   const initGuestMode = (shouldSwitchTab = false) => {
-    const guestBoard = getGuestBoard();
-    setBoards([guestBoard]);
-    setCurrentBoardId(GUEST_BOARD_ID);
-    const offlineData = getOfflineBoardData(GUEST_BOARD_ID);
-    setColumns(offlineData.columns || []);
-    setTasks(offlineData.tasks || []);
+    const offlineList = getOfflineBoards();
+    let guestBoards = offlineList;
+    if (guestBoards.length === 0) {
+      const defaultBoard = getGuestBoard();
+      guestBoards = [defaultBoard];
+      addOfflineBoard(defaultBoard);
+    }
+    setBoards(guestBoards);
+    const activeId = currentBoardId || guestBoards[0].id;
+    const targetBoard = guestBoards.find(b => String(b.id) === String(activeId)) || guestBoards[0];
+    selectBoard(targetBoard.id, targetBoard);
     if (shouldSwitchTab) {
       setCurrentTab('workspace');
     }
@@ -530,6 +535,23 @@ export default function App() {
   };
 
   const handleCreateBoard = (boardData) => {
+    if (!currentUser) {
+      const newBoard = {
+        id: `off_board_${Date.now()}`,
+        name: boardData.name || 'Новая доска',
+        description: boardData.description || '',
+        icon: boardData.icon || '📋',
+        is_offline: true
+      };
+      addOfflineBoard(newBoard);
+      setIsBoardModalOpen(false);
+      initGuestMode(true);
+      selectBoard(newBoard.id, newBoard);
+      setSyncStatus('synced');
+      setSyncMessage('💾 Локальная доска создана');
+      return;
+    }
+
     fetch('/api/boards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

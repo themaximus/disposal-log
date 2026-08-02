@@ -294,7 +294,7 @@ export default function Sidebar({
           ))}
         </div>
 
-        {!isCollapsed && currentUser && (
+        {!isCollapsed && (
           <button className="btn btn-secondary btn-new-board" style={{ marginTop: '0.6rem', width: '100%' }} onClick={onCreateBoard}>
             <span className="material-symbols-outlined" style={{ fontSize: '1rem', marginRight: '4px' }}>add</span>
             Создать доску
