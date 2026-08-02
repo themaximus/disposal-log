@@ -607,17 +607,11 @@ function ensureDefaultColumnsForBoard(boardId, cb) {
     });
 }
 
-// Multi-Board API
-app.get('/api/boards', sessionMiddleware, requireUser, (req, res) => {
-    const userId = req.user.id;
-    ensureDefaultBoardAndColumns(userId, (err, defaultBoard) => {
-        if (err) return res.status(500).json({ error: err.message });
-        db.all("SELECT * FROM boards WHERE user_id = ? ORDER BY id ASC", [userId], (bErr, boards) => {
-            if (bErr) return res.status(500).json({ error: bErr.message });
-            res.json(boards || []);
-        });
-    });
-});
+// Modular OOP Routers
+const boardRoutes = require('./src/routes/boardRoutes')(sessionMiddleware, requireUser, upload);
+const taskRoutes = require('./src/routes/taskRoutes')(sessionMiddleware, requireUser, upload);
+app.use('/api/boards', boardRoutes);
+app.use('/api/tasks', taskRoutes);
 
 app.post('/api/boards', sessionMiddleware, requireUser, (req, res) => {
     const { name, description, icon } = req.body;
