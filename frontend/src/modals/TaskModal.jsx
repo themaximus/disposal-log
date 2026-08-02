@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
+export default function TaskModal({ taskToEdit, task, boardId, currentUser, onClose, onSave }) {
+  const activeTask = taskToEdit || task;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState(1);
@@ -22,36 +23,36 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
   };
 
   useEffect(() => {
-    if (taskToEdit) {
-      setTitle(taskToEdit.title || '');
-      setDescription(taskToEdit.description || '');
-      setDifficulty(taskToEdit.difficulty || 1);
+    if (activeTask) {
+      setTitle(activeTask.title || '');
+      setDescription(activeTask.description || '');
+      setDifficulty(activeTask.difficulty || 1);
       
       let existingMedia = [];
-      if (Array.isArray(taskToEdit.images) && taskToEdit.images.length > 0) {
-        existingMedia = taskToEdit.images;
-      } else if (typeof taskToEdit.images_json === 'string') {
+      if (Array.isArray(activeTask.images) && activeTask.images.length > 0) {
+        existingMedia = activeTask.images;
+      } else if (typeof activeTask.images_json === 'string') {
         try {
-          const parsed = JSON.parse(taskToEdit.images_json);
+          const parsed = JSON.parse(activeTask.images_json);
           if (Array.isArray(parsed)) existingMedia = parsed;
         } catch (e) {}
-      } else if (taskToEdit.image_url) {
-        existingMedia = [taskToEdit.image_url];
+      } else if (activeTask.image_url) {
+        existingMedia = [activeTask.image_url];
       }
       setImages(existingMedia);
 
       let existingSubtasks = [];
-      if (Array.isArray(taskToEdit.subtasks)) {
-        existingSubtasks = taskToEdit.subtasks;
-      } else if (typeof taskToEdit.subtasks_json === 'string') {
+      if (Array.isArray(activeTask.subtasks)) {
+        existingSubtasks = activeTask.subtasks;
+      } else if (typeof activeTask.subtasks_json === 'string') {
         try {
-          const parsed = JSON.parse(taskToEdit.subtasks_json);
+          const parsed = JSON.parse(activeTask.subtasks_json);
           if (Array.isArray(parsed)) existingSubtasks = parsed;
         } catch(e) {}
       }
       setSubtasks(existingSubtasks);
     }
-  }, [taskToEdit]);
+  }, [activeTask]);
 
   const handleFileUpload = async (e) => {
     const files = e.target.files;
@@ -125,9 +126,9 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
     e.preventDefault();
     if (!title.trim()) return;
     onSave({
-      id: taskToEdit && taskToEdit.id ? taskToEdit.id : null,
+      id: activeTask && activeTask.id ? activeTask.id : null,
       board_id: boardId,
-      status: taskToEdit && taskToEdit.status ? taskToEdit.status : undefined,
+      status: activeTask && activeTask.status ? activeTask.status : undefined,
       title,
       description,
       difficulty,
@@ -140,7 +141,7 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
     <div className="modal-overlay active">
       <div className="modal" style={{ maxWidth: '520px' }}>
         <div className="modal-header">
-          <h2>{taskToEdit ? 'Редактировать Механику' : 'Новая Механика'}</h2>
+          <h2>{activeTask ? 'Редактировать Механику' : 'Новая Механика'}</h2>
           <button className="btn-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit}>
