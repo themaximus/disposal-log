@@ -78,7 +78,13 @@ export default function Sidebar({
 
           <button
             className={`sidebar-nav-btn ${currentTab === 'workspace' ? 'active' : ''}`}
-            onClick={() => onSelectTab('workspace')}
+            onClick={() => {
+              if (!currentUser) {
+                onOpenAuth();
+              } else {
+                onSelectTab('workspace');
+              }
+            }}
             title="Рабочее пространство Задачи"
           >
             <span className="material-symbols-outlined">space_dashboard</span>
@@ -139,9 +145,11 @@ export default function Sidebar({
 
       {/* Middle Group: Boards List (Scrollable) */}
       <div className="sidebar-content">
-        <div className="sidebar-boards-header">
-          {!isCollapsed && <span className="sidebar-heading">МОИ ДОСКИ</span>}
-        </div>
+        {currentUser && (
+          <div className="sidebar-boards-header">
+            {!isCollapsed && <span className="sidebar-heading">МОИ ДОСКИ</span>}
+          </div>
+        )}
 
         <div className="boards-list">
           {boards.map(b => (

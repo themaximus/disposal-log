@@ -125,10 +125,11 @@ export default function App() {
   };
 
   const handleSelectTab = (tab) => {
-    setCurrentTab(tab);
     if (tab === 'workspace' && !currentUser) {
       setIsAuthModalOpen(true);
+      return;
     }
+    setCurrentTab(tab);
   };
 
   // Switch Board Mode ONLINE <-> OFFLINE
