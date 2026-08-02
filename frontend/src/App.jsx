@@ -344,29 +344,31 @@ export default function App() {
 
   const handleDeleteTask = (taskId) => {
     askConfirmation({
-      title: 'Удалить эту задачу?',
-      message: 'Вы уверены, что хотите безвозвратно удалить эту задачу? Это действие нельзя отменить.',
-      confirmText: 'Удалить задачу',
+      title: 'Переместить задачу в Корзину?',
+      message: 'Задача сохранится в Корзине на 30 дней. Вы сможете восстановить её в любой момент.',
+      confirmText: 'Переместить в корзину',
       confirmStyle: 'danger',
       onConfirm: () => {
         const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-        const updatedTasks = tasks.filter(t => t.id !== taskId);
-        setTasks(updatedTasks);
 
         if (activeBoard && activeBoard.is_offline) {
-          saveOfflineBoardData(currentBoardId, { columns, tasks: updatedTasks });
+          const allBoardData = tasks.map(t => t.id === taskId ? { ...t, deleted_at: new Date().toISOString() } : t);
+          const activeTasks = allBoardData.filter(t => !t.deleted_at);
+          setTasks(activeTasks);
+          saveOfflineBoardData(currentBoardId, { columns, tasks: allBoardData });
           setSyncStatus('synced');
-          setSyncMessage('💾 Задача удалена');
+          setSyncMessage('💾 Перемещено в корзину');
           return;
         }
 
+        setTasks(prev => prev.filter(t => t.id !== taskId));
         setSyncStatus('syncing');
         setSyncMessage('Синхронизация...');
 
         fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
           .then(() => {
             setSyncStatus('synced');
-            setSyncMessage('Задача удалена');
+            setSyncMessage('Перемещено в корзину');
           })
           .catch(() => {
             setSyncStatus('error');
