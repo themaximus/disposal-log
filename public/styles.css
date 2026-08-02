@@ -1369,7 +1369,8 @@ body.is-guest-view .task-card {
 .boards-sidebar.collapsed .sidebar-heading,
 .boards-sidebar.collapsed .board-item-name,
 .boards-sidebar.collapsed .dropdown-container,
-.boards-sidebar.collapsed .btn-new-board {
+.boards-sidebar.collapsed .btn-new-board,
+.boards-sidebar.collapsed #btn-create-board {
     display: none !important;
 }
 

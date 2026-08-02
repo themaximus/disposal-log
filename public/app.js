@@ -1645,9 +1645,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchTasks() {
         try {
-            const res = await fetch('/api/tasks?t=' + Date.now());
-            currentTasks = await res.json();
-            renderTasks(currentTasks);
+            const bId = currentBoardId || '';
+            const res = await authFetch('/api/tasks?board_id=' + bId + '&t=' + Date.now());
+            if (res.ok) {
+                currentTasks = await res.json();
+                renderTasks(currentTasks);
+            }
         } catch (error) { console.error('Error fetching tasks:', error); }
     }
 
@@ -1786,9 +1789,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderTasks(tasks) {
+        tasks = tasks || [];
         const viewMode = parseInt(board.dataset.view) || 1;
+        const columnMap = {};
 
-        const createColumns = (listEl) => {
+        const allTaskLists = document.querySelectorAll('#dynamic-columns-container .task-list');
+        if (allTaskLists.length === 0) return;
+
+        allTaskLists.forEach(listEl => {
+            const statusKey = listEl.dataset.status;
             listEl.innerHTML = '';
             const cols = [];
             for (let i = 0; i < viewMode; i++) {
@@ -1797,17 +1806,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 listEl.appendChild(col);
                 cols.push(col);
             }
-            return cols;
-        };
+            columnMap[statusKey] = {
+                cols: cols,
+                heights: new Array(viewMode).fill(0)
+            };
+        });
 
-        const todoCols = createColumns(listTodo);
-        const inProgressCols = createColumns(listInProgress);
-        const doneCols = createColumns(listDone);
-
-        // Track accumulated heights in each sub-column
-        const todoHeights = new Array(viewMode).fill(0);
-        const inProgressHeights = new Array(viewMode).fill(0);
-        const doneHeights = new Array(viewMode).fill(0);
+        const firstColKey = Object.keys(columnMap)[0] || 'todo';
 
         const findShortestColIdx = (heightsArray) => {
             let minIdx = 0;
@@ -1832,6 +1837,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const renderedGroups = new Set();
 
         tasks.forEach(task => {
+            let statusKey = task.status || 'todo';
+            if (!columnMap[statusKey]) {
+                if (statusKey === 'todo' && columnMap['todo']) statusKey = 'todo';
+                else statusKey = firstColKey;
+            }
+
+            const colData = columnMap[statusKey] || columnMap[firstColKey];
+            if (!colData) return;
+
             if (task.group_id && task.status === 'todo') {
                 if (!renderedGroups.has(task.group_id)) {
                     const groupTasks = groups[task.group_id].filter(t => t.status === 'todo');
@@ -1839,18 +1853,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         const stackEl = createTaskCard(groupTasks[0], groupTasks);
                         const estHeight = estimateCardHeight(null, groupTasks);
                         
-                        const colIdx = findShortestColIdx(todoHeights);
-                        todoCols[colIdx].appendChild(stackEl);
-                        todoHeights[colIdx] += estHeight + 16;
+                        const colIdx = findShortestColIdx(colData.heights);
+                        colData.cols[colIdx].appendChild(stackEl);
+                        colData.heights[colIdx] += estHeight + 16;
                         
                         renderedGroups.add(task.group_id);
                     } else if (groupTasks.length === 1) {
                         const cardEl = createTaskCard(groupTasks[0]);
                         const estHeight = estimateCardHeight(groupTasks[0]);
                         
-                        const colIdx = findShortestColIdx(todoHeights);
-                        todoCols[colIdx].appendChild(cardEl);
-                        todoHeights[colIdx] += estHeight + 16;
+                        const colIdx = findShortestColIdx(colData.heights);
+                        colData.cols[colIdx].appendChild(cardEl);
+                        colData.heights[colIdx] += estHeight + 16;
                         
                         renderedGroups.add(task.group_id);
                     }
@@ -1859,19 +1873,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cardEl = createTaskCard(task);
                 const estHeight = estimateCardHeight(task);
                 
-                if (task.status === 'todo') {
-                    const colIdx = findShortestColIdx(todoHeights);
-                    todoCols[colIdx].appendChild(cardEl);
-                    todoHeights[colIdx] += estHeight + 16;
-                } else if (task.status === 'in_progress') {
-                    const colIdx = findShortestColIdx(inProgressHeights);
-                    inProgressCols[colIdx].appendChild(cardEl);
-                    inProgressHeights[colIdx] += estHeight + 16;
-                } else {
-                    const colIdx = findShortestColIdx(doneHeights);
-                    doneCols[colIdx].appendChild(cardEl);
-                    doneHeights[colIdx] += estHeight + 16;
-                }
+                const colIdx = findShortestColIdx(colData.heights);
+                colData.cols[colIdx].appendChild(cardEl);
+                colData.heights[colIdx] += estHeight + 16;
             }
         });
 
