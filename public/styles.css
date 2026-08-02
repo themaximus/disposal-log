@@ -194,6 +194,7 @@ body {
 }
 
 /* Mode Switching Rules */
+body:not(.mode-workspace) .workspace-wrapper,
 body:not(.mode-workspace) #kanban-board-section,
 body:not(.mode-workspace) .mobile-tab-bar,
 body:not(.mode-workspace) .header-controls .view-modes,

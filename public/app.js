@@ -153,6 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const shareTokenParam = urlParams.get('share_token');
         const targetShare = shareTokenParam || shareParam;
 
+        let hasNewSession = false;
+
         if (authError) {
             console.error('[Auth Error]', authError);
             alert('Ошибка авторизации: ' + authError);
@@ -163,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('[Auth] Received new session token from URL:', sessionToken);
             localStorage.setItem('session_token', sessionToken);
             history.replaceState(null, '', window.location.pathname);
+            hasNewSession = true;
         }
 
         if (targetShare) {
@@ -179,6 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 console.log('[Auth] Current Session User:', data.user);
                 updateUserUI(data.user);
+                if (hasNewSession) {
+                    setAppMode('workspace');
+                }
             } else {
                 console.warn('[Auth] Session invalid or expired');
                 updateUserUI(null);
