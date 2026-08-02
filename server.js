@@ -619,25 +619,38 @@ app.get('/api/boards', sessionMiddleware, requireUser, (req, res) => {
 });
 
 app.post('/api/boards', sessionMiddleware, requireUser, (req, res) => {
-    const { name, description } = req.body;
+    const { name, description, icon } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Укажите название доски' });
     const userId = req.user.id;
+    const token = crypto.randomUUID();
 
-    db.run("INSERT INTO boards (user_id, name, description) VALUES (?, ?, ?)", [userId, name.trim(), description || ''], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        const boardId = this.lastID;
-        ensureDefaultColumnsForBoard(boardId, (cErr, cols) => {
-            res.json({ success: true, id: boardId, name: name.trim(), description: description || '', columns: cols });
-        });
+    db.run("INSERT INTO boards (user_id, name, description, icon, share_mode, share_token) VALUES (?, ?, ?, ?, 'link', ?)",
+        [userId, name.trim(), description || '', icon || '📋', token], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            const boardId = this.lastID;
+            ensureDefaultColumnsForBoard(boardId, (cErr, cols) => {
+                res.json({ success: true, id: boardId, name: name.trim(), description: description || '', icon: icon || '📋', share_mode: 'link', share_token: token, columns: cols });
+            });
     });
 });
 
 app.put('/api/boards/:id', sessionMiddleware, requireUser, (req, res) => {
     const boardId = req.params.id;
-    const { name, description } = req.body;
-    db.run("UPDATE boards SET name = ?, description = ? WHERE id = ? AND user_id = ?", [name, description, boardId, req.user.id], function(err) {
+    const { name, description, icon } = req.body;
+    db.run("UPDATE boards SET name = COALESCE(?, name), description = COALESCE(?, description), icon = COALESCE(?, icon) WHERE id = ? AND user_id = ?",
+        [name, description, icon, boardId, req.user.id], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+    });
+});
+
+app.post('/api/boards/:id/icon', sessionMiddleware, requireUser, upload.single('icon'), (req, res) => {
+    const boardId = req.params.id;
+    if (!req.file) return res.status(400).json({ error: 'Файл иконки не выбран' });
+    const iconUrl = `/uploads/${req.file.filename}`;
+    db.run("UPDATE boards SET icon = ? WHERE id = ? AND user_id = ?", [iconUrl, boardId, req.user.id], function(err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
+        res.json({ success: true, icon: iconUrl });
     });
 });
 
@@ -647,6 +660,85 @@ app.delete('/api/boards/:id', sessionMiddleware, requireUser, (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         db.run("DELETE FROM columns WHERE board_id = ?", [boardId]);
         db.run("DELETE FROM tasks WHERE board_id = ?", [boardId]);
+        db.run("DELETE FROM board_access WHERE board_id = ?", [boardId]);
+        res.json({ success: true });
+    });
+});
+
+// Per-Board Sharing API
+app.get('/api/boards/:id/share', sessionMiddleware, requireUser, (req, res) => {
+    const boardId = req.params.id;
+    db.get("SELECT * FROM boards WHERE id = ? AND user_id = ?", [boardId, req.user.id], (err, board) => {
+        if (err || !board) return res.status(404).json({ error: 'Доска не найдена' });
+
+        let token = board.share_token;
+        if (!token) {
+            token = crypto.randomUUID();
+            db.run("UPDATE boards SET share_token = ? WHERE id = ?", [token, boardId]);
+        }
+
+        const shareMode = board.share_mode || 'link';
+        const baseUrl = getAppUrl(req);
+        let shareUrl = `${baseUrl}/?share_token=${token}`;
+        if (shareMode === 'public') {
+            shareUrl = `${baseUrl}/?share=${board.id}`;
+        }
+
+        db.all("SELECT granted_email FROM board_access WHERE board_id = ?", [boardId], (aErr, accessRows) => {
+            const invitedEmails = accessRows ? accessRows.map(r => r.granted_email) : [];
+            res.json({
+                boardId: board.id,
+                shareMode,
+                shareToken: token,
+                shareUrl,
+                invitedEmails
+            });
+        });
+    });
+});
+
+app.put('/api/boards/:id/share/mode', sessionMiddleware, requireUser, (req, res) => {
+    const boardId = req.params.id;
+    const { shareMode } = req.body;
+    const allowedModes = ['private', 'public', 'link', 'restricted'];
+    if (!allowedModes.includes(shareMode)) return res.status(400).json({ error: 'Неверный режим доступа' });
+
+    db.run("UPDATE boards SET share_mode = ? WHERE id = ? AND user_id = ?", [shareMode, boardId, req.user.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, shareMode });
+    });
+});
+
+app.post('/api/boards/:id/share/rotate-token', sessionMiddleware, requireUser, (req, res) => {
+    const boardId = req.params.id;
+    const newToken = crypto.randomUUID();
+    db.run("UPDATE boards SET share_token = ? WHERE id = ? AND user_id = ?", [newToken, boardId, req.user.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const baseUrl = getAppUrl(req);
+        res.json({ success: true, shareToken: newToken, shareUrl: `${baseUrl}/?share_token=${newToken}` });
+    });
+});
+
+app.post('/api/boards/:id/share/invite', sessionMiddleware, requireUser, (req, res) => {
+    const boardId = req.params.id;
+    const { email } = req.body;
+    if (!email || !email.includes('@')) return res.status(400).json({ error: 'Укажите корректный E-mail' });
+
+    const cleanEmail = email.trim().toLowerCase();
+    db.run("INSERT INTO board_access (board_id, owner_id, granted_email) VALUES (?, ?, ?)", [boardId, req.user.id, cleanEmail], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, email: cleanEmail });
+    });
+});
+
+app.delete('/api/boards/:id/share/invite', sessionMiddleware, requireUser, (req, res) => {
+    const boardId = req.params.id;
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Укажите E-mail' });
+
+    const cleanEmail = email.trim().toLowerCase();
+    db.run("DELETE FROM board_access WHERE board_id = ? AND granted_email = ?", [boardId, cleanEmail], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
     });
 });

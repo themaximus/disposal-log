@@ -39,11 +39,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
         // Board Access Table for restricted invited users
         db.run(`CREATE TABLE IF NOT EXISTS board_access (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            owner_id INTEGER NOT NULL,
+            owner_id INTEGER,
+            board_id INTEGER,
             granted_email TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(owner_id, granted_email)
-        )`);
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`, (err) => {
+            if (!err) {
+                db.run(`ALTER TABLE board_access ADD COLUMN board_id INTEGER`, () => {});
+            }
+        });
 
         // Sessions table for token authentication
         db.run(`CREATE TABLE IF NOT EXISTS sessions (
@@ -60,9 +64,18 @@ const db = new sqlite3.Database(dbPath, (err) => {
             user_id INTEGER NOT NULL,
             name TEXT NOT NULL,
             description TEXT,
+            icon TEXT DEFAULT '📋',
+            share_mode TEXT DEFAULT 'link',
+            share_token TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )`);
+        )`, (err) => {
+            if (!err) {
+                db.run(`ALTER TABLE boards ADD COLUMN icon TEXT DEFAULT '📋'`, () => {});
+                db.run(`ALTER TABLE boards ADD COLUMN share_mode TEXT DEFAULT 'link'`, () => {});
+                db.run(`ALTER TABLE boards ADD COLUMN share_token TEXT`, () => {});
+            }
+        });
 
         // Columns table for dynamic Kanban process columns
         db.run(`CREATE TABLE IF NOT EXISTS columns (

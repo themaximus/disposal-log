@@ -550,36 +550,79 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Global click listener to close dropdown menus
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.dropdown-container')) {
+            document.querySelectorAll('.dropdown-menu.active').forEach(menu => menu.classList.remove('active'));
+        }
+    });
+
     function renderBoardsList(boards) {
         if (!boardsList) return;
         boardsList.innerHTML = '';
         boards.forEach(boardItem => {
             const item = document.createElement('div');
             item.className = `board-item ${boardItem.id === currentBoardId ? 'active' : ''}`;
+            
+            const iconHtml = (boardItem.icon && boardItem.icon.startsWith('/uploads/'))
+                ? `<img src="${boardItem.icon}" class="board-item-icon" alt="icon">`
+                : `<span class="board-item-icon">${boardItem.icon || '📋'}</span>`;
+
             item.innerHTML = `
-                <span class="board-item-name" title="${boardItem.name}">📋 ${boardItem.name}</span>
-                <div class="board-item-actions owner-only">
-                    <button type="button" class="board-item-btn btn-edit-board" title="Редактировать">✏️</button>
-                    ${boards.length > 1 ? '<button type="button" class="board-item-btn btn-delete-board" title="Удалить">🗑️</button>' : ''}
+                <div style="display: flex; align-items: center; gap: 0.5rem; overflow: hidden; flex: 1;">
+                    ${iconHtml}
+                    <span class="board-item-name" title="${boardItem.name}">${boardItem.name}</span>
+                </div>
+                <div class="dropdown-container owner-only" style="margin-left: 0.3rem;">
+                    <button type="button" class="btn-dots btn-board-dots" title="Опции доски">⋮</button>
+                    <div class="dropdown-menu">
+                        <button type="button" class="dropdown-item btn-menu-board-edit">✏️ Настройки</button>
+                        <button type="button" class="dropdown-item btn-menu-board-share">🔗 Доступ</button>
+                        ${boards.length > 1 ? '<button type="button" class="dropdown-item danger btn-menu-board-delete">🗑️ Удалить</button>' : ''}
+                    </div>
                 </div>
             `;
+
             item.addEventListener('click', (e) => {
-                if (e.target.closest('.board-item-actions')) return;
+                if (e.target.closest('.dropdown-container')) return;
                 selectBoard(boardItem.id);
             });
 
-            const btnEdit = item.querySelector('.btn-edit-board');
+            const btnDots = item.querySelector('.btn-board-dots');
+            const dropdownMenu = item.querySelector('.dropdown-menu');
+            if (btnDots && dropdownMenu) {
+                btnDots.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.dropdown-menu.active').forEach(m => {
+                        if (m !== dropdownMenu) m.classList.remove('active');
+                    });
+                    dropdownMenu.classList.toggle('active');
+                });
+            }
+
+            const btnEdit = item.querySelector('.btn-menu-board-edit');
             if (btnEdit) {
                 btnEdit.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    dropdownMenu.classList.remove('active');
                     openBoardModal(boardItem);
                 });
             }
 
-            const btnDelete = item.querySelector('.btn-delete-board');
+            const btnShare = item.querySelector('.btn-menu-board-share');
+            if (btnShare) {
+                btnShare.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdownMenu.classList.remove('active');
+                    openBoardShareModal(boardItem);
+                });
+            }
+
+            const btnDelete = item.querySelector('.btn-menu-board-delete');
             if (btnDelete) {
                 btnDelete.addEventListener('click', async (e) => {
                     e.stopPropagation();
+                    dropdownMenu.classList.remove('active');
                     if (confirm(`Удалить доску "${boardItem.name}" и все её задачи?`)) {
                         await authFetch(`/api/boards/${boardItem.id}`, { method: 'DELETE' });
                         currentBoardId = null;
@@ -596,7 +639,10 @@ document.addEventListener('DOMContentLoaded', () => {
         currentBoardId = boardId;
         const bObj = currentBoards.find(b => b.id === boardId);
         if (bObj) {
-            if (currentBoardName) currentBoardName.textContent = bObj.name;
+            const iconHtml = (bObj.icon && bObj.icon.startsWith('/uploads/'))
+                ? `<img src="${bObj.icon}" class="board-item-icon" style="width:28px; height:28px;" alt="icon">`
+                : `<span style="font-size:1.4rem;">${bObj.icon || '📋'}</span>`;
+            if (currentBoardName) currentBoardName.innerHTML = `${iconHtml} ${bObj.name}`;
             if (currentBoardDesc) currentBoardDesc.textContent = bObj.description || '';
         }
         renderBoardsList(currentBoards);
@@ -629,9 +675,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="column-header" style="border-top: 3px solid ${col.color || '#388bfd'};">
                     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                         <h2>${col.title} <span class="count" id="count-${col.column_key}">0</span></h2>
-                        <div class="column-header-actions owner-only">
-                            <button type="button" class="btn-col-action btn-edit-col" title="Настройки колонки">✏️</button>
-                            ${columns.length > 1 ? '<button type="button" class="btn-col-action btn-delete-col" title="Удалить колонку">🗑️</button>' : ''}
+                        <div class="dropdown-container owner-only">
+                            <button type="button" class="btn-dots btn-col-dots" title="Опции колонки">⋮</button>
+                            <div class="dropdown-menu">
+                                <button type="button" class="dropdown-item btn-menu-col-edit">✏️ Настроить имя/цвет</button>
+                                ${columns.length > 1 ? '<button type="button" class="dropdown-item danger btn-menu-col-delete">🗑️ Удалить колонку</button>' : ''}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -642,14 +691,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            const btnEditCol = colEl.querySelector('.btn-edit-col');
-            if (btnEditCol) {
-                btnEditCol.addEventListener('click', () => openColumnModal(col));
+            const btnColDots = colEl.querySelector('.btn-col-dots');
+            const colDropdown = colEl.querySelector('.dropdown-menu');
+            if (btnColDots && colDropdown) {
+                btnColDots.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.dropdown-menu.active').forEach(m => {
+                        if (m !== colDropdown) m.classList.remove('active');
+                    });
+                    colDropdown.classList.toggle('active');
+                });
             }
 
-            const btnDeleteCol = colEl.querySelector('.btn-delete-col');
+            const btnEditCol = colEl.querySelector('.btn-menu-col-edit');
+            if (btnEditCol) {
+                btnEditCol.addEventListener('click', () => {
+                    colDropdown.classList.remove('active');
+                    openColumnModal(col);
+                });
+            }
+
+            const btnDeleteCol = colEl.querySelector('.btn-menu-col-delete');
             if (btnDeleteCol) {
                 btnDeleteCol.addEventListener('click', async () => {
+                    colDropdown.classList.remove('active');
                     if (confirm(`Удалить колонку "${col.title}"?`)) {
                         await authFetch(`/api/columns/${col.id}`, { method: 'DELETE' });
                         fetchColumnsAndTasks(currentBoardId);
@@ -670,8 +735,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const boardIdInput = document.getElementById('board-id-input');
     const boardNameInput = document.getElementById('board-name-input');
     const boardDescInput = document.getElementById('board-desc-input');
+    const boardIconInput = document.getElementById('board-icon-input');
+    const boardIconPreview = document.getElementById('board-icon-preview');
+    const boardIconFileInput = document.getElementById('board-icon-file-input');
     const btnCloseBoardModal = document.getElementById('btn-close-board-modal');
     const btnCancelBoard = document.getElementById('btn-cancel-board');
+
+    document.querySelectorAll('.btn-quick-emoji').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const emoji = btn.dataset.emoji;
+            if (boardIconInput) boardIconInput.value = emoji;
+            if (boardIconPreview) boardIconPreview.innerHTML = emoji;
+        });
+    });
+
+    if (boardIconFileInput) {
+        boardIconFileInput.addEventListener('change', async () => {
+            if (boardIconFileInput.files && boardIconFileInput.files[0]) {
+                const file = boardIconFileInput.files[0];
+                const targetBoardId = boardIdInput.value;
+                if (targetBoardId) {
+                    const formData = new FormData();
+                    formData.append('icon', file);
+                    const res = await authFetch(`/api/boards/${targetBoardId}/icon`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (boardIconInput) boardIconInput.value = data.icon;
+                        if (boardIconPreview) boardIconPreview.innerHTML = `<img src="${data.icon}" style="width:100%; height:100%; object-fit:cover;">`;
+                    }
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        if (boardIconPreview) boardIconPreview.innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+    }
 
     function openBoardModal(boardToEdit = null) {
         if (boardToEdit) {
@@ -679,11 +783,20 @@ document.addEventListener('DOMContentLoaded', () => {
             boardIdInput.value = boardToEdit.id;
             boardNameInput.value = boardToEdit.name;
             boardDescInput.value = boardToEdit.description || '';
+            const iconVal = boardToEdit.icon || '📋';
+            if (boardIconInput) boardIconInput.value = iconVal;
+            if (boardIconPreview) {
+                boardIconPreview.innerHTML = iconVal.startsWith('/uploads/') 
+                    ? `<img src="${iconVal}" style="width:100%; height:100%; object-fit:cover;">`
+                    : iconVal;
+            }
         } else {
             document.getElementById('modal-board-title').textContent = 'Новая Доска';
             boardIdInput.value = '';
             boardNameInput.value = '';
             boardDescInput.value = '';
+            if (boardIconInput) boardIconInput.value = '📋';
+            if (boardIconPreview) boardIconPreview.innerHTML = '📋';
         }
         if (modalBoardOverlay) modalBoardOverlay.classList.add('active');
     }
@@ -702,18 +815,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = boardIdInput.value;
             const name = boardNameInput.value.trim();
             const description = boardDescInput.value.trim();
+            const icon = boardIconInput ? boardIconInput.value : '📋';
 
             if (id) {
                 await authFetch(`/api/boards/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, description })
+                    body: JSON.stringify({ name, description, icon })
                 });
             } else {
                 const res = await authFetch('/api/boards', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, description })
+                    body: JSON.stringify({ name, description, icon })
                 });
                 if (res.ok) {
                     const newBoard = await res.json();
@@ -722,6 +836,152 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             closeBoardModal();
             fetchBoards();
+        });
+    }
+
+    // Per-Board Share Modal Handlers
+    const modalBoardShareOverlay = document.getElementById('modal-board-share');
+    const btnCloseBoardShare = document.getElementById('btn-close-board-share');
+    const btnCloseBoardShareOk = document.getElementById('btn-close-board-share-ok');
+    const boardShareLinkInput = document.getElementById('board-share-link-input');
+    const boardShareModeBadge = document.getElementById('board-share-mode-badge');
+    const boardRestrictedUsersBlock = document.getElementById('board-restricted-users-block');
+    const boardInviteEmailInput = document.getElementById('board-invite-email-input');
+    const btnBoardAddInviteEmail = document.getElementById('btn-board-add-invite-email');
+    const boardInvitedEmailsList = document.getElementById('board-invited-emails-list');
+    const btnBoardRotateToken = document.getElementById('btn-board-rotate-token');
+    const btnCopyBoardShare = document.getElementById('btn-copy-board-share');
+    let activeShareBoardId = null;
+
+    async function openBoardShareModal(boardItem) {
+        if (!boardItem) return;
+        activeShareBoardId = boardItem.id;
+        document.getElementById('modal-share-board-title').textContent = `🔗 Доступ: ${boardItem.name}`;
+        await loadBoardShareSettings(boardItem.id);
+        if (modalBoardShareOverlay) modalBoardShareOverlay.classList.add('active');
+    }
+
+    function closeBoardShareModal() {
+        if (modalBoardShareOverlay) modalBoardShareOverlay.classList.remove('active');
+    }
+
+    if (btnCloseBoardShare) btnCloseBoardShare.addEventListener('click', closeBoardShareModal);
+    if (btnCloseBoardShareOk) btnCloseBoardShareOk.addEventListener('click', closeBoardShareModal);
+
+    async function loadBoardShareSettings(boardId) {
+        try {
+            const res = await authFetch(`/api/boards/${boardId}/share`);
+            if (res.ok) {
+                const data = await res.json();
+                const shareMode = data.shareMode || 'link';
+                
+                const radio = document.querySelector(`input[name="board_share_mode_radio"][value="${shareMode}"]`);
+                if (radio) radio.checked = true;
+
+                if (boardShareLinkInput) boardShareLinkInput.value = data.shareUrl;
+
+                const badgeLabels = {
+                    private: '🔒 Приватная',
+                    link: '🔑 По секретной ссылке',
+                    restricted: '👥 По приглашению',
+                    public: '🌐 Публичная'
+                };
+                if (boardShareModeBadge) boardShareModeBadge.textContent = badgeLabels[shareMode] || 'По ссылке';
+
+                if (boardRestrictedUsersBlock) {
+                    boardRestrictedUsersBlock.style.display = shareMode === 'restricted' ? 'block' : 'none';
+                }
+
+                if (boardInvitedEmailsList) {
+                    boardInvitedEmailsList.innerHTML = '';
+                    if (data.invitedEmails && data.invitedEmails.length > 0) {
+                        data.invitedEmails.forEach(email => {
+                            const chip = document.createElement('div');
+                            chip.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: var(--github-surface); border: 1px solid var(--github-border); border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.78rem; color: #fff;";
+                            chip.innerHTML = `
+                                <span>${email}</span>
+                                <button type="button" class="btn-remove-email" style="background:none; border:none; color:#f85149; cursor:pointer; font-size:0.8rem; margin-left:0.5rem;">✕</button>
+                            `;
+                            chip.querySelector('.btn-remove-email').addEventListener('click', async () => {
+                                await authFetch(`/api/boards/${boardId}/share/invite`, {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ email })
+                                });
+                                loadBoardShareSettings(boardId);
+                            });
+                            boardInvitedEmailsList.appendChild(chip);
+                        });
+                    } else {
+                        boardInvitedEmailsList.innerHTML = `<span style="font-size:0.72rem; color:var(--text-muted);">Список приглашенных пуст</span>`;
+                    }
+                }
+            }
+        } catch(e) {
+            console.error('Error loading board share settings:', e);
+        }
+    }
+
+    document.querySelectorAll('input[name="board_share_mode_radio"]').forEach(radio => {
+        radio.addEventListener('change', async (e) => {
+            if (!activeShareBoardId) return;
+            const shareMode = e.target.value;
+            await authFetch(`/api/boards/${activeShareBoardId}/share/mode`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shareMode })
+            });
+            loadBoardShareSettings(activeShareBoardId);
+        });
+    });
+
+    if (btnBoardRotateToken) {
+        btnBoardRotateToken.addEventListener('click', async () => {
+            if (!activeShareBoardId) return;
+            if (confirm('Перегенерировать секретную ссылку доски?')) {
+                const res = await authFetch(`/api/boards/${activeShareBoardId}/share/rotate-token`, { method: 'POST' });
+                if (res.ok) {
+                    alert('🔑 Ссылка успешно обновлена!');
+                    loadBoardShareSettings(activeShareBoardId);
+                }
+            }
+        });
+    }
+
+    if (btnBoardAddInviteEmail) {
+        btnBoardAddInviteEmail.addEventListener('click', async () => {
+            if (!activeShareBoardId) return;
+            const email = boardInviteEmailInput ? boardInviteEmailInput.value.trim() : '';
+            if (!email || !email.includes('@')) {
+                alert('Введите корректный E-mail адрес');
+                return;
+            }
+            const res = await authFetch(`/api/boards/${activeShareBoardId}/share/invite`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            if (res.ok) {
+                if (boardInviteEmailInput) boardInviteEmailInput.value = '';
+                loadBoardShareSettings(activeShareBoardId);
+            } else {
+                alert('Не удалось добавить пользователя');
+            }
+        });
+    }
+
+    if (btnCopyBoardShare) {
+        btnCopyBoardShare.addEventListener('click', () => {
+            const shareUrl = boardShareLinkInput ? boardShareLinkInput.value : window.location.href;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert(`🔗 Ссылка скопирована!\n\n${shareUrl}`);
+                }).catch(() => {
+                    prompt('Скопируйте ссылку:', shareUrl);
+                });
+            } else {
+                prompt('Скопируйте ссылку:', shareUrl);
+            }
         });
     }
 
