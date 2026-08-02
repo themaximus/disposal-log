@@ -236,7 +236,7 @@ function getEnvVar(key) {
 // OAuth Endpoints
 
 // 1. GitHub OAuth
-app.get('/api/auth/github', (req, res) => {
+app.get(['/api/auth/github', '/auth/github'], (req, res) => {
     const clientId = getEnvVar('GITHUB_CLIENT_ID');
     if (!clientId) return res.status(500).send('GITHUB_CLIENT_ID не настроен в вашей панели Railway.');
     const redirectUri = `${getAppUrl(req)}/api/auth/github/callback`;
@@ -244,7 +244,7 @@ app.get('/api/auth/github', (req, res) => {
     res.redirect(githubUrl);
 });
 
-app.get('/api/auth/github/callback', async (req, res) => {
+app.get(['/api/auth/github/callback', '/auth/github/callback'], async (req, res) => {
     const code = req.query.code;
     if (!code) return res.redirect('/?auth_error=code_missing');
 
@@ -302,7 +302,7 @@ app.get('/api/auth/github/callback', async (req, res) => {
 });
 
 // 2. Google OAuth
-app.get('/api/auth/google', (req, res) => {
+app.get(['/api/auth/google', '/auth/google'], (req, res) => {
     const clientId = getEnvVar('GOOGLE_CLIENT_ID');
     if (!clientId) return res.status(500).send('GOOGLE_CLIENT_ID не настроен в вашей панели Railway.');
     const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
@@ -310,7 +310,7 @@ app.get('/api/auth/google', (req, res) => {
     res.redirect(googleUrl);
 });
 
-app.get('/api/auth/google/callback', async (req, res) => {
+app.get(['/api/auth/google/callback', '/auth/google/callback'], async (req, res) => {
     const code = req.query.code;
     if (!code) return res.redirect('/?auth_error=code_missing');
 
@@ -360,20 +360,27 @@ app.get('/api/auth/google/callback', async (req, res) => {
 });
 
 // Profile and Session Status
-app.get('/api/auth/me', sessionMiddleware, (req, res) => {
-    res.json({ user: req.user });
+app.get(['/api/auth/me', '/auth/me'], sessionMiddleware, (req, res) => {
+    res.json(req.user || null);
 });
 
-// Logout Endpoint
-app.post('/api/auth/logout', sessionMiddleware, (req, res) => {
+// Logout Endpoint (Supports both GET and POST)
+const handleLogout = (req, res) => {
     const cookies = parseCookies(req);
     const token = cookies.session_token || req.headers['x-session-token'];
     if (token) {
         db.run(`DELETE FROM sessions WHERE token = ?`, [token], () => {});
     }
     res.setHeader('Set-Cookie', 'session_token=; Path=/; HttpOnly; Max-Age=0');
-    res.json({ success: true });
-});
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        res.json({ success: true });
+    } else {
+        res.redirect('/');
+    }
+};
+
+app.get(['/api/auth/logout', '/auth/logout'], sessionMiddleware, handleLogout);
+app.post(['/api/auth/logout', '/auth/logout'], sessionMiddleware, handleLogout);
 
 // Settings API (SQLite Persistent Settings)
 app.get('/api/settings', sessionMiddleware, requireUser, (req, res) => {

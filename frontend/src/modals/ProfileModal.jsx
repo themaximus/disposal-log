@@ -1,11 +1,7 @@
 import React from 'react';
 
-export default function ProfileModal({ user, onClose }) {
+export default function ProfileModal({ user, onClose, onLogout }) {
   if (!user) return null;
-
-  const handleLogout = () => {
-    window.location.href = '/api/auth/logout';
-  };
 
   return (
     <div className="modal-overlay active">
@@ -22,7 +18,7 @@ export default function ProfileModal({ user, onClose }) {
             style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--github-blue)' }}
           />
           <div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>{user.name || 'Разработчик'}</div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>{user.name || user.email || 'Разработчик'}</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{user.email || 'No Email'}</div>
             <span style={{ display: 'inline-block', marginTop: '0.3rem', background: 'rgba(56, 139, 253, 0.15)', color: '#58a6ff', fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>
               Провайдер: {user.provider === 'github' ? 'GitHub 🐙' : 'Google 🔴'}
@@ -36,7 +32,7 @@ export default function ProfileModal({ user, onClose }) {
         </div>
 
         <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
-          <button className="btn btn-secondary" onClick={handleLogout} style={{ color: '#f85149', borderColor: 'rgba(248, 81, 73, 0.4)' }}>
+          <button className="btn btn-secondary" onClick={onLogout} style={{ color: '#f85149', borderColor: 'rgba(248, 81, 73, 0.4)' }}>
             🚪 Выйти из аккаунта
           </button>
           <button className="btn btn-primary" onClick={onClose}>Закрыть</button>

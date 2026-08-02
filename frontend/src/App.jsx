@@ -41,12 +41,22 @@ export default function App() {
   const [columnToEdit, setColumnToEdit] = useState(null);
 
   useEffect(() => {
+    // Check URL parameters for session token
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionToken = urlParams.get('session');
+    if (sessionToken) {
+      document.cookie = `session_token=${sessionToken}; path=/; max-age=2592000; SameSite=Lax`;
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     // Fetch Current User
     fetch('/api/auth/me')
       .then(res => res.ok ? res.json() : null)
-      .then(user => {
-        if (user) {
-          setCurrentUser(user);
+      .then(data => {
+        if (data && (data.id || data.user)) {
+          setCurrentUser(data.id ? data : data.user);
+        } else {
+          setCurrentUser(null);
         }
       })
       .catch(() => setCurrentUser(null));
@@ -204,7 +214,15 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    window.location.href = '/api/auth/logout';
+    fetch('/api/auth/logout', { method: 'POST' })
+      .then(() => {
+        setCurrentUser(null);
+        setIsProfileModalOpen(false);
+        window.location.reload();
+      })
+      .catch(() => {
+        window.location.href = '/api/auth/logout';
+      });
   };
 
   return (
@@ -278,7 +296,7 @@ export default function App() {
       )}
 
       {isProfileModalOpen && (
-        <ProfileModal user={currentUser} onClose={() => setIsProfileModalOpen(false)} />
+        <ProfileModal user={currentUser} onClose={() => setIsProfileModalOpen(false)} onLogout={handleLogout} />
       )}
 
       {isSettingsModalOpen && (
