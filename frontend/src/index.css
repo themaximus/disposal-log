@@ -1252,35 +1252,53 @@ body {
     color: var(--text-main);
 }
 
-/* Add New Column Card Component */
+/* Vertical Slim Hidden/Reveal Add New Column Button */
 .add-column-wrapper {
-    min-width: 280px;
-    width: 280px;
+    min-width: 48px;
+    width: 48px;
+    height: 100%;
+    min-height: 450px;
     flex-shrink: 0;
+    opacity: 0.15;
+    transition: opacity 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.add-column-wrapper:hover {
+    opacity: 1;
 }
 
 .btn-add-new-column {
     width: 100%;
-    height: 48px;
-    background: rgba(22, 27, 34, 0.7);
+    height: 100%;
+    min-height: 450px;
+    background: rgba(22, 27, 34, 0.4);
     border: 1px dashed var(--github-border);
     border-radius: 8px;
     color: var(--text-muted);
-    font-size: 0.88rem;
+    font-size: 0.84rem;
     font-weight: 600;
     cursor: pointer;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    transition: all 0.2s ease;
+    gap: 0.8rem;
+    padding: 1rem 0;
+    transition: all 0.25s ease;
 }
 
 .btn-add-new-column:hover {
     background: var(--github-surface);
     border-color: var(--github-blue-hover);
     color: var(--github-blue-text);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.add-column-text-vertical {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
 }
 
 /* Drag Over Stacking Target Visual Indicator */

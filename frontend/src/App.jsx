@@ -391,8 +391,8 @@ export default function App() {
               />
             ))}
 
-            {/* Quick Add New Column Card */}
-            <div className="add-column-wrapper">
+            {/* Vertical Slim Hidden/Reveal Add New Column Button */}
+            <div className="add-column-wrapper" title="Добавить колонку">
               <button
                 type="button"
                 className="btn-add-new-column"
@@ -401,8 +401,8 @@ export default function App() {
                   setIsColumnModalOpen(true);
                 }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>add</span>
-                Добавить колонку
+                <span className="material-symbols-outlined" style={{ fontSize: '1.3rem' }}>add</span>
+                <span className="add-column-text-vertical">Добавить колонку</span>
               </button>
             </div>
           </main>
