@@ -331,14 +331,25 @@ export default function App() {
     e.preventDefault();
     if (!draggedTaskId || draggedTaskId === targetTask.id) return;
 
-    if (hoverTargetRef.current !== targetTask.id) {
+    const sourceTask = tasks.find(t => t.id === draggedTaskId);
+    const isSameColumn = sourceTask && sourceTask.status === targetTask.status;
+
+    if (isSameColumn) {
+      // Intra-column drag -> INSTANT STACK READY (0ms delay!)
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
       hoverTargetRef.current = targetTask.id;
-      setDwellStackTargetId(null);
+      setDwellStackTargetId(targetTask.id);
+    } else {
+      // Inter-column drag -> Require 1.8s dwell timer!
+      if (hoverTargetRef.current !== targetTask.id) {
+        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+        hoverTargetRef.current = targetTask.id;
+        setDwellStackTargetId(null);
 
-      hoverTimerRef.current = setTimeout(() => {
-        setDwellStackTargetId(targetTask.id);
-      }, 1800);
+        hoverTimerRef.current = setTimeout(() => {
+          setDwellStackTargetId(targetTask.id);
+        }, 1800);
+      }
     }
   };
 
@@ -346,10 +357,13 @@ export default function App() {
     e.preventDefault();
     e.stopPropagation();
 
-    const isDwellStackReady = (dwellStackTargetId === targetTask.id);
-    clearDwellTimer();
-
     if (!draggedTaskId || draggedTaskId === targetTask.id) return;
+
+    const sourceTask = tasks.find(t => t.id === draggedTaskId);
+    const isSameColumn = sourceTask && sourceTask.status === targetTask.status;
+    const isDwellStackReady = isSameColumn || (dwellStackTargetId === targetTask.id);
+
+    clearDwellTimer();
 
     const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
 
