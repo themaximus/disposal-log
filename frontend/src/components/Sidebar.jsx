@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function Sidebar({
   currentUser,
@@ -22,6 +22,12 @@ export default function Sidebar({
   const [activeMenuBoardId, setActiveMenuBoardId] = useState(null);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
+  useEffect(() => {
+    if (isCollapsed) {
+      setIsFilterPanelOpen(false);
+    }
+  }, [isCollapsed]);
+
   const getAvatarUrl = (user) => {
     if (!user) return null;
     if (user.avatar_url) return user.avatar_url;
@@ -33,14 +39,14 @@ export default function Sidebar({
     <aside className={`boards-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       {/* Top Group: Brand Header & Nav Tabs */}
       <div className="sidebar-top-group">
-        {/* Brand Header with Clickable Folder & Phantom Arrow */}
-        <div className="sidebar-brand-header">
+        {/* Brand Header: Entire block (PULSE + Folder) is clickable to toggle collapse */}
+        <div
+          className="sidebar-brand-header"
+          onClick={onToggleCollapse}
+          title={isCollapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар'}
+        >
           <div className="sidebar-logo-block">
-            <div
-              className="sidebar-folder-wrapper"
-              onClick={onToggleCollapse}
-              title={isCollapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар'}
-            >
+            <div className="sidebar-folder-wrapper">
               <span className="material-symbols-outlined sidebar-icon">folder</span>
               <span className="material-symbols-outlined sidebar-hover-arrow">
                 {isCollapsed ? 'chevron_right' : 'chevron_left'}
@@ -83,7 +89,10 @@ export default function Sidebar({
             <div className="sidebar-filter-wrapper" style={{ position: 'relative' }}>
               <button
                 className={`sidebar-nav-btn ${isFilterPanelOpen ? 'active' : ''}`}
-                onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                onClick={() => {
+                  if (isCollapsed) onToggleCollapse();
+                  setIsFilterPanelOpen(!isFilterPanelOpen);
+                }}
                 title="Вид и Фильтры"
               >
                 <span className="material-symbols-outlined">tune</span>
@@ -95,7 +104,7 @@ export default function Sidebar({
                 )}
               </button>
 
-              {isFilterPanelOpen && (
+              {isFilterPanelOpen && !isCollapsed && (
                 <div className="sidebar-filter-panel">
                   <div className="filter-panel-section">
                     <span className="filter-section-title">Количество карточек в ряд:</span>
