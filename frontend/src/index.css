@@ -60,11 +60,11 @@
 
 /* Custom GitHub Dark Scrollbars */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 ::-webkit-scrollbar-track {
-    background: var(--github-canvas);
+    background: transparent;
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb {
@@ -761,12 +761,12 @@ body {
     border-radius: 0 6px 6px 6px;
     border: 1px solid var(--github-border);
     flex: 1;
-    padding: 0.85rem;
+    padding: 0.85rem 0.4rem 0.85rem 0.85rem; /* Clean right padding for vertical scrollbar gutter */
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     min-height: 0;
-    overflow-x: hidden !important; /* Strictly eliminate column horizontal scrollbar! */
+    overflow-x: hidden !important;
 }
 
 .task-list {
@@ -777,6 +777,7 @@ body {
     align-content: start;
     width: 100%;
     box-sizing: border-box;
+    padding-right: 0.45rem; /* Neat 7px gap between cards and scrollbar track */
 }
 
 /* Task Cards */
