@@ -206,9 +206,22 @@ export default function App() {
 
     if (isDwellStackReady) {
       // User held card over target for 1.8-2s -> Group into Stack!
-      setSyncStatus('syncing');
-      setSyncMessage('Создание стопки задач...');
+      const assignedGroupId = targetTask.group_id || `group_${Date.now()}`;
 
+      // 1. INSTANT OPTIMISTIC UI UPDATE (0ms delay!)
+      setTasks(prevTasks => prevTasks.map(t => {
+        if (t.id === draggedTaskId || t.id === targetTask.id) {
+          return { ...t, status: targetTask.status, group_id: assignedGroupId };
+        }
+        return t;
+      }));
+      setDraggedTaskId(null);
+
+      // 2. SHOW SYNCING TOAST
+      setSyncStatus('syncing');
+      setSyncMessage('Синхронизация...');
+
+      // 3. BACKGROUND API
       fetch(`/api/tasks/${draggedTaskId}/group`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -218,12 +231,11 @@ export default function App() {
         .then(() => {
           setSyncStatus('synced');
           setSyncMessage('Стопка создана');
-          setDraggedTaskId(null);
-          fetchBoardTasks(currentBoardId);
         })
         .catch(() => {
           setSyncStatus('error');
           setSyncMessage('Ошибка группировки');
+          fetchBoardTasks(currentBoardId);
         });
     } else {
       // Quick drop (< 2s) -> Just move task to target's column!
@@ -234,18 +246,23 @@ export default function App() {
   };
 
   const handleUnlinkGroup = (groupId) => {
+    // 1. INSTANT OPTIMISTIC UI UPDATE (0ms delay!)
+    setTasks(prevTasks => prevTasks.map(t =>
+      t.group_id === groupId ? { ...t, group_id: null } : t
+    ));
+
     setSyncStatus('syncing');
-    setSyncMessage('Разгруппировка стопки...');
+    setSyncMessage('Синхронизация...');
 
     fetch(`/api/tasks/group/${groupId}/unlink`, { method: 'PUT' })
       .then(() => {
         setSyncStatus('synced');
         setSyncMessage('Стопка разгруппирована');
-        fetchBoardTasks(currentBoardId);
       })
       .catch(() => {
         setSyncStatus('error');
         setSyncMessage('Ошибка разгруппировки');
+        fetchBoardTasks(currentBoardId);
       });
   };
 
@@ -278,9 +295,17 @@ export default function App() {
     const task = tasks.find(t => t.id === draggedTaskId);
     if (!task || task.status === columnKey) return;
 
-    setSyncStatus('syncing');
-    setSyncMessage(`Перемещение в "${columnKey}"...`);
+    // 1. INSTANT OPTIMISTIC UI UPDATE (0ms delay!)
+    setTasks(prevTasks => prevTasks.map(t =>
+      t.id === draggedTaskId ? { ...t, status: columnKey } : t
+    ));
+    setDraggedTaskId(null);
 
+    // 2. SHOW SYNCING TOAST
+    setSyncStatus('syncing');
+    setSyncMessage('Синхронизация...');
+
+    // 3. BACKGROUND API
     fetch(`/api/tasks/${draggedTaskId}/status`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -288,13 +313,12 @@ export default function App() {
     })
       .then(() => {
         setSyncStatus('synced');
-        setSyncMessage('Статус обновлен');
-        setDraggedTaskId(null);
-        fetchBoardTasks(currentBoardId);
+        setSyncMessage('Изменения сохранены');
       })
       .catch(() => {
         setSyncStatus('error');
         setSyncMessage('Ошибка перемещения');
+        fetchBoardTasks(currentBoardId);
       });
   };
 
