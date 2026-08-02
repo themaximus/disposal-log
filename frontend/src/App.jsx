@@ -160,39 +160,77 @@ export default function App() {
       });
   };
 
+  const [dwellStackTargetId, setDwellStackTargetId] = useState(null);
+  const hoverTargetRef = React.useRef(null);
+  const hoverTimerRef = React.useRef(null);
+
+  const clearDwellTimer = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    hoverTargetRef.current = null;
+    setDwellStackTargetId(null);
+  };
+
   const handleDragStartTask = (e, task) => {
+    clearDwellTimer();
     setDraggedTaskId(task.id);
     e.dataTransfer.setData('text/plain', String(task.id));
   };
 
-  const handleDragOverTask = (e) => {
+  const handleDragOverTask = (e, targetTask) => {
     e.preventDefault();
+    if (!draggedTaskId || draggedTaskId === targetTask.id) return;
+
+    if (hoverTargetRef.current !== targetTask.id) {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+      hoverTargetRef.current = targetTask.id;
+      setDwellStackTargetId(null);
+
+      // Start 1.8s dwell timer to activate stack creation mode
+      hoverTimerRef.current = setTimeout(() => {
+        setDwellStackTargetId(targetTask.id);
+      }, 1800);
+    }
   };
 
   const handleDropTask = (e, targetTask) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const isDwellStackReady = (dwellStackTargetId === targetTask.id);
+    clearDwellTimer();
+
     if (!draggedTaskId || draggedTaskId === targetTask.id) return;
 
-    setSyncStatus('syncing');
-    setSyncMessage('Создание стопки задач...');
+    if (isDwellStackReady) {
+      // User held card over target for 1.8-2s -> Group into Stack!
+      setSyncStatus('syncing');
+      setSyncMessage('Создание стопки задач...');
 
-    fetch(`/api/tasks/${draggedTaskId}/group`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target_id: targetTask.id })
-    })
-      .then(res => res.json())
-      .then(() => {
-        setSyncStatus('synced');
-        setSyncMessage('Стопка создана');
-        setDraggedTaskId(null);
-        fetchBoardTasks(currentBoardId);
+      fetch(`/api/tasks/${draggedTaskId}/group`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_id: targetTask.id })
       })
-      .catch(() => {
-        setSyncStatus('error');
-        setSyncMessage('Ошибка группировки');
-      });
+        .then(res => res.json())
+        .then(() => {
+          setSyncStatus('synced');
+          setSyncMessage('Стопка создана');
+          setDraggedTaskId(null);
+          fetchBoardTasks(currentBoardId);
+        })
+        .catch(() => {
+          setSyncStatus('error');
+          setSyncMessage('Ошибка группировки');
+        });
+    } else {
+      // Quick drop (< 2s) -> Just move task to target's column!
+      if (targetTask.status) {
+        handleDropColumn(e, targetTask.status);
+      }
+    }
   };
 
   const handleUnlinkGroup = (groupId) => {
@@ -213,6 +251,7 @@ export default function App() {
 
   const handleDropColumn = (e, columnKey) => {
     e.preventDefault();
+    clearDwellTimer();
     if (!draggedTaskId) return;
 
     const task = tasks.find(t => t.id === draggedTaskId);
@@ -406,6 +445,7 @@ export default function App() {
                 key={col.id}
                 column={col}
                 viewMode={viewMode}
+                dwellStackTargetId={dwellStackTargetId}
                 groupedItems={getGroupedItemsForColumn(col.column_key)}
                 onAddTask={(colKey) => { setTaskToEdit({ status: colKey }); setIsTaskModalOpen(true); }}
                 onEditColumn={(col) => { setColumnToEdit(col); setIsColumnModalOpen(true); }}

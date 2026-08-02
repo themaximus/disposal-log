@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 import TaskStack from './TaskStack';
 
-export default function Column({ column, groupedItems, viewMode, onAddTask, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
+export default function Column({ column, groupedItems, viewMode, dwellStackTargetId, onAddTask, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Total task count
@@ -132,6 +132,7 @@ export default function Column({ column, groupedItems, viewMode, onAddTask, onEd
               <TaskCard
                 key={item.task.id}
                 task={item.task}
+                isDwellStackReady={dwellStackTargetId === item.task.id}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
                 onDragStart={onDragStartTask}

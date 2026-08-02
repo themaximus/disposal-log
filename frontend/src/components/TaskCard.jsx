@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStart, onDragOverTask, onDragOver, onDrop }) {
+export default function TaskCard({ task, isInStack, isDwellStackReady, onEdit, onDelete, onDragStart, onDragOverTask, onDragOver, onDrop }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [subtasks, setSubtasks] = useState(task.subtasks || []);
 
@@ -55,7 +55,7 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
 
   return (
     <div
-      className={`task-card ${isInStack ? 'in-stack' : ''} ${isDragOver ? 'drag-over-target' : ''}`}
+      className={`task-card ${isInStack ? 'in-stack' : ''} ${isDragOver ? 'drag-over-target' : ''} ${isDwellStackReady ? 'dwell-ready' : ''}`}
       data-diff={task.difficulty || 1}
       draggable
       onClick={(e) => {
@@ -78,10 +78,17 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
       }}
     >
       {isDragOver && (
-        <div className="drop-stack-badge" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>layers</span>
-          Создать стопку
-        </div>
+        isDwellStackReady ? (
+          <div className="drop-stack-badge" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>layers</span>
+            Создать стопку
+          </div>
+        ) : (
+          <div className="drop-dwell-hint" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <span className="material-symbols-outlined sync-spinner" style={{ fontSize: '0.85rem' }}>timer</span>
+            Удерживайте 2 сек. для стопки
+          </div>
+        )
       )}
 
       {firstMedia && (
