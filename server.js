@@ -1032,11 +1032,12 @@ const staticDir = fs.existsSync(distDir) ? distDir : publicDir;
 
 app.use(express.static(staticDir));
 
-app.get('*', (req, res, next) => {
+// Express 5.x catch-all route handler for SPA fallback
+app.get('*splat', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/uploads') || req.path === '/health') {
         return next();
     }
-    const indexPath = path.join(staticDir, 'index.html');
+    const indexPath = path.resolve(staticDir, 'index.html');
     if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);
     } else {
