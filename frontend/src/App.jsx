@@ -46,6 +46,7 @@ export default function App() {
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [shareBoardModal, setShareBoardModal] = useState(null);
   const [syncBoardModal, setSyncBoardModal] = useState(null);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
   const [columnToEdit, setColumnToEdit] = useState(null);
@@ -619,6 +620,36 @@ export default function App() {
 
   return (
     <div className="app-container">
+      {/* Mobile Sticky Top Header Bar (<768px) */}
+      <div className="mobile-header-bar">
+        <button className="btn-mobile-menu" onClick={() => setIsMobileDrawerOpen(true)} title="Открыть меню">
+          <span className="material-symbols-outlined">menu</span>
+        </button>
+        <div className="mobile-brand" onClick={() => { setIsMobileDrawerOpen(false); handleSelectTab('landing'); }}>
+          <span className="material-symbols-outlined" style={{ color: 'var(--github-blue-text)' }}>folder</span>
+          <span>PULSE</span>
+        </div>
+        {currentUser ? (
+          <div className="mobile-user-avatar" onClick={() => setIsProfileModalOpen(true)}>
+            {currentUser.avatar_url ? (
+              <img src={currentUser.avatar_url} alt="Avatar" />
+            ) : (
+              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>account_circle</span>
+            )}
+          </div>
+        ) : (
+          <button className="btn-mobile-auth" onClick={() => setIsAuthModalOpen(true)}>
+            Войти
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Drawer Backdrop Overlay */}
+      <div
+        className={`mobile-drawer-overlay ${isMobileDrawerOpen ? 'active' : ''}`}
+        onClick={() => setIsMobileDrawerOpen(false)}
+      />
+
       <div className="workspace-wrapper full-height">
         <Sidebar
           currentUser={currentUser}
@@ -643,6 +674,8 @@ export default function App() {
           onOpenSyncModal={(b) => setSyncBoardModal(b)}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          isMobileOpen={isMobileDrawerOpen}
+          onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
         />
 
         {currentTab === 'landing' && (

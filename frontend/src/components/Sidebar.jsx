@@ -19,7 +19,9 @@ export default function Sidebar({
   onToggleBoardMode,
   onOpenSyncModal,
   isCollapsed,
-  onToggleCollapse
+  onToggleCollapse,
+  isMobileOpen,
+  onCloseMobileDrawer
 }) {
   const [activeMenuBoardId, setActiveMenuBoardId] = useState(null);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
@@ -30,6 +32,11 @@ export default function Sidebar({
     }
   }, [isCollapsed]);
 
+  const handleMobileNavClick = (action) => {
+    if (typeof onCloseMobileDrawer === 'function') onCloseMobileDrawer();
+    action();
+  };
+
   const getAvatarUrl = (user) => {
     if (!user) return null;
     if (user.avatar_url) return user.avatar_url;
@@ -38,7 +45,7 @@ export default function Sidebar({
   };
 
   return (
-    <aside className={`boards-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+    <aside className={`boards-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
       {/* Top Group: Brand Header & Nav Tabs */}
       <div className="sidebar-top-group">
         {/* Brand Header: Entire block (PULSE + Folder) is clickable to toggle collapse */}
@@ -157,7 +164,7 @@ export default function Sidebar({
             <div
               key={b.id}
               className={`board-item ${b.id === currentBoardId ? 'active' : ''}`}
-              onClick={() => onSelectBoard(b.id)}
+              onClick={() => handleMobileNavClick(() => onSelectBoard(b.id))}
               style={{ position: 'relative' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', overflow: 'hidden', flex: 1 }}>
