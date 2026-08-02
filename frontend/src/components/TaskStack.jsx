@@ -2,7 +2,7 @@ import React from 'react';
 import TaskCard from './TaskCard';
 
 export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask }) {
-  // Show max 3 cards visually with diagonal 3D offset (0px, 6px, 12px)
+  // Show max 3 cards visually with diagonal 3D offset (0px, 4px, 8px)
   const reversedTasks = [...tasks].reverse();
   const total = reversedTasks.length;
   const startVisibleIndex = Math.max(0, total - 3);
@@ -16,8 +16,9 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
       style={{
         position: 'relative',
         width: '100%',
-        height: 'auto',
-        marginBottom: `calc(1rem + ${maxOffsetPx}px)`
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        marginBottom: `calc(0.85rem + ${maxOffsetPx}px)`
       }}
     >
       <div className="stack-header-bar">
@@ -34,7 +35,7 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
         </button>
       </div>
 
-      <div className="stack-deck-wrapper" style={{ position: 'relative', width: '100%' }}>
+      <div className="stack-deck-wrapper" style={{ position: 'relative', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         {reversedTasks.map((task, index) => {
           const isVisible = index >= startVisibleIndex;
           if (!isVisible) return null;
@@ -50,7 +51,8 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
                 position: offsetIndex > 0 ? 'absolute' : 'relative',
                 top: offsetIndex > 0 ? `${offsetPx}px` : undefined,
                 left: offsetIndex > 0 ? `${offsetPx}px` : undefined,
-                width: '100%',
+                width: offsetIndex > 0 ? `calc(100% - ${offsetPx}px)` : '100%',
+                boxSizing: 'border-box',
                 zIndex: index + 1
               }}
             >

@@ -766,13 +766,17 @@ body {
     flex-direction: column;
     justify-content: flex-start;
     min-height: 0;
+    overflow-x: hidden !important; /* Strictly eliminate column horizontal scrollbar! */
 }
 
 .task-list {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden !important;
     min-height: 100px;
     align-content: start;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Task Cards */
@@ -785,12 +789,37 @@ body {
     transition: all 0.2s ease;
     cursor: grab;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .task-card:hover {
     transform: translateY(-2px);
     background: var(--bg-card-hover);
     border-color: #8b949e;
+}
+
+/* Drag Over Stacking Target Visual Indicator */
+.task-card.drag-over-target {
+    border: 2px dashed #58a6ff !important;
+    background: rgba(56, 139, 253, 0.15) !important;
+    box-shadow: 0 0 15px rgba(56, 139, 253, 0.4) !important;
+    transform: scale(1.02) !important;
+}
+
+.drop-stack-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1f6feb;
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(31, 111, 235, 0.6);
+    pointer-events: none;
+    z-index: 1000;
 }
 
 .task-card[data-diff="1"] { border-left: 4px solid var(--diff-1); }
@@ -818,6 +847,9 @@ body {
 .stack-container {
     position: relative;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 

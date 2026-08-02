@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStart, onDragOver, onDrop }) {
+  const [isDragOver, setIsDragOver] = useState(false);
+
   const diffStars = '★'.repeat(task.difficulty || 1) + '☆'.repeat(3 - (task.difficulty || 1));
   
   const validCover = (task.images && task.images.length > 0 && typeof task.images[0] === 'string' && task.images[0].startsWith('/uploads/'))
@@ -9,13 +11,27 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
 
   return (
     <div
-      className={`task-card ${isInStack ? 'in-stack' : ''}`}
+      className={`task-card ${isInStack ? 'in-stack' : ''} ${isDragOver ? 'drag-over-target' : ''}`}
       data-diff={task.difficulty || 1}
       draggable
       onDragStart={(e) => onDragStart(e, task)}
-      onDragOver={(e) => onDragOver(e, task)}
-      onDrop={(e) => onDrop(e, task)}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsDragOver(true);
+        onDragOver(e, task);
+      }}
+      onDragLeave={() => setIsDragOver(false)}
+      onDrop={(e) => {
+        setIsDragOver(false);
+        onDrop(e, task);
+      }}
     >
+      {isDragOver && (
+        <div className="drop-stack-badge">
+          ➕ Создать стопку
+        </div>
+      )}
+
       {validCover && (
         <img
           src={validCover}
