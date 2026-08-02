@@ -27,14 +27,16 @@ export default function Sidebar({ boards, currentBoardId, onSelectBoard, onCreat
               </div>
               {!isCollapsed && (
                 <button
-                  className="btn-board-settings"
+                  className="btn-dots-menu"
                   onClick={(e) => {
                     e.stopPropagation();
                     onOpenShare(b);
                   }}
                   title="Настройки доступа и шеринг"
                 >
-                  ⚙️
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM1.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM14.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                  </svg>
                 </button>
               )}
             </div>

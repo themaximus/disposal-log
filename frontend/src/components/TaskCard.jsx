@@ -5,9 +5,22 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
 
   const diffStars = '★'.repeat(task.difficulty || 1) + '☆'.repeat(3 - (task.difficulty || 1));
   
-  const validCover = (task.images && task.images.length > 0 && typeof task.images[0] === 'string' && task.images[0].startsWith('/uploads/'))
-    ? task.images[0]
-    : (task.image_url && task.image_url.startsWith('/uploads/')) ? task.image_url : null;
+  const isVideoUrl = (url) => typeof url === 'string' && /\.(mp4|webm|mov|ogg)$/i.test(url);
+
+  const getMediaList = () => {
+    if (Array.isArray(task.images) && task.images.length > 0) return task.images;
+    if (typeof task.images_json === 'string') {
+      try {
+        const parsed = JSON.parse(task.images_json);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    if (task.image_url) return [task.image_url];
+    return [];
+  };
+
+  const mediaList = getMediaList();
+  const firstMedia = mediaList.length > 0 ? mediaList[0] : null;
 
   return (
     <div
@@ -32,14 +45,49 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
         </div>
       )}
 
-      {validCover && (
-        <img
-          src={validCover}
-          alt="Cover"
-          className="card-banner"
-          onError={(e) => { e.target.style.display = 'none'; }}
-        />
+      {firstMedia && (
+        <div style={{ position: 'relative', width: '100%' }}>
+          {isVideoUrl(firstMedia) ? (
+            <video
+              src={firstMedia}
+              className="card-banner"
+              autoPlay
+              muted
+              loop
+              playsInline
+              style={{ objectFit: 'cover' }}
+            />
+          ) : (
+            <img
+              src={firstMedia}
+              alt="Cover"
+              className="card-banner"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          )}
+
+          {mediaList.length > 1 && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '8px',
+                right: '8px',
+                background: 'rgba(0,0,0,0.75)',
+                backdropFilter: 'blur(4px)',
+                color: '#ffffff',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                padding: '0.15rem 0.45rem',
+                borderRadius: '6px',
+                border: '1px solid rgba(255,255,255,0.2)'
+              }}
+            >
+              🖼️ {mediaList.length}
+            </div>
+          )}
+        </div>
       )}
+
       <div className="card-content">
         <div className="card-header">
           <h3 className="card-title">{task.title}</h3>
