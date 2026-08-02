@@ -282,7 +282,7 @@ export default function Sidebar({
           ))}
         </div>
 
-        {!isCollapsed && (
+        {!isCollapsed && currentUser && (
           <button className="btn btn-secondary btn-new-board" style={{ marginTop: '0.6rem', width: '100%' }} onClick={onCreateBoard}>
             <span className="material-symbols-outlined" style={{ fontSize: '1rem', marginRight: '4px' }}>add</span>
             Создать доску
@@ -290,17 +290,19 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* Bottom Fixed Footer: Settings Gear ON TOP, Profile UNDERNEATH */}
+      {/* Bottom Fixed Footer: Settings Gear ON TOP (only for logged in users), Profile UNDERNEATH */}
       <div className="sidebar-footer">
         {/* Settings Button on Top */}
-        <button
-          className="btn-sidebar-settings-full"
-          onClick={onOpenSettings}
-          title="Настройки TG и Системы"
-        >
-          <span className="material-symbols-outlined gear-icon">settings</span>
-          {!isCollapsed && <span>Настройки системы</span>}
-        </button>
+        {currentUser && (
+          <button
+            className="btn-sidebar-settings-full"
+            onClick={onOpenSettings}
+            title="Настройки TG и Системы"
+          >
+            <span className="material-symbols-outlined gear-icon">settings</span>
+            {!isCollapsed && <span>Настройки системы</span>}
+          </button>
+        )}
 
         {/* User Profile Widget Underneath */}
         {currentUser ? (
