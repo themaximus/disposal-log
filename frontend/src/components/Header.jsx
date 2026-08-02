@@ -6,7 +6,7 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
       <div className="header-left">
         <div className="header-logo" onClick={() => onSelectTab('landing')} style={{ cursor: 'pointer' }}>
           <div className="logo-icon-wrapper">
-            <span style={{ fontSize: '1.4rem' }}>⚙️</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.5rem', color: 'var(--github-green-text)' }}>analytics</span>
           </div>
           <div className="logo-text-group">
             <h1 className="github-title">PULSE</h1>
@@ -23,12 +23,14 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
             className={`btn ${currentTab === 'landing' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => onSelectTab('landing')}
           >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', marginRight: '4px' }}>home</span>
             Главная
           </button>
           <button
             className={`btn ${currentTab === 'workspace' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => onSelectTab('workspace')}
           >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', marginRight: '4px' }}>view_kanban</span>
             Задачи
           </button>
         </div>
@@ -61,7 +63,7 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
             </div>
             <div className="user-info-text">
               <span className="user-name-text">{currentUser.name || currentUser.email}</span>
-              <span className="user-provider-badge">{currentUser.provider === 'github' ? 'GitHub 🐙' : 'Google 🔴'}</span>
+              <span className="user-provider-badge">{currentUser.provider === 'github' ? 'GitHub' : 'Google'}</span>
             </div>
             <button
               className="btn-logout-icon"
@@ -79,17 +81,19 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
           </div>
         ) : (
           <button className="btn btn-primary" onClick={onOpenAuth}>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', marginRight: '4px' }}>login</span>
             Войти
           </button>
         )}
 
         <button className="btn btn-secondary" onClick={onOpenSettings} title="Настройки TG и Системы">
-          ⚙️
+          <span className="material-symbols-outlined" style={{ fontSize: '1.15rem' }}>settings</span>
         </button>
 
         {currentTab === 'workspace' && (
           <button className="btn btn-primary" onClick={onAddTask}>
-            ＋ Добавить задачу
+            <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', marginRight: '4px' }}>add</span>
+            Добавить задачу
           </button>
         )}
       </div>

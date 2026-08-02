@@ -41,7 +41,7 @@ export default function ShareModal({ board, onClose }) {
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);
-    alert('🔗 Ссылка скопирована в буфер обмена!');
+    alert('Ссылка скопирована в буфер обмена!');
   };
 
   if (!board) return null;
@@ -50,36 +50,51 @@ export default function ShareModal({ board, onClose }) {
     <div className="modal-overlay active">
       <div className="modal" style={{ maxWidth: '460px' }}>
         <div className="modal-header">
-          <h2>🔗 Доступ к доске: {board.name}</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: 'var(--github-blue-text)' }}>share</span>
+            Доступ к доске: {board.name}
+          </h2>
           <button className="btn-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="option-cards-group">
           <div className={`option-card ${shareMode === 'link' ? 'active' : ''}`} onClick={() => handleSelectMode('link')}>
-            <div className="option-card-icon">🔑</div>
+            <div className="option-card-icon">
+              <span className="material-symbols-outlined">key</span>
+            </div>
             <div className="option-card-content">
               <div className="option-card-title">По секретной ссылке</div>
               <div className="option-card-sub">Доступен только обладателям уникальной ссылки UUID</div>
             </div>
-            <div className="option-card-check">✓</div>
+            <div className="option-card-check">
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>check</span>
+            </div>
           </div>
 
           <div className={`option-card ${shareMode === 'private' ? 'active' : ''}`} onClick={() => handleSelectMode('private')}>
-            <div className="option-card-icon">🔒</div>
+            <div className="option-card-icon">
+              <span className="material-symbols-outlined">lock</span>
+            </div>
             <div className="option-card-content">
               <div className="option-card-title">Приватный доступ</div>
               <div className="option-card-sub">Только вы имеете доступ к этой доске</div>
             </div>
-            <div className="option-card-check">✓</div>
+            <div className="option-card-check">
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>check</span>
+            </div>
           </div>
 
           <div className={`option-card ${shareMode === 'restricted' ? 'active' : ''}`} onClick={() => handleSelectMode('restricted')}>
-            <div className="option-card-icon">👥</div>
+            <div className="option-card-icon">
+              <span className="material-symbols-outlined">group</span>
+            </div>
             <div className="option-card-content">
               <div className="option-card-title">Ограниченный (по E-mail)</div>
               <div className="option-card-sub">Доступен только приглашенным пользователям</div>
             </div>
-            <div className="option-card-check">✓</div>
+            <div className="option-card-check">
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>check</span>
+            </div>
           </div>
         </div>
 

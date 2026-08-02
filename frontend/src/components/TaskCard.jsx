@@ -73,8 +73,9 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
       }}
     >
       {isDragOver && (
-        <div className="drop-stack-badge">
-          ➕ Создать стопку
+        <div className="drop-stack-badge" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>layers</span>
+          Создать стопку
         </div>
       )}
 
@@ -112,10 +113,14 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
                 fontWeight: 700,
                 padding: '0.15rem 0.45rem',
                 borderRadius: '6px',
-                border: '1px solid rgba(255,255,255,0.2)'
+                border: '1px solid rgba(255,255,255,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.2rem'
               }}
             >
-              🖼️ {mediaList.length}
+              <span className="material-symbols-outlined" style={{ fontSize: '0.8rem' }}>collections</span>
+              {mediaList.length}
             </div>
           )}
         </div>
@@ -136,7 +141,8 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
           <div className="card-subtasks-box">
             <div className="subtasks-box-header">
               <span className={`subtask-badge-pill ${completedSubtasks === totalSubtasks ? 'done' : ''}`}>
-                📋 Чек-лист {completedSubtasks}/{totalSubtasks} ({subtaskPercent}%)
+                <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>checklist</span>
+                Чек-лист {completedSubtasks}/{totalSubtasks} ({subtaskPercent}%)
               </span>
             </div>
             
@@ -177,7 +183,8 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
             }}
             title="Добавить чек-лист подзадач"
           >
-            + Добавить чек-лист
+            <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>add_task</span>
+            Добавить чек-лист
           </button>
         )}
 
@@ -192,10 +199,17 @@ export default function TaskCard({ task, isInStack, onEdit, onDelete, onDragStar
         )}
 
         <div className="card-footer">
-          <span>📅 {task.created_at ? new Date(task.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Сегодня'}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>calendar_today</span>
+            {task.created_at ? new Date(task.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Сегодня'}
+          </span>
           <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <button className="btn-icon edit" onClick={() => onEdit(task)} title="Редактировать">✏️</button>
-            <button className="btn-icon delete" onClick={() => onDelete(task.id)} title="Удалить">🗑️</button>
+            <button className="btn-icon edit" onClick={() => onEdit(task)} title="Редактировать">
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>edit</span>
+            </button>
+            <button className="btn-icon delete" onClick={() => onDelete(task.id)} title="Удалить">
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>delete</span>
+            </button>
           </div>
         </div>
       </div>

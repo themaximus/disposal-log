@@ -140,7 +140,10 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
           {/* Sub-tasks Checklists Section */}
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-              <label style={{ margin: 0 }}>📋 Чек-лист Подзадач</label>
+              <label style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>checklist</span>
+                Чек-лист Подзадач
+              </label>
               {subtasks.length > 0 && (
                 <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--github-blue-text)' }}>
                   {completedCount} из {subtasks.length} ({progressPercent}%)
@@ -241,7 +244,7 @@ export default function TaskModal({ taskToEdit, boardId, onClose, onSave }) {
                 style={{ display: 'none' }}
               />
               <div className="upload-zone-content">
-                <span className="upload-icon">📁</span>
+                <span className="material-symbols-outlined upload-icon" style={{ fontSize: '1.8rem', color: 'var(--github-blue-text)' }}>cloud_upload</span>
                 <div>
                   <span className="upload-title">
                     {isUploading ? 'Загрузка файлов...' : 'Выбрать или перетащить медиафайлы'}

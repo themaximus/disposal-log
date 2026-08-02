@@ -5,7 +5,10 @@ export default function AuthModal({ onClose }) {
     <div className="modal-overlay active">
       <div className="modal" style={{ maxWidth: '400px', textAlign: 'center' }}>
         <div className="modal-header" style={{ justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-          <h2>🔑 Вход в аккаунт</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.3rem', color: 'var(--github-blue-text)' }}>key</span>
+            Вход в аккаунт
+          </h2>
           <button className="btn-close" onClick={onClose}>✕</button>
         </div>
 

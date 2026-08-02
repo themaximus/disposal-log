@@ -21,9 +21,7 @@ export default function Column({ column, groupedItems, viewMode, onEditColumn, o
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             title="Настройки колонки"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM1.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM14.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-            </svg>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>more_vert</span>
           </button>
           
           {isMenuOpen && (
@@ -60,7 +58,8 @@ export default function Column({ column, groupedItems, viewMode, onEditColumn, o
                 }}
                 onClick={() => { setIsMenuOpen(false); onEditColumn(column); }}
               >
-                ✏️ Настроить
+                <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>edit</span>
+                Настроить
               </button>
               <button
                 className="dropdown-item danger"
@@ -79,7 +78,8 @@ export default function Column({ column, groupedItems, viewMode, onEditColumn, o
                 }}
                 onClick={() => { setIsMenuOpen(false); onDeleteColumn(column.id); }}
               >
-                🗑️ Удалить
+                <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>delete</span>
+                Удалить
               </button>
             </div>
           )}

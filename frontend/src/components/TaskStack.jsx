@@ -23,7 +23,8 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
     >
       <div className="stack-header-bar">
         <span className="stack-badge-pill" title={`Стопка из ${tasks.length} задач`}>
-          📚 {tasks.length}
+          <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>layers</span>
+          {tasks.length}
         </span>
         <button
           className="btn-unlink-stack"
@@ -33,7 +34,8 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
             onUnlinkGroup(groupId);
           }}
         >
-          🔓 <span className="unlink-text">Разгруппировать</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>unfold_more</span>
+          <span className="unlink-text">Разгруппировать</span>
         </button>
       </div>
 

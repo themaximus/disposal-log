@@ -6,9 +6,9 @@ export default function Sidebar({ boards, currentBoardId, onSelectBoard, onCreat
       <div className="sidebar-header-bar" onClick={onToggleCollapse} title="Свернуть / Развернуть сайдбар">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <div className="sidebar-folder-wrapper">
-            <span className="sidebar-icon">📁</span>
-            <span className="sidebar-hover-arrow">
-              {isCollapsed ? '▶' : '◀'}
+            <span className="material-symbols-outlined sidebar-icon">folder</span>
+            <span className="material-symbols-outlined sidebar-hover-arrow">
+              {isCollapsed ? 'chevron_right' : 'chevron_left'}
             </span>
           </div>
           <span className="sidebar-heading" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Мои Доски</span>
@@ -24,7 +24,11 @@ export default function Sidebar({ boards, currentBoardId, onSelectBoard, onCreat
               onClick={() => onSelectBoard(b.id)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', overflow: 'hidden' }}>
-                <span className="board-item-icon">{b.icon || '📋'}</span>
+                {b.icon && !b.icon.includes('http') && b.icon.length > 2 ? (
+                  <span className="material-symbols-outlined board-item-icon">{b.icon}</span>
+                ) : (
+                  <span className="material-symbols-outlined board-item-icon">space_dashboard</span>
+                )}
                 <span className="board-item-name" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {b.name}
                 </span>
@@ -38,9 +42,7 @@ export default function Sidebar({ boards, currentBoardId, onSelectBoard, onCreat
                   }}
                   title="Настройки доступа и шеринг"
                 >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M8 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM1.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM14.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                  </svg>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>more_vert</span>
                 </button>
               )}
             </div>
@@ -49,7 +51,8 @@ export default function Sidebar({ boards, currentBoardId, onSelectBoard, onCreat
 
         {!isCollapsed && (
           <button className="btn btn-secondary btn-new-board" style={{ marginTop: '0.8rem', width: '100%' }} onClick={onCreateBoard}>
-            + Создать доску
+            <span className="material-symbols-outlined" style={{ fontSize: '1rem', marginRight: '4px' }}>add</span>
+            Создать доску
           </button>
         )}
       </div>
