@@ -1289,13 +1289,50 @@ document.addEventListener('DOMContentLoaded', () => {
                     await updatePositions(sourceList);
                 }
                 checkOwnerStatus();
-                fetchTasks();
             }
             clearHoverState();
         });
     }
 
-    // Dynamic drop target binding is handled inside renderDynamicColumns
+    // Floating Sync Toast Indicator Handlers
+    const syncIndicator = document.getElementById('sync-indicator');
+    let syncTimeout = null;
+
+    function showSyncing(text = 'Сохранение...') {
+        if (!syncIndicator) return;
+        clearTimeout(syncTimeout);
+        syncIndicator.className = 'sync-indicator active';
+        const textEl = syncIndicator.querySelector('.sync-text');
+        if (textEl) textEl.textContent = text;
+    }
+
+    function showSyncSuccess(text = 'Сохранено') {
+        if (!syncIndicator) return;
+        clearTimeout(syncTimeout);
+        syncIndicator.className = 'sync-indicator active success';
+        const textEl = syncIndicator.querySelector('.sync-text');
+        const iconEl = syncIndicator.querySelector('.sync-icon');
+        if (textEl) textEl.textContent = text;
+        if (iconEl) iconEl.textContent = '✓';
+
+        syncTimeout = setTimeout(() => {
+            syncIndicator.classList.remove('active');
+        }, 2000);
+    }
+
+    function showSyncError(text = 'Ошибка сохранения') {
+        if (!syncIndicator) return;
+        clearTimeout(syncTimeout);
+        syncIndicator.className = 'sync-indicator active error';
+        const textEl = syncIndicator.querySelector('.sync-text');
+        const iconEl = syncIndicator.querySelector('.sync-icon');
+        if (textEl) textEl.textContent = text;
+        if (iconEl) iconEl.textContent = '✕';
+
+        syncTimeout = setTimeout(() => {
+            syncIndicator.classList.remove('active');
+        }, 3000);
+    }
 
     async function updatePositions(listEl) {
         if (!listEl) return;
@@ -1361,14 +1398,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateCounters();
 
+        showSyncing('Сохранение изменений...');
         try {
-            await authFetch('/api/tasks/positions', {
+            const res = await authFetch('/api/tasks/positions', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ updates })
             });
+            if (res.ok) {
+                showSyncSuccess('Сохранено');
+            } else {
+                showSyncError('Ошибка сохранения');
+            }
         } catch (error) {
             console.error('Error updating task positions:', error);
+            showSyncError('Ошибка сети');
         }
     }
 
@@ -2188,7 +2232,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sourceList && sourceList !== list) {
                 await updatePositions(sourceList);
             }
-            fetchTasks();
         });
 
         // Edit button click

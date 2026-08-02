@@ -1582,6 +1582,73 @@ body.is-guest-view .task-card {
     color: #ffffff;
 }
 
+/* Floating Sync Indicator (Bottom Left Corner) */
+.sync-indicator {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    z-index: 999999;
+    background: #161b22;
+    border: 1px solid #30363d;
+    padding: 0.5rem 0.9rem;
+    border-radius: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #c9d1d9;
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+    transition: opacity 0.25s cubic-bezier(0.2, 0, 0, 1), transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+    pointer-events: none;
+}
+
+.sync-indicator.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.sync-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(56, 139, 253, 0.3);
+    border-top-color: #58a6ff;
+    border-radius: 50%;
+    animation: syncSpin 0.7s linear infinite;
+    display: block;
+}
+
+@keyframes syncSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.sync-icon {
+    display: none;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.sync-indicator.success .sync-spinner {
+    display: none;
+}
+
+.sync-indicator.success .sync-icon {
+    display: inline-block;
+    color: #3fb950;
+}
+
+.sync-indicator.error .sync-spinner {
+    display: none;
+}
+
+.sync-indicator.error .sync-icon {
+    display: inline-block;
+    color: #f85149;
+}
+
 .sidebar-content {
     padding: 1rem;
     display: flex;
