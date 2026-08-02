@@ -726,7 +726,13 @@ export default function App() {
       <SyncToast status={syncStatus} message={syncMessage} />
 
       {isAuthModalOpen && (
-        <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+        <AuthModal
+          onClose={() => setIsAuthModalOpen(false)}
+          onOpenGuestMode={() => {
+            setIsAuthModalOpen(false);
+            handleSelectTab('workspace');
+          }}
+        />
       )}
 
       {isProfileModalOpen && (
