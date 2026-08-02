@@ -17,6 +17,7 @@ export default function Sidebar({
   onOpenShare,
   onOpenManageColumns,
   onToggleBoardMode,
+  onOpenSyncModal,
   isCollapsed,
   onToggleCollapse
 }) {
@@ -249,13 +250,13 @@ export default function Sidebar({
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveMenuBoardId(null);
-                          if (typeof onToggleBoardMode === 'function') onToggleBoardMode(b);
+                          if (typeof onOpenSyncModal === 'function') onOpenSyncModal(b);
                         }}
                       >
-                        <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
-                          {b.is_offline ? 'cloud_upload' : 'cloud_off'}
+                        <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: 'var(--github-blue-text)' }}>
+                          cloud_sync
                         </span>
-                        {b.is_offline ? 'Переключить в ОНЛАЙН' : 'Переключить в ОФЛАЙН'}
+                        Синхронизация
                       </button>
 
                       <button

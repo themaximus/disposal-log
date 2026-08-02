@@ -13,6 +13,7 @@ import BoardModal from './modals/BoardModal';
 import ColumnModal from './modals/ColumnModal';
 import ManageColumnsModal from './modals/ManageColumnsModal';
 import ShareModal from './modals/ShareModal';
+import BoardSyncModal from './modals/BoardSyncModal';
 
 import {
   getOfflineBoards,
@@ -44,6 +45,7 @@ export default function App() {
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [shareBoardModal, setShareBoardModal] = useState(null);
+  const [syncBoardModal, setSyncBoardModal] = useState(null);
 
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
   const [columnToEdit, setColumnToEdit] = useState(null);
@@ -638,6 +640,7 @@ export default function App() {
             setIsManageColumnsModalOpen(true);
           }}
           onToggleBoardMode={handleToggleBoardMode}
+          onOpenSyncModal={(b) => setSyncBoardModal(b)}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         />
@@ -768,6 +771,14 @@ export default function App() {
         <ShareModal
           board={shareBoardModal}
           onClose={() => setShareBoardModal(null)}
+        />
+      )}
+
+      {syncBoardModal && (
+        <BoardSyncModal
+          board={syncBoardModal}
+          onClose={() => setSyncBoardModal(null)}
+          onToggleBoardMode={handleToggleBoardMode}
         />
       )}
     </div>
