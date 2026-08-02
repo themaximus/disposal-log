@@ -675,6 +675,56 @@ app.delete('/api/boards/:id', sessionMiddleware, requireUser, (req, res) => {
     });
 });
 
+app.post('/api/boards/import', sessionMiddleware, requireUser, (req, res) => {
+    const { board, columns, tasks } = req.body;
+    if (!board || !board.name) return res.status(400).json({ error: 'Укажите данные доски' });
+
+    const userId = req.user.id;
+    const token = crypto.randomUUID();
+
+    db.run("INSERT INTO boards (user_id, name, description, icon, share_mode, share_token) VALUES (?, ?, ?, ?, 'link', ?)",
+        [userId, board.name.trim(), board.description || '', board.icon || '📋', token], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            const newBoardId = this.lastID;
+
+            const colsToInsert = (Array.isArray(columns) && columns.length > 0)
+                ? columns
+                : [
+                    { column_key: 'todo', title: 'Предстоящие', position: 0, color: '#f85149' },
+                    { column_key: 'in_progress', title: 'В работе', position: 1, color: '#d29922' },
+                    { column_key: 'done', title: 'Реализованные', position: 2, color: '#3fb950' }
+                ];
+
+            let colsDone = 0;
+            colsToInsert.forEach(col => {
+                db.run("INSERT INTO columns (board_id, column_key, title, position, color) VALUES (?, ?, ?, ?, ?)",
+                    [newBoardId, col.column_key, col.title, col.position || 0, col.color || '#388bfd'], () => {
+                        colsDone++;
+                        if (colsDone === colsToInsert.length) {
+                            if (!Array.isArray(tasks) || tasks.length === 0) {
+                                return res.json({ success: true, boardId: newBoardId });
+                            }
+                            let tasksDone = 0;
+                            tasks.forEach(task => {
+                                const imagesJson = typeof task.images_json === 'string' ? task.images_json : JSON.stringify(task.images || []);
+                                const subtasksJson = typeof task.subtasks_json === 'string' ? task.subtasks_json : JSON.stringify(task.subtasks || []);
+                                db.run("INSERT INTO tasks (user_id, board_id, title, description, status, difficulty, image_url, images_json, subtasks_json, group_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                    [userId, newBoardId, task.title || 'Задача', task.description || '', task.status || 'todo', task.difficulty || 1, task.image_url || '', imagesJson, subtasksJson, task.group_id || null],
+                                    () => {
+                                        tasksDone++;
+                                        if (tasksDone === tasks.length) {
+                                            res.json({ success: true, boardId: newBoardId });
+                                        }
+                                    }
+                                );
+                            });
+                        }
+                    }
+                );
+            });
+    });
+});
+
 // Per-Board Sharing API
 app.get('/api/boards/:id/share', sessionMiddleware, requireUser, (req, res) => {
     const boardId = req.params.id;

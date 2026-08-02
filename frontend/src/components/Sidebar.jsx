@@ -16,6 +16,7 @@ export default function Sidebar({
   onCreateBoard,
   onOpenShare,
   onOpenManageColumns,
+  onToggleBoardMode,
   isCollapsed,
   onToggleCollapse
 }) {
@@ -150,7 +151,7 @@ export default function Sidebar({
               onClick={() => onSelectBoard(b.id)}
               style={{ position: 'relative' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', overflow: 'hidden', flex: 1 }}>
                 {b.icon && !b.icon.includes('http') && b.icon.length > 2 ? (
                   <span className="material-symbols-outlined board-item-icon">{b.icon}</span>
                 ) : (
@@ -159,6 +160,11 @@ export default function Sidebar({
                 {!isCollapsed && (
                   <span className="board-item-name" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {b.name}
+                  </span>
+                )}
+                {!isCollapsed && b.is_offline && (
+                  <span className="offline-badge" style={{ fontSize: '0.62rem', background: 'rgba(56, 139, 253, 0.15)', color: 'var(--github-blue-text)', border: '1px solid rgba(56, 139, 253, 0.3)', padding: '0.05rem 0.3rem', borderRadius: '4px', marginLeft: 'auto' }}>
+                    Офлайн
                   </span>
                 )}
               </div>
@@ -170,7 +176,7 @@ export default function Sidebar({
                       e.stopPropagation();
                       setActiveMenuBoardId(activeMenuBoardId === b.id ? null : b.id);
                     }}
-                    title="Настройки доски и колонок"
+                    title="Настройки доски и режима"
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>more_vert</span>
                   </button>
@@ -182,7 +188,7 @@ export default function Sidebar({
                         position: 'absolute',
                         top: '30px',
                         right: 0,
-                        minWidth: '180px',
+                        minWidth: '190px',
                         background: 'var(--github-surface)',
                         border: '1px solid var(--github-border)',
                         borderRadius: '8px',
@@ -215,6 +221,33 @@ export default function Sidebar({
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>view_column</span>
                         Порядок колонок
+                      </button>
+
+                      <button
+                        className="dropdown-item"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          width: '100%',
+                          padding: '0.45rem 0.65rem',
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--text-main)',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuBoardId(null);
+                          if (typeof onToggleBoardMode === 'function') onToggleBoardMode(b);
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
+                          {b.is_offline ? 'cloud_upload' : 'cloud_off'}
+                        </span>
+                        {b.is_offline ? 'Переключить в ОНЛАЙН' : 'Переключить в ОФЛАЙН'}
                       </button>
 
                       <button
