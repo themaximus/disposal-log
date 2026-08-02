@@ -1047,6 +1047,60 @@ body {
     border-color: #8b949e;
 }
 
+/* Sub-Column Modes 2 and 3 Compact Card Rules */
+.board[data-card-mode="2"] .task-card,
+.board[data-card-mode="3"] .task-card {
+    padding: 0.55rem 0.6rem !important;
+}
+
+.board[data-card-mode="2"] .card-title,
+.board[data-card-mode="3"] .card-title {
+    font-size: 0.84rem !important;
+    line-height: 1.25 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    word-break: break-word !important;
+}
+
+.board[data-card-mode="2"] .card-desc,
+.board[data-card-mode="3"] .card-desc {
+    font-size: 0.75rem !important;
+    line-height: 1.35 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    margin-top: 0.25rem !important;
+}
+
+.board[data-card-mode="2"] .card-banner,
+.board[data-card-mode="3"] .card-banner {
+    max-height: 75px !important;
+    object-fit: cover !important;
+}
+
+.board[data-card-mode="2"] .card-tags,
+.board[data-card-mode="3"] .card-tags {
+    max-height: 22px !important;
+    overflow: hidden !important;
+    flex-wrap: nowrap !important;
+}
+
+.board[data-card-mode="2"] .tag-badge,
+.board[data-card-mode="3"] .tag-badge {
+    font-size: 0.65rem !important;
+    padding: 0.1rem 0.35rem !important;
+    white-space: nowrap !important;
+}
+
+.board[data-card-mode="2"] .card-footer,
+.board[data-card-mode="3"] .card-footer {
+    font-size: 0.72rem !important;
+    margin-top: 0.45rem !important;
+}
+
 /* Drag Over Stacking Target Visual Indicator */
 .task-card.drag-over-target {
     border: 2px dashed #58a6ff !important;
