@@ -181,16 +181,36 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static(uploadsDir));
 
-// Multer setup
+// Multer setup with MIME validation
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadsDir);
-    },
+    destination: (req, file, cb) => cb(null, uploadsDir),
     filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
     }
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({ 
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+    fileFilter: (req, file, cb) => {
+        const allowedMime = /image\/(png|jpeg|jpg|webp|gif)|video\/(mp4|webm|quicktime)/;
+        const allowedExt = /\.(png|jpeg|jpg|webp|gif|mp4|webm|mov)$/i;
+        if (allowedMime.test(file.mimetype) && allowedExt.test(path.extname(file.originalname))) {
+            return cb(null, true);
+        }
+        cb(new Error('Загрузка отклонена: разрешены только изображения (PNG, JPG, WEBP, GIF) и видео (MP4, WEBM, MOV).'));
+    }
+});
+
+// Periodic Cleanup of Expired Sessions
+function cleanupExpiredSessions() {
+    db.run("DELETE FROM sessions WHERE expires_at <= CURRENT_TIMESTAMP", (err) => {
+        if (err) console.error('Expired sessions cleanup error:', err.message);
+    });
+}
+cleanupExpiredSessions();
+setInterval(cleanupExpiredSessions, 6 * 60 * 60 * 1000);
 
 function getEnvVar(key) {
     if (process.env[key]) return process.env[key];
@@ -356,60 +376,98 @@ app.post('/api/auth/logout', sessionMiddleware, (req, res) => {
     res.json({ success: true });
 });
 
-// Settings API
-app.get('/api/settings', (req, res) => {
-    initBot();
-    const templatePath = path.join(__dirname, 'telegram_template.txt');
-    let template = '';
-    if (fs.existsSync(templatePath)) {
-        try { template = fs.readFileSync(templatePath, 'utf8'); } catch(e){}
-    }
-    res.json({
-        botToken: botToken ? botToken.substring(0, 8) + '...' : '',
-        channelId: channelId || '',
-        telegramTemplate: template
+// Settings API (SQLite Persistent Settings)
+app.get('/api/settings', sessionMiddleware, requireUser, (req, res) => {
+    db.all("SELECT * FROM settings", [], (err, rows) => {
+        let settingsObj = {};
+        if (rows) rows.forEach(r => settingsObj[r.key] = r.value);
+        
+        const templatePath = path.join(__dirname, 'telegram_template.txt');
+        let template = settingsObj.telegramTemplate || '';
+        if (!template && fs.existsSync(templatePath)) {
+            try { template = fs.readFileSync(templatePath, 'utf8'); } catch(e){}
+        }
+
+        res.json({
+            botToken: settingsObj.botToken || getEnvVar('BOT_TOKEN') || '',
+            channelId: settingsObj.channelId || getEnvVar('CHANNEL_ID') || '',
+            telegramTemplate: template,
+            isPublicBoard: settingsObj.isPublicBoard !== '0'
+        });
     });
 });
 
 app.put('/api/settings', sessionMiddleware, requireUser, (req, res) => {
-    const { botToken: newToken, channelId: newChannelId, telegramTemplate: newTemplate } = req.body;
-    const envPath = path.join(__dirname, '.env');
-    let envContent = '';
-    if (fs.existsSync(envPath)) {
-        envContent = fs.readFileSync(envPath, 'utf8');
-    }
+    const { botToken: newToken, channelId: newChannelId, telegramTemplate: newTemplate, isPublicBoard } = req.body;
     
-    let botTokenUpdated = false;
-    let channelIdUpdated = false;
-    
-    const lines = envContent.split(/\r?\n/);
-    const newLines = lines.map(line => {
-        if (line.trim().startsWith('BOT_TOKEN=')) {
-            botTokenUpdated = true;
-            return `BOT_TOKEN=${newToken}`;
-        }
-        if (line.trim().startsWith('CHANNEL_ID=')) {
-            channelIdUpdated = true;
-            return `CHANNEL_ID=${newChannelId}`;
-        }
-        return line;
-    });
-    
-    if (!botTokenUpdated) newLines.push(`BOT_TOKEN=${newToken}`);
-    if (!channelIdUpdated) newLines.push(`CHANNEL_ID=${newChannelId}`);
-    
-    try {
-        fs.writeFileSync(envPath, newLines.join('\n'), 'utf8');
-        if (typeof newTemplate === 'string') {
-            const templatePath = path.join(__dirname, 'telegram_template.txt');
-            fs.writeFileSync(templatePath, newTemplate, 'utf8');
-        }
+    db.serialize(() => {
+        const stmt = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+        stmt.run('botToken', newToken || '');
+        stmt.run('channelId', newChannelId || '');
+        stmt.run('telegramTemplate', newTemplate || '');
+        stmt.run('isPublicBoard', isPublicBoard ? '1' : '0');
+        stmt.finalize();
+
+        // Also fallback write to .env if writable
+        try {
+            const envPath = path.join(__dirname, '.env');
+            let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+            let lines = envContent.split(/\r?\n/);
+            let bOpt = false, cOpt = false;
+            lines = lines.map(line => {
+                if (line.startsWith('BOT_TOKEN=')) { bOpt = true; return `BOT_TOKEN=${newToken}`; }
+                if (line.startsWith('CHANNEL_ID=')) { cOpt = true; return `CHANNEL_ID=${newChannelId}`; }
+                return line;
+            });
+            if (!bOpt) lines.push(`BOT_TOKEN=${newToken}`);
+            if (!cOpt) lines.push(`CHANNEL_ID=${newChannelId}`);
+            fs.writeFileSync(envPath, lines.join('\n'), 'utf8');
+        } catch(e) {}
+
         initBot();
         res.json({ success: true });
-    } catch (e) {
-        console.error('Error writing settings:', e);
-        res.status(500).json({ error: 'Failed to write settings' });
+    });
+});
+
+// Test Telegram Connection Endpoint
+app.post('/api/settings/test-telegram', sessionMiddleware, requireUser, async (req, res) => {
+    const channelIdVal = channelId || getEnvVar('CHANNEL_ID');
+    if (!bot || !channelIdVal) {
+        return res.status(400).json({ error: 'Бот не инициализирован. Проверьте Bot Token и Channel ID.' });
     }
+    try {
+        await bot.telegram.sendMessage(channelIdVal, '<b>🧪 PULSE Test Connection</b>\n\nТестовая связь с вашей Канбан-доской работает успешно!', { parse_mode: 'HTML' });
+        res.json({ success: true });
+    } catch(e) {
+        res.status(500).json({ error: 'Ошибка отправки в Telegram: ' + e.message });
+    }
+});
+
+// JSON Backup Export Endpoint
+app.get('/api/backup/export', sessionMiddleware, requireUser, (req, res) => {
+    const userId = req.user.id;
+    db.all("SELECT * FROM tasks WHERE user_id = ?", [userId], (err, tasks) => {
+        if (err) return res.status(500).json({ error: err.message });
+        db.all("SELECT * FROM tags WHERE user_id = ?", [userId], (tagErr, tags) => {
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Content-Disposition', `attachment; filename=pulse_backup_${userId}_${Date.now()}.json`);
+            res.send(JSON.stringify({
+                exported_at: new Date().toISOString(),
+                user: { id: req.user.id, name: req.user.name, email: req.user.email },
+                tasks: tasks || [],
+                tags: tags || []
+            }, null, 2));
+        });
+    });
+});
+
+// Revoke Other Sessions Endpoint
+app.post('/api/auth/revoke-sessions', sessionMiddleware, requireUser, (req, res) => {
+    const currentToken = req.headers['x-session-token'] || parseCookies(req).session_token;
+    db.run("DELETE FROM sessions WHERE user_id = ? AND token != ?", [req.user.id, currentToken || ''], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, revoked: this.changes });
+    });
 });
 
 // Tags API

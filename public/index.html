@@ -331,32 +331,78 @@
         </div>
     </div>
 
-    <!-- Модальное окно: Настройки Telegram -->
+    <!-- Модальное окно: Панель настроек (Мультираздел) -->
     <div class="modal-overlay" id="modal-settings">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 style="font-size: 1.4rem; font-weight: 600;">Настройки Telegram</h2>
+        <div class="modal settings-modal" style="max-width: 620px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--github-border); padding-bottom: 0.85rem; justify-content: space-between;">
+                <h2 style="font-size: 1.3rem; font-weight: 600;">Панель Настроек</h2>
                 <button class="btn-close" id="btn-close-settings">✕</button>
             </div>
+
+            <!-- Разделы настроек (Tabs) -->
+            <div class="settings-tabs-nav" style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--github-border); padding: 0.75rem 0; margin-bottom: 1rem; overflow-x: auto;">
+                <button type="button" class="settings-tab-btn active" data-tab="tab-tg">🤖 Telegram Бот</button>
+                <button type="button" class="settings-tab-btn" data-tab="tab-sec">🛡️ Безопасность</button>
+                <button type="button" class="settings-tab-btn" data-tab="tab-backup">💾 Бэкапы</button>
+            </div>
+
             <form id="form-settings">
-                <div class="form-group">
-                    <label for="settings-bot-token">Токен бота (BOT_TOKEN)</label>
-                    <input type="text" id="settings-bot-token" name="botToken" placeholder="Введите токен Telegram-бота">
+                <!-- Раздел 1: Telegram -->
+                <div class="settings-tab-content active" id="tab-tg">
+                    <div class="form-group">
+                        <label for="settings-bot-token">Токен бота (BOT_TOKEN)</label>
+                        <input type="text" id="settings-bot-token" name="botToken" placeholder="123456789:ABCdefGHIjklmno...">
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-channel-id">ID Канала (CHANNEL_ID)</label>
+                        <input type="text" id="settings-channel-id" name="channelId" placeholder="-1001234567890">
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-template">Шаблон отчета (HTML)</label>
+                        <textarea id="settings-template" name="telegramTemplate" rows="5" style="width:100%; padding:0.75rem; background:#0d1117; border:1px solid #30363d; border-radius:6px; color:#fff; font-family:monospace; font-size:0.85rem;" placeholder="Шаблон отчета..."></textarea>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem; line-height:1.4;">
+                            Переменные: <b>{title}</b>, <b>{stars}</b>, <b>{tags}</b>, <b>{description}</b>, <b>{created_at}</b>, <b>{completed_at}</b>.
+                        </div>
+                    </div>
+                    <button type="button" id="btn-test-telegram" class="btn btn-secondary btn-sm" style="margin-bottom: 0.5rem; border-color: rgba(46,160,67,0.4); color: var(--github-green-text);">
+                        🧪 Проверить связь с Telegram
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label for="settings-channel-id">ID канала (CHANNEL_ID)</label>
-                    <input type="text" id="settings-channel-id" name="channelId" placeholder="Введите ID канала (например, -100...)">
-                </div>
-                <div class="form-group">
-                    <label for="settings-template">Шаблон отчета (HTML)</label>
-                    <textarea id="settings-template" name="telegramTemplate" rows="6" style="width:100%; padding:0.75rem; background:#0d1117; border:1px solid #30363d; border-radius:6px; color:#fff; font-family:monospace; font-size:0.85rem;" placeholder="Шаблон отчета..."></textarea>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem; line-height:1.4;">
-                        Доступные теги: <b>{title}</b>, <b>{stars}</b>, <b>{tags}</b>, <b>{description}</b>, <b>{created_at}</b>, <b>{completed_at}</b>.
+
+                <!-- Раздел 2: Безопасность -->
+                <div class="settings-tab-content" id="tab-sec" style="display: none;">
+                    <div style="background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+                        <div style="font-weight: 600; color: var(--text-main); margin-bottom: 0.35rem;">Публичный доступ к доске</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.85rem;">Разрешить гостям смотреть ваш бэклог по ссылке `?share=ID` без права редактирования.</div>
+                        <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.88rem; font-weight: 500;">
+                            <input type="checkbox" id="settings-public-board" name="isPublicBoard" checked style="width: 18px; height: 18px; accent-color: var(--github-blue);">
+                            <span>Включить публичный режим чтения для моей доски</span>
+                        </label>
+                    </div>
+
+                    <div style="background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 10px; padding: 1rem;">
+                        <div style="font-weight: 600; color: var(--text-main); margin-bottom: 0.35rem;">Управление активными сессиями</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.85rem;">Завершить все старые сессии входа на других устройствах.</div>
+                        <button type="button" id="btn-revoke-sessions" class="btn btn-secondary btn-sm" style="border-color: rgba(248,81,73,0.4); color: #f85149;">Сбросить чужие сессии 🚪</button>
                     </div>
                 </div>
-                <div class="modal-actions">
+
+                <!-- Раздел 3: Резервное копирование -->
+                <div class="settings-tab-content" id="tab-backup" style="display: none;">
+                    <div style="background: var(--github-canvas); border: 1px solid var(--github-border); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+                        <div style="font-weight: 600; color: var(--text-main); margin-bottom: 0.35rem;">Экспорт бэклога</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.85rem;">Скачайте полную локальную копию всех ваших задач и тегов в формате JSON.</div>
+                        <button type="button" id="btn-export-data" class="btn btn-secondary btn-sm" style="border-color: rgba(56,139,253,0.4); color: #58a6ff;">📥 Скачать бэкап (JSON)</button>
+                    </div>
+
+                    <div style="background: rgba(46, 160, 67, 0.1); border: 1px solid rgba(46, 160, 67, 0.25); border-radius: 10px; padding: 0.85rem; font-size: 0.82rem; color: var(--text-muted);">
+                        <span style="font-weight: 600; color: var(--github-green-text);">Статус диска:</span> SQLite хранилище с изоляцией сессий.
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 1.25rem;">
                     <button type="button" class="btn btn-secondary" id="btn-cancel-settings">Отмена</button>
-                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                    <button type="submit" class="btn btn-primary">Сохранить настройки</button>
                 </div>
             </form>
         </div>

@@ -77,6 +77,12 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 db.run(`ALTER TABLE tags ADD COLUMN user_id INTEGER`, () => {});
             }
         });
+
+        // Settings table for persistent configuration
+        db.run(`CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )`);
     }
 });
 

@@ -1232,3 +1232,29 @@ body.is-guest-view .task-checkbox {
 body.is-guest-view .task-card {
     cursor: default !important;
 }
+
+/* Settings Tabs Styling */
+.settings-tab-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.settings-tab-btn:hover {
+    color: var(--text-main);
+    background: var(--github-surface);
+}
+
+.settings-tab-btn.active {
+    color: var(--github-blue);
+    background: rgba(56, 139, 253, 0.12);
+    border-color: rgba(56, 139, 253, 0.3);
+    font-weight: 600;
+}

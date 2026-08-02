@@ -402,22 +402,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsBotToken = document.getElementById('settings-bot-token');
     const settingsChannelId = document.getElementById('settings-channel-id');
     const settingsTemplate = document.getElementById('settings-template');
+    const settingsPublicBoard = document.getElementById('settings-public-board');
 
-    if (btnSettings) {
-        btnSettings.addEventListener('click', async () => {
-            try {
-                const res = await fetch('/api/settings');
+    // Settings Modal Tabs
+    const settingsTabBtns = document.querySelectorAll('.settings-tab-btn');
+    const settingsTabContents = document.querySelectorAll('.settings-tab-content');
+
+    settingsTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.dataset.tab;
+            settingsTabBtns.forEach(b => b.classList.remove('active'));
+            settingsTabContents.forEach(c => c.style.display = 'none');
+            
+            btn.classList.add('active');
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) targetTab.style.display = 'block';
+        });
+    });
+
+    async function openSettingsModal() {
+        try {
+            const res = await authFetch('/api/settings');
+            if (res.ok) {
                 const settings = await res.json();
-                settingsBotToken.value = settings.botToken;
-                settingsChannelId.value = settings.channelId;
-                settingsTemplate.value = settings.telegramTemplate || '';
+                if (settingsBotToken) settingsBotToken.value = settings.botToken || '';
+                if (settingsChannelId) settingsChannelId.value = settings.channelId || '';
+                if (settingsTemplate) settingsTemplate.value = settings.telegramTemplate || '';
+                if (settingsPublicBoard) settingsPublicBoard.checked = settings.isPublicBoard !== false;
                 modalSettingsOverlay.classList.add('active');
-            } catch(e) {
-                console.error('Error fetching settings:', e);
+            } else {
                 alert('Не удалось загрузить настройки');
             }
-        });
+        } catch(e) {
+            console.error('Error fetching settings:', e);
+            alert('Не удалось загрузить настройки');
+        }
     }
+
+    if (btnSettings) btnSettings.addEventListener('click', openSettingsModal);
 
     const closeSettingsModal = () => {
         modalSettingsOverlay.classList.remove('active');
@@ -429,19 +451,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formSettings) {
         formSettings.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const botToken = settingsBotToken.value.trim();
-            const channelId = settingsChannelId.value.trim();
-            const telegramTemplate = settingsTemplate.value;
+            const botToken = settingsBotToken ? settingsBotToken.value.trim() : '';
+            const channelId = settingsChannelId ? settingsChannelId.value.trim() : '';
+            const telegramTemplate = settingsTemplate ? settingsTemplate.value : '';
+            const isPublicBoard = settingsPublicBoard ? settingsPublicBoard.checked : true;
             
             try {
                 const btnSubmit = formSettings.querySelector('button[type="submit"]');
-                btnSubmit.disabled = true;
-                btnSubmit.textContent = 'Сохранение...';
+                if (btnSubmit) {
+                    btnSubmit.disabled = true;
+                    btnSubmit.textContent = 'Сохранение...';
+                }
 
-                const res = await authFetch('/api/settings', { method: 'PUT',
+                const res = await authFetch('/api/settings', {
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ botToken, channelId, telegramTemplate })
+                    body: JSON.stringify({ botToken, channelId, telegramTemplate, isPublicBoard })
                 });
+
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = 'Сохранить настройки';
+                }
 
                 if (res.ok) {
                     closeSettingsModal();
