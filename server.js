@@ -445,7 +445,11 @@ app.post('/api/upload/google-drive', sessionMiddleware, async (req, res) => {
 
 // Profile and Session Status
 app.get(['/api/auth/me', '/auth/me'], sessionMiddleware, (req, res) => {
-    res.json(req.user || null);
+    if (req.user) {
+        res.json({ user: req.user });
+    } else {
+        res.json({ user: null });
+    }
 });
 
 // Logout Endpoint (Supports both GET and POST)

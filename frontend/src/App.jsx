@@ -92,8 +92,9 @@ export default function App() {
     authFetch('/api/auth/me')
       .then(res => res.json())
       .then(data => {
-        if (data && data.user) {
-          setCurrentUser(data.user);
+        const user = data && (data.user || (data.id ? data : null));
+        if (user) {
+          setCurrentUser(user);
           setCurrentTab('boards');
           fetchUserBoards();
         } else {
@@ -525,20 +526,6 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {currentTab === 'landing' && (
-        <Header
-          currentUser={currentUser}
-          onOpenAuth={() => setIsAuthModalOpen(true)}
-          onOpenProfile={() => setIsProfileModalOpen(true)}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          viewMode={viewMode}
-          onChangeViewMode={(mode) => setViewMode(mode)}
-          onToggleMobileDrawer={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
-          currentTab={currentTab}
-          onSelectTab={handleSelectTab}
-        />
-      )}
-
       <div className="workspace-wrapper full-height">
         <Sidebar
           currentUser={currentUser}
