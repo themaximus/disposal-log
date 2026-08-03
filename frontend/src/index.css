@@ -621,24 +621,37 @@ body {
     color: #ffffff;
 }
 
-.btn-close {
+.btn-close, .btn-dots-menu {
     background: transparent;
     border: 1px solid transparent;
     color: var(--text-muted);
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.15s ease;
+    padding: 0;
+    line-height: 0;
+    box-sizing: border-box;
 }
 
-.btn-close:hover {
+.btn-close:hover, .btn-dots-menu:hover {
     background: var(--github-subtle);
     border-color: var(--github-border);
     color: var(--text-main);
+}
+
+.btn-close .material-symbols-outlined,
+.btn-dots-menu .material-symbols-outlined {
+    display: inline-block;
+    line-height: 1;
+    font-size: 1.15rem;
+    margin: 0;
+    padding: 0;
+    vertical-align: middle;
 }
 
 .form-group {
@@ -1331,25 +1344,6 @@ body {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-}
-
-.btn-dots-menu {
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--text-muted);
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-.btn-dots-menu:hover {
-    background: var(--github-subtle);
-    border-color: var(--github-border);
-    color: var(--text-main);
 }
 
 .count {
