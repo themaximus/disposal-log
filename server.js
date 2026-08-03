@@ -700,8 +700,15 @@ function ensureDefaultColumnsForBoard(boardId, cb) {
 // Modular OOP Routers
 const boardRoutes = require('./src/routes/boardRoutes')(sessionMiddleware, requireUser, upload);
 const taskRoutes = require('./src/routes/taskRoutes')(sessionMiddleware, requireUser, upload);
+const columnRoutes = require('./src/routes/columnRoutes')(sessionMiddleware, requireUser);
+const { startTrashAutoPurgeWorker } = require('./src/services/trashService');
+
 app.use('/api/boards', boardRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/columns', columnRoutes);
+
+// Start 30-day trash auto-purge worker
+startTrashAutoPurgeWorker();
 
 app.post('/api/boards', sessionMiddleware, requireUser, (req, res) => {
     const { name, description, icon } = req.body;

@@ -4,19 +4,8 @@ import Sidebar from './components/Sidebar';
 import Column from './components/Column';
 import LandingHero from './components/LandingHero';
 import SyncToast from './components/SyncToast';
-
-import AuthModal from './modals/AuthModal';
-import ProfileModal from './modals/ProfileModal';
-import SettingsModal from './modals/SettingsModal';
-import TaskModal from './modals/TaskModal';
-import BoardModal from './modals/BoardModal';
-import ColumnModal from './modals/ColumnModal';
-import ManageColumnsModal from './modals/ManageColumnsModal';
-import ShareModal from './modals/ShareModal';
-import BoardSyncModal from './modals/BoardSyncModal';
-import ConfirmModal from './modals/ConfirmModal';
-import TrashModal from './modals/TrashModal';
-import BoardSettingsModal from './modals/BoardSettingsModal';
+import ModalContainer from './components/ModalContainer';
+import { useDragAndDrop } from './hooks/useDragAndDrop';
 
 import {
   getOfflineBoards,
@@ -64,7 +53,7 @@ export default function App() {
     message: '',
     confirmText: 'Подтвердить',
     cancelText: 'Отмена',
-    confirmStyle: 'danger',
+    confirmStyle: 'primary',
     onConfirm: () => {}
   });
 
@@ -75,80 +64,79 @@ export default function App() {
       message,
       confirmText: confirmText || 'Подтвердить',
       cancelText: cancelText || 'Отмена',
-      confirmStyle: confirmStyle || 'danger',
+      confirmStyle: confirmStyle || 'primary',
       onConfirm: () => {
         setConfirmModalState(prev => ({ ...prev, isOpen: false }));
-        onConfirm();
+        if (typeof onConfirm === 'function') onConfirm();
       }
     });
   };
 
-  const [draggedTaskId, setDraggedTaskId] = useState(null);
-  const [dwellStackTargetId, setDwellStackTargetId] = useState(null);
-  const hoverTargetRef = React.useRef(null);
-  const hoverTimerRef = React.useRef(null);
-
-  useEffect(() => {
+  const checkAuthStatus = () => {
     fetch('/api/auth/me')
       .then(res => res.json())
-      .then(user => {
-        if (user) {
-          setCurrentUser(user);
-          fetchBoards();
+      .then(data => {
+        if (data && data.user) {
+          setCurrentUser(data.user);
+          if (currentTab === 'landing') setCurrentTab('boards');
+          fetchUserBoards();
         } else {
           initGuestMode();
         }
       })
-      .catch(() => {
-        initGuestMode();
-      });
-  }, []);
-
-  const initGuestMode = (shouldSwitchTab = false) => {
-    const offlineList = getOfflineBoards();
-    setBoards(offlineList);
-
-    if (offlineList.length > 0) {
-      const activeId = currentBoardId || offlineList[0].id;
-      const targetBoard = offlineList.find(b => String(b.id) === String(activeId)) || offlineList[0];
-      selectBoard(targetBoard.id, targetBoard);
-    } else {
-      setCurrentBoardId(null);
-      setColumns([]);
-      setTasks([]);
-    }
-
-    if (shouldSwitchTab) {
-      setCurrentTab('workspace');
-    }
+      .catch(() => initGuestMode());
   };
 
-  const fetchBoards = () => {
-    const offlineList = getOfflineBoards();
+  const initGuestMode = (forceGuest = false) => {
+    const offlineBoards = getOfflineBoards();
+    if (offlineBoards.length === 0) {
+      const defaultOfflineBoard = {
+        id: 'off_board_default',
+        name: 'Мой локальный проект 🚀',
+        description: 'Демонстрационная офлайн-доска для работы без интернета.',
+        icon: '📋',
+        is_offline: true,
+        created_at: new Date().toISOString()
+      };
+      saveOfflineBoards([defaultOfflineBoard]);
+      setBoards([defaultOfflineBoard]);
+      selectBoard(defaultOfflineBoard.id);
+    } else {
+      setBoards(offlineBoards);
+      const lastSelectedId = localStorage.getItem('last_selected_board_id');
+      if (lastSelectedId && offlineBoards.some(b => String(b.id) === String(lastSelectedId))) {
+        selectBoard(lastSelectedId);
+      } else {
+        selectBoard(offlineBoards[0].id);
+      }
+    }
+    if (forceGuest) setCurrentTab('boards');
+  };
+
+  const fetchUserBoards = () => {
     fetch('/api/boards')
       .then(res => res.json())
-      .then(data => {
-        const serverBoards = Array.isArray(data) ? data.map(b => ({ ...b, is_offline: false })) : [];
-        const combined = [...serverBoards, ...offlineList];
+      .then(onlineBoards => {
+        const offlineBoards = getOfflineBoards();
+        const combined = [...(Array.isArray(onlineBoards) ? onlineBoards : []), ...offlineBoards];
         setBoards(combined);
-        if (combined.length > 0 && !currentBoardId) {
-          selectBoard(combined[0].id, combined[0]);
+
+        const lastSelectedId = localStorage.getItem('last_selected_board_id');
+        if (lastSelectedId && combined.some(b => String(b.id) === String(lastSelectedId))) {
+          selectBoard(lastSelectedId);
+        } else if (combined.length > 0) {
+          selectBoard(combined[0].id);
         }
       })
-      .catch(() => {
-        setBoards(offlineList);
-        if (offlineList.length > 0 && !currentBoardId) {
-          selectBoard(offlineList[0].id, offlineList[0]);
-        }
-      });
+      .catch(() => initGuestMode());
   };
 
-  const selectBoard = (boardId, boardObj) => {
-    const targetBoard = boardObj || boards.find(b => String(b.id) === String(boardId));
+  const selectBoard = (boardId) => {
     setCurrentBoardId(boardId);
-    setCurrentTab('workspace');
+    localStorage.setItem('last_selected_board_id', boardId);
 
-    if (targetBoard && targetBoard.is_offline) {
+    const activeBoard = boards.find(b => String(b.id) === String(boardId));
+    if (activeBoard && activeBoard.is_offline) {
       const offlineData = getOfflineBoardData(boardId);
       setColumns(offlineData.columns || []);
       setTasks(offlineData.tasks || []);
@@ -162,9 +150,7 @@ export default function App() {
     fetch(`/api/boards/${boardId}/columns`)
       .then(res => res.json())
       .then(cols => {
-        if (Array.isArray(cols)) {
-          setColumns(cols);
-        }
+        if (Array.isArray(cols)) setColumns(cols);
       })
       .catch(console.error);
   };
@@ -172,339 +158,35 @@ export default function App() {
   const fetchBoardTasks = (boardId) => {
     fetch(`/api/tasks?board_id=${boardId}`)
       .then(res => res.json())
-      .then(taskData => {
-        if (Array.isArray(taskData)) {
-          setTasks(taskData);
-        }
+      .then(tList => {
+        if (Array.isArray(tList)) setTasks(tList);
       })
       .catch(console.error);
   };
 
-  const handleSelectTab = (tab) => {
-    if (tab === 'workspace' && !currentUser) {
-      initGuestMode(true);
-      return;
-    }
-    setCurrentTab(tab);
-  };
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
-  // Switch Board Mode ONLINE <-> OFFLINE
-  const handleToggleBoardMode = (targetBoard) => {
-    if (!targetBoard) return;
-
-    if (!targetBoard.is_offline) {
-      // ONLINE -> OFFLINE
-      askConfirmation({
-        title: 'Переключить в Офлайн-режим?',
-        message: `Все данные доски "${targetBoard.name}" будут сохранены локально в вашем браузере (localStorage) и полностью удалены с сервера.`,
-        confirmText: 'Перевести в Офлайн',
-        confirmStyle: 'danger',
-        onConfirm: () => {
-          setSyncStatus('syncing');
-          setSyncMessage('Перенос в Офлайн...');
-
-          Promise.all([
-            fetch(`/api/boards/${targetBoard.id}/columns`).then(r => r.json()),
-            fetch(`/api/tasks?board_id=${targetBoard.id}`).then(r => r.json())
-          ])
-            .then(([cols, ts]) => {
-              const offlineCols = Array.isArray(cols) ? cols : [];
-              const offlineTasks = Array.isArray(ts) ? ts : [];
-
-              saveOfflineBoardData(targetBoard.id, { columns: offlineCols, tasks: offlineTasks });
-              addOfflineBoard({ ...targetBoard, is_offline: true });
-
-              fetch(`/api/boards/${targetBoard.id}`, { method: 'DELETE' })
-                .then(() => {
-                  setSyncStatus('synced');
-                  setSyncMessage('💾 Доска переведена в Офлайн');
-                  fetchBoards();
-                })
-                .catch(console.error);
-            })
-            .catch(() => {
-              setSyncStatus('error');
-              setSyncMessage('Ошибка перевода в офлайн');
-            });
-        }
-      });
-    } else {
-      // OFFLINE -> ONLINE
-      askConfirmation({
-        title: 'Переключить в Онлайн-режим?',
-        message: `Данные доски "${targetBoard.name}" будут загружены на сервер и синхронизированы с базой данных.`,
-        confirmText: 'Перевести в Онлайн',
-        confirmStyle: 'primary',
-        onConfirm: () => {
-          setSyncStatus('syncing');
-          setSyncMessage('Синхронизация с сервером...');
-
-          const offlineData = getOfflineBoardData(targetBoard.id);
-
-          fetch('/api/boards/import', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              board: targetBoard,
-              columns: offlineData.columns,
-              tasks: offlineData.tasks
-            })
-          })
-            .then(r => r.json())
-            .then(data => {
-              if (data && data.success) {
-                deleteOfflineBoard(targetBoard.id);
-                setSyncStatus('synced');
-                setSyncMessage('🌐 Доска переведена в Онлайн');
-                fetch('/api/boards')
-                  .then(res => res.json())
-                  .then(serverBoards => {
-                    const offlineList = getOfflineBoards();
-                    const combined = [...(Array.isArray(serverBoards) ? serverBoards : []), ...offlineList];
-                    setBoards(combined);
-                    selectBoard(data.boardId, combined.find(b => String(b.id) === String(data.boardId)));
-                  });
-              } else {
-                throw new Error(data.error || 'Ошибка импорта');
-              }
-            })
-            .catch(err => {
-              setSyncStatus('error');
-              setSyncMessage('Ошибка перевода в онлайн');
-            });
-        }
-      });
-    }
-  };
-
-  const handleSaveTask = (taskData) => {
-    setSyncStatus('syncing');
-    setSyncMessage('Сохранение...');
-
-    const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-
-    if (activeBoard && activeBoard.is_offline) {
-      let updatedTasks;
-      if (taskData.id) {
-        updatedTasks = tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t);
-      } else {
-        const newTask = {
-          ...taskData,
-          id: `off_task_${Date.now()}`,
-          board_id: currentBoardId,
-          created_at: new Date().toISOString()
-        };
-        updatedTasks = [...tasks, newTask];
-      }
-      setTasks(updatedTasks);
-      saveOfflineBoardData(currentBoardId, { columns, tasks: updatedTasks });
-      setSyncStatus('synced');
-      setSyncMessage('💾 Сохранено локально');
-      setIsTaskModalOpen(false);
-      return;
-    }
-
-    if (taskData.id) {
-      setTasks(prev => prev.map(t => t.id === taskData.id ? { ...t, ...taskData } : t));
-      fetch(`/api/tasks/${taskData.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskData)
-      })
-        .then(() => {
-          setSyncStatus('synced');
-          setSyncMessage('Задача обновлена');
-          setIsTaskModalOpen(false);
-        })
-        .catch(() => {
-          setSyncStatus('error');
-          setSyncMessage('Ошибка обновления');
-          fetchBoardTasks(currentBoardId);
-        });
-    } else {
-      fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...taskData, board_id: currentBoardId })
-      })
-        .then(res => res.json())
-        .then(newTask => {
-          setSyncStatus('synced');
-          setSyncMessage('Задача создана');
-          setIsTaskModalOpen(false);
-          if (newTask && newTask.id) {
-            setTasks(prev => [...prev.filter(t => t.id !== newTask.id), newTask]);
-          }
-          fetchBoardTasks(currentBoardId);
-        })
-        .catch(() => {
-          setSyncStatus('error');
-          setSyncMessage('Ошибка создания');
-        });
-    }
-  };
-
-  const handleDeleteTask = (taskId) => {
-    askConfirmation({
-      title: 'Переместить задачу в Корзину?',
-      message: 'Задача сохранится в Корзине на 30 дней. Вы сможете восстановить её в любой момент.',
-      confirmText: 'Переместить в корзину',
-      confirmStyle: 'danger',
-      onConfirm: () => {
-        const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-
-        if (activeBoard && activeBoard.is_offline) {
-          const allBoardData = tasks.map(t => t.id === taskId ? { ...t, deleted_at: new Date().toISOString() } : t);
-          const activeTasks = allBoardData.filter(t => !t.deleted_at);
-          setTasks(activeTasks);
-          saveOfflineBoardData(currentBoardId, { columns, tasks: allBoardData });
-          setSyncStatus('synced');
-          setSyncMessage('💾 Перемещено в корзину');
-          return;
-        }
-
-        setTasks(prev => prev.filter(t => t.id !== taskId));
-        setSyncStatus('syncing');
-        setSyncMessage('Синхронизация...');
-
-        fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
-          .then(() => {
-            setSyncStatus('synced');
-            setSyncMessage('Перемещено в корзину');
-          })
-          .catch(() => {
-            setSyncStatus('error');
-            setSyncMessage('Ошибка удаления');
-            fetchBoardTasks(currentBoardId);
-          });
-      }
-    });
-  };
-
-  const clearDwellTimer = () => {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
-    hoverTargetRef.current = null;
-    setDwellStackTargetId(null);
-  };
-
-  const handleDragStartTask = (e, task) => {
-    clearDwellTimer();
-    setDraggedTaskId(task.id);
-    e.dataTransfer.setData('text/plain', String(task.id));
-  };
-
-  const handleDragOverTask = (e, targetTask) => {
-    e.preventDefault();
-    if (!draggedTaskId || draggedTaskId === targetTask.id) return;
-
-    const sourceTask = tasks.find(t => t.id === draggedTaskId);
-    const isSameColumn = sourceTask && sourceTask.status === targetTask.status;
-
-    if (isSameColumn) {
-      // Intra-column drag -> INSTANT STACK READY (0ms delay!)
-      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-      hoverTargetRef.current = targetTask.id;
-      setDwellStackTargetId(targetTask.id);
-    } else {
-      // Inter-column drag -> Require 1.8s dwell timer!
-      if (hoverTargetRef.current !== targetTask.id) {
-        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-        hoverTargetRef.current = targetTask.id;
-        setDwellStackTargetId(null);
-
-        hoverTimerRef.current = setTimeout(() => {
-          setDwellStackTargetId(targetTask.id);
-        }, 1800);
-      }
-    }
-  };
-
-  const handleDropTask = (e, targetTask) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!draggedTaskId || draggedTaskId === targetTask.id) return;
-
-    const sourceTask = tasks.find(t => t.id === draggedTaskId);
-    const isSameColumn = sourceTask && sourceTask.status === targetTask.status;
-    const isDwellStackReady = isSameColumn || (dwellStackTargetId === targetTask.id);
-
-    clearDwellTimer();
-
-    const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-
-    if (isDwellStackReady) {
-      const assignedGroupId = targetTask.group_id || `group_${Date.now()}`;
-      const newTasks = tasks.map(t => {
-        if (t.id === draggedTaskId || t.id === targetTask.id) {
-          return { ...t, status: targetTask.status, group_id: assignedGroupId };
-        }
-        return t;
-      });
-
-      setTasks(newTasks);
-      setDraggedTaskId(null);
-
-      if (activeBoard && activeBoard.is_offline) {
-        saveOfflineBoardData(currentBoardId, { columns, tasks: newTasks });
-        setSyncStatus('synced');
-        setSyncMessage('💾 Стопка создана');
-        return;
-      }
-
-      setSyncStatus('syncing');
-      setSyncMessage('Синхронизация...');
-
-      fetch(`/api/tasks/${draggedTaskId}/group`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_id: targetTask.id })
-      })
-        .then(() => {
-          setSyncStatus('synced');
-          setSyncMessage('Стопка создана');
-        })
-        .catch(() => {
-          setSyncStatus('error');
-          setSyncMessage('Ошибка группировки');
-          fetchBoardTasks(currentBoardId);
-        });
-    } else {
-      if (targetTask.status) {
-        handleDropColumn(e, targetTask.status);
-      }
-    }
-  };
-
-  const handleUnlinkGroup = (groupId) => {
-    const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-    const newTasks = tasks.map(t => t.group_id === groupId ? { ...t, group_id: null } : t);
-    setTasks(newTasks);
-
-    if (activeBoard && activeBoard.is_offline) {
-      saveOfflineBoardData(currentBoardId, { columns, tasks: newTasks });
-      setSyncStatus('synced');
-      setSyncMessage('💾 Стопка разгруппирована');
-      return;
-    }
-
-    setSyncStatus('syncing');
-    setSyncMessage('Синхронизация...');
-
-    fetch(`/api/tasks/group/${groupId}/unlink`, { method: 'PUT' })
-      .then(() => {
-        setSyncStatus('synced');
-        setSyncMessage('Стопка разгруппирована');
-      })
-      .catch(() => {
-        setSyncStatus('error');
-        setSyncMessage('Ошибка разгруппировки');
-        fetchBoardTasks(currentBoardId);
-      });
-  };
+  // Hook for Drag & Drop functionality
+  const {
+    draggedTaskId,
+    dwellStackTargetId,
+    handleDragStartTask,
+    handleDragOverTask,
+    handleDropTask,
+    handleDropColumn,
+    handleUnlinkGroup
+  } = useDragAndDrop({
+    tasks,
+    setTasks,
+    boards,
+    currentBoardId,
+    columns,
+    setSyncStatus,
+    setSyncMessage,
+    fetchBoardTasks
+  });
 
   const handleSubtasksChange = (taskId, updatedSubtasks) => {
     const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
@@ -537,60 +219,12 @@ export default function App() {
       });
   };
 
-  const handleDropColumn = (e, columnKey) => {
-    e.preventDefault();
-    clearDwellTimer();
-    if (!draggedTaskId) return;
-
-    const task = tasks.find(t => t.id === draggedTaskId);
-    if (!task || task.status === columnKey) return;
-
-    const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-    const newTasks = tasks.map(t => t.id === draggedTaskId ? { ...t, status: columnKey } : t);
-    setTasks(newTasks);
-    setDraggedTaskId(null);
-
-    if (activeBoard && activeBoard.is_offline) {
-      saveOfflineBoardData(currentBoardId, { columns, tasks: newTasks });
-      setSyncStatus('synced');
-      setSyncMessage('💾 Изменения сохранены');
-      return;
-    }
-
-    setSyncStatus('syncing');
-    setSyncMessage('Синхронизация...');
-
-    fetch(`/api/tasks/${draggedTaskId}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: columnKey })
-    })
-      .then(() => {
-        setSyncStatus('synced');
-        setSyncMessage('Изменения сохранены');
-      })
-      .catch(() => {
-        setSyncStatus('error');
-        setSyncMessage('Ошибка перемещения');
-        fetchBoardTasks(currentBoardId);
-      });
-  };
-
   const handleCreateBoard = (boardData) => {
     if (!currentUser) {
-      const newBoard = {
-        id: `off_board_${Date.now()}`,
-        name: boardData.name || 'Новая доска',
-        description: boardData.description || '',
-        icon: boardData.icon || '📋',
-        is_offline: true
-      };
-      addOfflineBoard(newBoard);
+      const newOffBoard = addOfflineBoard(boardData.name, boardData.description, boardData.icon);
+      setBoards(getOfflineBoards());
+      selectBoard(newOffBoard.id);
       setIsBoardModalOpen(false);
-      initGuestMode(true);
-      selectBoard(newBoard.id, newBoard);
-      setSyncStatus('synced');
-      setSyncMessage('💾 Локальная доска создана');
       return;
     }
 
@@ -602,10 +236,8 @@ export default function App() {
       .then(res => res.json())
       .then(newBoard => {
         setIsBoardModalOpen(false);
-        fetchBoards();
-        if (newBoard && newBoard.id) {
-          selectBoard(newBoard.id);
-        }
+        fetchUserBoards();
+        if (newBoard && newBoard.id) selectBoard(newBoard.id);
       })
       .catch(console.error);
   };
@@ -613,40 +245,36 @@ export default function App() {
   const handleSaveReorderedColumns = (reorderedCols) => {
     setColumns(reorderedCols);
     const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-
     if (activeBoard && activeBoard.is_offline) {
       saveOfflineBoardData(currentBoardId, { columns: reorderedCols, tasks });
       setSyncStatus('synced');
-      setSyncMessage('💾 Порядок колонок сохранён');
+      setSyncMessage('💾 Порядок сохранён');
       return;
     }
 
     setSyncStatus('syncing');
-    setSyncMessage('Синхронизация колонок...');
+    setSyncMessage('Синхронизация порядка...');
 
-    const updates = reorderedCols.map((c, index) =>
-      fetch(`/api/columns/${c.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ position: index, title: c.title, color: c.color })
-      })
-    );
-
-    Promise.all(updates)
+    fetch('/api/columns/positions', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates: reorderedCols.map(c => ({ id: c.id, position: c.position })) })
+    })
       .then(() => {
         setSyncStatus('synced');
-        setSyncMessage('Порядок колонок сохранён');
+        setSyncMessage('Порядок сохранён');
       })
       .catch(() => {
         setSyncStatus('error');
-        setSyncMessage('Ошибка порядка колонок');
+        setSyncMessage('Ошибка порядка');
+        fetchBoardColumns(currentBoardId);
       });
   };
 
   const handleDeleteColumn = (columnId) => {
     askConfirmation({
-      title: 'Удалить эту колонку?',
-      message: 'Вы уверены, что хотите удалить эту колонку? Все задачи в ней будут безвозвратно удалены!',
+      title: 'Удалить колонку?',
+      message: 'Вы уверены, что хотите удалить эту колонку? Задачи из неё не будут удалены.',
       confirmText: 'Удалить колонку',
       confirmStyle: 'danger',
       onConfirm: () => {
@@ -701,107 +329,198 @@ export default function App() {
       confirmText: 'Удалить доску',
       confirmStyle: 'danger',
       onConfirm: () => {
-        setSyncStatus('syncing');
-        setSyncMessage('Удаление доски...');
-
         if (boardToDelete.is_offline) {
           deleteOfflineBoard(boardToDelete.id);
-          setSyncStatus('synced');
-          setSyncMessage('💾 Доска удалена');
-          const updatedOfflineList = getOfflineBoards();
-          setBoards(updatedOfflineList);
-          if (updatedOfflineList.length > 0) {
-            selectBoard(updatedOfflineList[0].id, updatedOfflineList[0]);
+          const remaining = getOfflineBoards();
+          setBoards(prev => prev.filter(b => b.id !== boardToDelete.id));
+          if (remaining.length > 0) {
+            selectBoard(remaining[0].id);
           } else {
             setCurrentBoardId(null);
             setColumns([]);
             setTasks([]);
           }
-        } else {
-          fetch(`/api/boards/${boardToDelete.id}`, { method: 'DELETE' })
-            .then(() => {
-              setSyncStatus('synced');
-              setSyncMessage('Доска удалена');
-              fetchBoards();
-            })
-            .catch(() => {
-              setSyncStatus('error');
-              setSyncMessage('Ошибка удаления доски');
-            });
+          return;
         }
+
+        fetch(`/api/boards/${boardToDelete.id}`, { method: 'DELETE' })
+          .then(() => {
+            fetchUserBoards();
+          })
+          .catch(console.error);
       }
     });
+  };
+
+  const handleToggleBoardMode = (boardToToggle) => {
+    if (!boardToToggle) return;
+    const isCurrentlyOffline = !!boardToToggle.is_offline;
+
+    if (isCurrentlyOffline) {
+      if (!currentUser) {
+        setIsAuthModalOpen(true);
+        return;
+      }
+
+      fetch('/api/boards/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board: boardToToggle,
+          columns,
+          tasks
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.boardId) {
+            deleteOfflineBoard(boardToToggle.id);
+            fetchUserBoards();
+            selectBoard(data.boardId);
+          }
+        })
+        .catch(console.error);
+    } else {
+      const offlineBoard = addOfflineBoard(boardToToggle.name, boardToToggle.description, boardToToggle.icon);
+      saveOfflineBoardData(offlineBoard.id, { columns, tasks });
+      fetchUserBoards();
+      selectBoard(offlineBoard.id);
+    }
+  };
+
+  const handleDeleteTask = (taskId) => {
+    askConfirmation({
+      title: 'Переместить задачу в Корзину?',
+      message: 'Задача сохранится в Корзине на 30 дней. Вы сможете восстановить её в любой момент.',
+      confirmText: 'В Корзину',
+      confirmStyle: 'danger',
+      onConfirm: () => {
+        const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
+
+        if (activeBoard && activeBoard.is_offline) {
+          const newTasks = tasks.filter(t => t.id !== taskId);
+          setTasks(newTasks);
+          saveOfflineBoardData(currentBoardId, { columns, tasks: newTasks });
+          return;
+        }
+
+        fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+          .then(() => {
+            fetchBoardTasks(currentBoardId);
+          })
+          .catch(console.error);
+      }
+    });
+  };
+
+  const handleSaveTask = (taskData) => {
+    const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
+
+    if (activeBoard && activeBoard.is_offline) {
+      let newTasks;
+      if (taskData.id) {
+        newTasks = tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t);
+      } else {
+        const newObj = {
+          ...taskData,
+          id: `off_task_${Date.now()}`,
+          created_at: new Date().toISOString()
+        };
+        newTasks = [...tasks, newObj];
+      }
+      setTasks(newTasks);
+      saveOfflineBoardData(currentBoardId, { columns, tasks: newTasks });
+      setIsTaskModalOpen(false);
+      setTaskToEdit(null);
+      return;
+    }
+
+    const payload = {
+      ...taskData,
+      board_id: currentBoardId
+    };
+
+    const method = taskData.id ? 'PUT' : 'POST';
+    const url = taskData.id ? `/api/tasks/${taskData.id}` : '/api/tasks';
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then((savedTask) => {
+        setIsTaskModalOpen(false);
+        setTaskToEdit(null);
+        if (savedTask && savedTask.id && !taskData.id) {
+          setTasks(prev => [...prev, savedTask]);
+        }
+        fetchBoardTasks(currentBoardId);
+      })
+      .catch(console.error);
   };
 
   const handleLogout = () => {
     fetch('/api/auth/logout', { method: 'POST' })
       .then(() => {
         setCurrentUser(null);
-        initGuestMode();
         setCurrentTab('landing');
-        setSyncStatus('synced');
-        setSyncMessage('Режим гостей (Офлайн)');
+        initGuestMode();
       })
       .catch(console.error);
+  };
+
+  const handleSelectTab = (tabId) => {
+    setCurrentTab(tabId);
   };
 
   const getGroupedItemsForColumn = (columnKey) => {
     const colTasks = tasks.filter(t => t.status === columnKey);
     const result = [];
-    const processedGroups = new Set();
+    const processedGroupIds = new Set();
 
     colTasks.forEach(task => {
       if (task.group_id) {
-        if (!processedGroups.has(task.group_id)) {
-          processedGroups.add(task.group_id);
-          const stackTasks = colTasks.filter(t => t.group_id === task.group_id);
-          result.push({ isStack: true, groupId: task.group_id, tasks: stackTasks });
+        if (!processedGroupIds.has(task.group_id)) {
+          processedGroupIds.add(task.group_id);
+          const stackMembers = colTasks.filter(t => t.group_id === task.group_id);
+          result.push({
+            isStack: true,
+            groupId: task.group_id,
+            tasks: stackMembers
+          });
         }
       } else {
-        result.push({ isStack: false, task });
+        result.push({
+          isStack: false,
+          task
+        });
       }
     });
 
     return result;
   };
 
+  const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
+
   return (
     <div className="app-container">
-      {/* Mobile Sticky Top Header Bar (<768px) */}
-      <div className="mobile-header-bar">
-        <button className="btn-mobile-menu" onClick={() => setIsMobileDrawerOpen(true)} title="Открыть меню">
-          <span className="material-symbols-outlined">menu</span>
-        </button>
-        <div className="mobile-brand" onClick={() => { setIsMobileDrawerOpen(false); handleSelectTab('landing'); }}>
-          <span className="material-symbols-outlined" style={{ color: 'var(--github-blue-text)' }}>folder</span>
-          <span>PULSE</span>
-        </div>
-        {currentUser ? (
-          <div className="mobile-user-avatar" onClick={() => setIsProfileModalOpen(true)}>
-            {currentUser.avatar_url ? (
-              <img src={currentUser.avatar_url} alt="Avatar" />
-            ) : (
-              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>account_circle</span>
-            )}
-          </div>
-        ) : (
-          <button className="btn-mobile-auth" onClick={() => setIsAuthModalOpen(true)}>
-            Войти
-          </button>
-        )}
-      </div>
-
-      {/* Mobile Drawer Backdrop Overlay */}
-      <div
-        className={`mobile-drawer-overlay ${isMobileDrawerOpen ? 'active' : ''}`}
-        onClick={() => setIsMobileDrawerOpen(false)}
+      <Header
+        currentUser={currentUser}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        viewMode={viewMode}
+        onChangeViewMode={(mode) => setViewMode(mode)}
+        onToggleMobileDrawer={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+        currentTab={currentTab}
+        onSelectTab={handleSelectTab}
       />
 
-      <div className="workspace-wrapper full-height">
+      <div className={`workspace-wrapper ${currentTab === 'landing' ? 'full-height' : ''}`}>
         <Sidebar
           currentUser={currentUser}
           currentTab={currentTab}
-          viewMode={viewMode}
           onSelectTab={handleSelectTab}
           onChangeViewMode={(mode) => setViewMode(mode)}
           onOpenAuth={() => setIsAuthModalOpen(true)}
@@ -828,55 +547,31 @@ export default function App() {
           onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
         />
 
-        {currentTab === 'landing' && (
+        {currentTab === 'landing' ? (
           <LandingHero
             currentUser={currentUser}
             onOpenAuth={() => setIsAuthModalOpen(true)}
-            onOpenWorkspace={() => handleSelectTab('workspace')}
-            onCreateBoard={() => setIsBoardModalOpen(true)}
+            onOpenBoard={() => setCurrentTab('boards')}
           />
-        )}
-
-        {currentTab === 'workspace' && boards.length === 0 && (
-          <div className="empty-workspace-state">
-            <div className="empty-state-card">
-              <span className="material-symbols-outlined empty-icon" style={{ fontSize: '3rem', color: 'var(--github-blue-text)', marginBottom: '0.75rem' }}>
-                space_dashboard
-              </span>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>
-                У вас пока нет ни одной доски
-              </h3>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '0 0 1.5rem 0', maxWidth: '360px', lineHeight: 1.45 }}>
-                Создайте свою первую доску, чтобы распределять задачи по колонкам и управлять процессами.
-              </p>
-              <button
-                className="btn btn-primary"
-                style={{ background: 'var(--github-green)', borderColor: 'var(--github-green-hover)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.4rem', fontWeight: 700, fontSize: '0.92rem' }}
-                onClick={() => setIsBoardModalOpen(true)}
-              >
-                <span className="material-symbols-outlined">add</span>
-                Создать доску
-              </button>
-            </div>
-          </div>
-        )}
-
-        {currentTab === 'workspace' && boards.length > 0 && (
+        ) : (
           <main className="board" data-card-mode={viewMode}>
             {columns.map(col => (
               <Column
-                key={col.id}
+                key={col.id || col.column_key}
                 column={col}
-                viewMode={viewMode}
-                dwellStackTargetId={dwellStackTargetId}
                 groupedItems={getGroupedItemsForColumn(col.column_key)}
-                onAddTask={(colKey) => { setTaskToEdit({ status: colKey }); setIsTaskModalOpen(true); }}
-                onEditColumn={(col) => { setColumnToEdit(col); setIsColumnModalOpen(true); }}
-                onDeleteColumn={handleDeleteColumn}
                 onEditTask={(task) => { setTaskToEdit(task); setIsTaskModalOpen(true); }}
                 onDeleteTask={handleDeleteTask}
+                onEditColumn={(col) => { setColumnToEdit(col); setIsColumnModalOpen(true); }}
+                onDeleteColumn={handleDeleteColumn}
                 onSubtasksChange={handleSubtasksChange}
                 onUnlinkGroup={handleUnlinkGroup}
+                onQuickAddTask={(colKey) => {
+                  setTaskToEdit({ status: colKey, difficulty: 1 });
+                  setIsTaskModalOpen(true);
+                }}
+                draggedTaskId={draggedTaskId}
+                dwellStackTargetId={dwellStackTargetId}
                 onDragStartTask={handleDragStartTask}
                 onDragOverTask={handleDragOverTask}
                 onDropTask={handleDropTask}
@@ -889,173 +584,59 @@ export default function App() {
 
       <SyncToast status={syncStatus} message={syncMessage} />
 
-      {isAuthModalOpen && (
-        <AuthModal
-          onClose={() => setIsAuthModalOpen(false)}
-          onOpenGuestMode={() => {
-            setIsAuthModalOpen(false);
-            initGuestMode(true);
-          }}
-        />
-      )}
-
-      {isProfileModalOpen && (
-        <ProfileModal
-          user={currentUser}
-          onClose={() => setIsProfileModalOpen(false)}
-          onLogout={handleLogout}
-        />
-      )}
-
-      {isSettingsModalOpen && (
-        <SettingsModal onClose={() => setIsSettingsModalOpen(false)} />
-      )}
-
-      {isTrashModalOpen && (
-        <TrashModal
-          boardId={currentBoardId}
-          currentUser={currentUser}
-          onClose={() => setIsTrashModalOpen(false)}
-          onTaskRestored={() => fetchBoardTasks(currentBoardId)}
-        />
-      )}
-
-      {boardSettingsModal && (
-        <BoardSettingsModal
-          board={boardSettingsModal}
-          columns={columns}
-          currentUser={currentUser}
-          onClose={() => setBoardSettingsModal(null)}
-          onUpdateBoard={(updatedBoard) => {
-            setBoards(prev => prev.map(b => b.id === updatedBoard.id ? updatedBoard : b));
-            if (updatedBoard.is_offline) {
-              saveOfflineBoards(boards.map(b => b.id === updatedBoard.id ? updatedBoard : b));
-            } else {
-              fetch(`/api/boards/${updatedBoard.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedBoard)
-              }).catch(console.error);
-            }
-          }}
-          onSaveColumns={(reordered) => {
-            setColumns(reordered);
-            const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-            if (activeBoard && activeBoard.is_offline) {
-              saveOfflineBoardData(currentBoardId, { columns: reordered, tasks });
-            } else {
-              fetch('/api/columns/positions', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ updates: reordered.map(c => ({ id: c.id, position: c.position })) })
-              }).catch(console.error);
-            }
-          }}
-          onAddColumn={handleAddColumn}
-          onEditColumn={(col) => {
-            setColumnToEdit(col);
-            setIsColumnModalOpen(true);
-          }}
-          onDeleteColumn={handleDeleteColumn}
-          onToggleBoardMode={handleToggleBoardMode}
-          onDeleteBoard={handleDeleteBoard}
-        />
-      )}
-
-      {isTaskModalOpen && (
-        <TaskModal
-          task={taskToEdit}
-          currentUser={currentUser}
-          onClose={() => { setIsTaskModalOpen(false); setTaskToEdit(null); }}
-          onSave={handleSaveTask}
-        />
-      )}
-
-      {isBoardModalOpen && (
-        <BoardModal
-          onClose={() => setIsBoardModalOpen(false)}
-          onSave={handleCreateBoard}
-        />
-      )}
-
-      {isColumnModalOpen && (
-        <ColumnModal
-          column={columnToEdit}
-          onClose={() => { setIsColumnModalOpen(false); setColumnToEdit(null); }}
-          onSave={(colData) => {
-            const updatedCols = columns.map(c => c.id === colData.id ? { ...c, ...colData } : c);
-            setColumns(updatedCols);
-            setIsColumnModalOpen(false);
-
-            const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-            if (activeBoard && activeBoard.is_offline) {
-              saveOfflineBoardData(currentBoardId, { columns: updatedCols, tasks });
-              setSyncStatus('synced');
-              setSyncMessage('💾 Колонка обновлена');
-              return;
-            }
-
-            fetch(`/api/columns/${colData.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(colData)
-            }).then(() => fetchBoardColumns(currentBoardId));
-          }}
-        />
-      )}
-
-      {isManageColumnsModalOpen && manageColumnsBoard && (
-        <ManageColumnsModal
-          board={manageColumnsBoard}
-          columns={columns}
-          onClose={() => { setIsManageColumnsModalOpen(false); setManageColumnsBoard(null); }}
-          onSaveReorder={handleSaveReorderedColumns}
-          onAddColumn={(newCol) => {
-            const colObj = { ...newCol, id: `off_col_${Date.now()}` };
-            const updated = [...columns, colObj];
-            setColumns(updated);
-
-            const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-            if (activeBoard && activeBoard.is_offline) {
-              saveOfflineBoardData(currentBoardId, { columns: updated, tasks });
-              setSyncStatus('synced');
-              setSyncMessage('💾 Колонка создана');
-              return;
-            }
-
-            fetch(`/api/boards/${currentBoardId}/columns`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newCol)
-            }).then(() => fetchBoardColumns(currentBoardId));
-          }}
-        />
-      )}
-
-      {shareBoardModal && (
-        <ShareModal
-          board={shareBoardModal}
-          onClose={() => setShareBoardModal(null)}
-        />
-      )}
-
-      {syncBoardModal && (
-        <BoardSyncModal
-          board={syncBoardModal}
-          onClose={() => setSyncBoardModal(null)}
-          onToggleBoardMode={handleToggleBoardMode}
-        />
-      )}
-
-      <ConfirmModal
-        isOpen={confirmModalState.isOpen}
-        title={confirmModalState.title}
-        message={confirmModalState.message}
-        confirmText={confirmModalState.confirmText}
-        cancelText={confirmModalState.cancelText}
-        confirmStyle={confirmModalState.confirmStyle}
-        onConfirm={confirmModalState.onConfirm}
-        onCancel={() => setConfirmModalState(prev => ({ ...prev, isOpen: false }))}
+      <ModalContainer
+        isAuthModalOpen={isAuthModalOpen}
+        setIsAuthModalOpen={setIsAuthModalOpen}
+        initGuestMode={initGuestMode}
+        isProfileModalOpen={isProfileModalOpen}
+        setIsProfileModalOpen={setIsProfileModalOpen}
+        currentUser={currentUser}
+        handleLogout={handleLogout}
+        isSettingsModalOpen={isSettingsModalOpen}
+        setIsSettingsModalOpen={setIsSettingsModalOpen}
+        isTrashModalOpen={isTrashModalOpen}
+        setIsTrashModalOpen={setIsTrashModalOpen}
+        currentBoardId={currentBoardId}
+        fetchBoardTasks={fetchBoardTasks}
+        boardSettingsModal={boardSettingsModal}
+        setBoardSettingsModal={setBoardSettingsModal}
+        columns={columns}
+        setColumns={setColumns}
+        boards={boards}
+        setBoards={setBoards}
+        saveOfflineBoards={saveOfflineBoards}
+        saveOfflineBoardData={saveOfflineBoardData}
+        tasks={tasks}
+        handleAddColumn={handleAddColumn}
+        setColumnToEdit={setColumnToEdit}
+        setIsColumnModalOpen={setIsColumnModalOpen}
+        handleDeleteColumn={handleDeleteColumn}
+        handleToggleBoardMode={handleToggleBoardMode}
+        handleDeleteBoard={handleDeleteBoard}
+        isTaskModalOpen={isTaskModalOpen}
+        setIsTaskModalOpen={setIsTaskModalOpen}
+        taskToEdit={taskToEdit}
+        setTaskToEdit={setTaskToEdit}
+        handleSaveTask={handleSaveTask}
+        isBoardModalOpen={isBoardModalOpen}
+        setIsBoardModalOpen={setIsBoardModalOpen}
+        handleCreateBoard={handleCreateBoard}
+        isColumnModalOpen={isColumnModalOpen}
+        columnToEdit={columnToEdit}
+        fetchBoardColumns={fetchBoardColumns}
+        setSyncStatus={setSyncStatus}
+        setSyncMessage={setSyncMessage}
+        isManageColumnsModalOpen={isManageColumnsModalOpen}
+        manageColumnsBoard={manageColumnsBoard}
+        setIsManageColumnsModalOpen={setIsManageColumnsModalOpen}
+        setManageColumnsBoard={setManageColumnsBoard}
+        handleSaveReorderedColumns={handleSaveReorderedColumns}
+        shareBoardModal={shareBoardModal}
+        setShareBoardModal={setShareBoardModal}
+        syncBoardModal={syncBoardModal}
+        setSyncBoardModal={setSyncBoardModal}
+        confirmModalState={confirmModalState}
+        setConfirmModalState={setConfirmModalState}
       />
     </div>
   );
