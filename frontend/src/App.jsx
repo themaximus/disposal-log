@@ -16,6 +16,7 @@ import ShareModal from './modals/ShareModal';
 import BoardSyncModal from './modals/BoardSyncModal';
 import ConfirmModal from './modals/ConfirmModal';
 import TrashModal from './modals/TrashModal';
+import BoardSettingsModal from './modals/BoardSettingsModal';
 
 import {
   getOfflineBoards,
@@ -49,6 +50,7 @@ export default function App() {
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [shareBoardModal, setShareBoardModal] = useState(null);
   const [syncBoardModal, setSyncBoardModal] = useState(null);
+  const [boardSettingsModal, setBoardSettingsModal] = useState(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
@@ -786,6 +788,7 @@ export default function App() {
           onOpenProfile={() => setIsProfileModalOpen(true)}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
           onOpenTrash={() => setIsTrashModalOpen(true)}
+          onOpenBoardSettings={(b) => setBoardSettingsModal(b)}
           onLogout={handleLogout}
           boards={boards}
           currentBoardId={currentBoardId}
@@ -894,6 +897,48 @@ export default function App() {
           currentUser={currentUser}
           onClose={() => setIsTrashModalOpen(false)}
           onTaskRestored={() => fetchBoardTasks(currentBoardId)}
+        />
+      )}
+
+      {boardSettingsModal && (
+        <BoardSettingsModal
+          board={boardSettingsModal}
+          columns={columns}
+          currentUser={currentUser}
+          onClose={() => setBoardSettingsModal(null)}
+          onUpdateBoard={(updatedBoard) => {
+            setBoards(prev => prev.map(b => b.id === updatedBoard.id ? updatedBoard : b));
+            if (updatedBoard.is_offline) {
+              saveOfflineBoards(boards.map(b => b.id === updatedBoard.id ? updatedBoard : b));
+            } else {
+              fetch(`/api/boards/${updatedBoard.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedBoard)
+              }).catch(console.error);
+            }
+          }}
+          onSaveColumns={(reordered) => {
+            setColumns(reordered);
+            const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
+            if (activeBoard && activeBoard.is_offline) {
+              saveOfflineBoardData(currentBoardId, { columns: reordered, tasks });
+            } else {
+              fetch('/api/columns/positions', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ updates: reordered.map(c => ({ id: c.id, position: c.position })) })
+              }).catch(console.error);
+            }
+          }}
+          onAddColumn={handleAddColumn}
+          onEditColumn={(col) => {
+            setColumnToEdit(col);
+            setIsColumnModalOpen(true);
+          }}
+          onDeleteColumn={handleDeleteColumn}
+          onToggleBoardMode={handleToggleBoardMode}
+          onDeleteBoard={handleDeleteBoard}
         />
       )}
 

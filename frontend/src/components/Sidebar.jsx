@@ -10,6 +10,7 @@ export default function Sidebar({
   onOpenProfile,
   onOpenSettings,
   onOpenTrash,
+  onOpenBoardSettings,
   onLogout,
   boards,
   currentBoardId,
@@ -188,9 +189,13 @@ export default function Sidebar({
                     className="btn-dots-menu"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setActiveMenuBoardId(activeMenuBoardId === b.id ? null : b.id);
+                      if (typeof onOpenBoardSettings === 'function') {
+                        onOpenBoardSettings(b);
+                      } else {
+                        setActiveMenuBoardId(activeMenuBoardId === b.id ? null : b.id);
+                      }
                     }}
-                    title="Настройки доски и режима"
+                    title="Настройки доски"
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>more_vert</span>
                   </button>
