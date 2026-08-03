@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function TaskCard({ task, isInStack, isDwellStackReady, onEdit, onDelete, onSubtasksChange, onDragStart, onDragOverTask, onDragOver, onDrop }) {
+export default function TaskCard({ task, isInStack, isDwellStackReady, onView, onEdit, onDelete, onSubtasksChange, onDragStart, onDragOverTask, onDragOver, onDrop }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [subtasks, setSubtasks] = useState(task.subtasks || []);
 
@@ -62,7 +62,8 @@ export default function TaskCard({ task, isInStack, isDwellStackReady, onEdit, o
       draggable
       onClick={(e) => {
         if (!e.target.closest('button, input, label, a')) {
-          onEdit(task);
+          if (typeof onView === 'function') onView(task);
+          else onEdit(task);
         }
       }}
       onDragStart={(e) => {

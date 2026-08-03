@@ -11,6 +11,7 @@ import BoardSyncModal from '../modals/BoardSyncModal';
 import ConfirmModal from '../modals/ConfirmModal';
 import TrashModal from '../modals/TrashModal';
 import BoardSettingsModal from '../modals/BoardSettingsModal';
+import TaskViewModal from '../modals/TaskViewModal';
 
 export default function ModalContainer({
   isAuthModalOpen,
@@ -46,6 +47,9 @@ export default function ModalContainer({
   setIsTaskModalOpen,
   taskToEdit,
   setTaskToEdit,
+  taskToView,
+  setTaskToView,
+  onSubtasksChange,
   handleSaveTask,
   isBoardModalOpen,
   setIsBoardModalOpen,
@@ -140,6 +144,19 @@ export default function ModalContainer({
           onDeleteColumn={handleDeleteColumn}
           onToggleBoardMode={handleToggleBoardMode}
           onDeleteBoard={handleDeleteBoard}
+        />
+      )}
+
+      {taskToView && (
+        <TaskViewModal
+          task={taskToView}
+          onClose={() => setTaskToView(null)}
+          onEdit={(t) => {
+            setTaskToView(null);
+            setTaskToEdit(t);
+            setIsTaskModalOpen(true);
+          }}
+          onSubtasksChange={onSubtasksChange}
         />
       )}
 

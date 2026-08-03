@@ -1,7 +1,7 @@
 import React from 'react';
 import TaskCard from './TaskCard';
 
-export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, onSubtasksChange, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask }) {
+export default function TaskStack({ groupId, tasks, onViewTask, onEditTask, onDeleteTask, onSubtasksChange, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask }) {
   // Show max 3 cards visually with diagonal 3D offset (0px, 4px, 8px)
   const reversedTasks = [...tasks].reverse();
   const total = reversedTasks.length;
@@ -73,6 +73,7 @@ export default function TaskStack({ groupId, tasks, onEditTask, onDeleteTask, on
               <TaskCard
                 task={task}
                 isInStack={true}
+                onView={onViewTask}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
                 onSubtasksChange={onSubtasksChange}

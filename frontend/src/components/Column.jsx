@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 import TaskStack from './TaskStack';
 
-export default function Column({ column, groupedItems, viewMode, dwellStackTargetId, onAddTask, onQuickAddTask, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onSubtasksChange, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
+export default function Column({ column, groupedItems, viewMode, dwellStackTargetId, onViewTask, onAddTask, onQuickAddTask, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onSubtasksChange, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const handleAdd = onAddTask || onQuickAddTask;
 
@@ -119,6 +119,7 @@ export default function Column({ column, groupedItems, viewMode, dwellStackTarge
                   key={`stack-${item.groupId}`}
                   groupId={item.groupId}
                   tasks={item.tasks}
+                  onViewTask={onViewTask}
                   onEditTask={onEditTask}
                   onDeleteTask={onDeleteTask}
                   onSubtasksChange={onSubtasksChange}
@@ -135,6 +136,7 @@ export default function Column({ column, groupedItems, viewMode, dwellStackTarge
                 key={item.task.id}
                 task={item.task}
                 isDwellStackReady={dwellStackTargetId === item.task.id}
+                onView={onViewTask}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
                 onSubtasksChange={onSubtasksChange}

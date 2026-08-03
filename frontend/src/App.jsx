@@ -36,6 +36,7 @@ export default function App() {
   const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
+  const [taskToView, setTaskToView] = useState(null);
   const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
   const [shareBoardModal, setShareBoardModal] = useState(null);
   const [syncBoardModal, setSyncBoardModal] = useState(null);
@@ -643,6 +644,7 @@ export default function App() {
                 key={col.id || col.column_key}
                 column={col}
                 groupedItems={getGroupedItemsForColumn(col.column_key)}
+                onViewTask={(task) => setTaskToView(task)}
                 onEditTask={(task) => { setTaskToEdit(task); setIsTaskModalOpen(true); }}
                 onDeleteTask={handleDeleteTask}
                 onEditColumn={(col) => { setColumnToEdit(col); setIsColumnModalOpen(true); }}
@@ -705,6 +707,9 @@ export default function App() {
         setIsTaskModalOpen={setIsTaskModalOpen}
         taskToEdit={taskToEdit}
         setTaskToEdit={setTaskToEdit}
+        taskToView={taskToView}
+        setTaskToView={setTaskToView}
+        onSubtasksChange={handleSubtasksChange}
         handleSaveTask={handleSaveTask}
         isBoardModalOpen={isBoardModalOpen}
         setIsBoardModalOpen={setIsBoardModalOpen}

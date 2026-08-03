@@ -2215,3 +2215,13 @@ body {
 @keyframes spinLoader {
     to { transform: rotate(360deg); }
 }
+
+/* Media Gallery Thumb Hover */
+.media-gallery-thumb:hover {
+    transform: scale(1.03);
+    border-color: #388bfd !important;
+}
+
+.media-gallery-thumb:hover .thumb-overlay {
+    opacity: 1 !important;
+}
