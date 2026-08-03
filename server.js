@@ -333,24 +333,38 @@ app.get(['/api/auth/google-drive', '/auth/google-drive'], (req, res) => {
     if (!clientId) return res.status(500).send('GOOGLE_CLIENT_ID не настроен в вашей панели Railway.');
     const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
     const referer = req.headers.referer || '/';
-    const state = encodeURIComponent(referer);
+    const origin = req.query.origin || 'default';
+    const stateObj = JSON.stringify({ referer, origin });
+    const state = encodeURIComponent(stateObj);
     const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.file&access_type=offline&prompt=consent&state=${state}`;
     res.redirect(googleUrl);
 });
 
 app.get(['/api/auth/google/callback', '/auth/google/callback'], sessionMiddleware, async (req, res) => {
     const code = req.query.code;
-    const stateParam = req.query.state ? decodeURIComponent(req.query.state) : '/';
+    let refererUrl = '/';
+    let originVal = 'default';
+    if (req.query.state) {
+        try {
+            const parsedState = JSON.parse(decodeURIComponent(req.query.state));
+            if (parsedState.referer) refererUrl = parsedState.referer;
+            if (parsedState.origin) originVal = parsedState.origin;
+        } catch (e) {
+            refererUrl = decodeURIComponent(req.query.state);
+        }
+    }
+
     if (!code) return res.redirect('/?auth_error=code_missing');
 
     const buildReturnUrl = (token, extraParams = {}) => {
         let returnUrl;
         try {
-            returnUrl = new URL(stateParam.startsWith('http') ? stateParam : `${getAppUrl(req)}${stateParam}`);
+            returnUrl = new URL(refererUrl.startsWith('http') ? refererUrl : `${getAppUrl(req)}${refererUrl}`);
         } catch (e) {
             returnUrl = new URL(`${getAppUrl(req)}/`);
         }
         if (token) returnUrl.searchParams.set('session', token);
+        if (originVal) returnUrl.searchParams.set('origin', originVal);
         Object.keys(extraParams).forEach(k => returnUrl.searchParams.set(k, extraParams[k]));
         return returnUrl.toString();
     };

@@ -109,10 +109,16 @@ export default function App() {
 
     const driveConnectedParam = params.get('drive_connected');
     if (driveConnectedParam === 'true') {
-      setIsProfileModalOpen(true);
+      const originParam = params.get('origin');
+      if (originParam === 'profile') {
+        setIsProfileModalOpen(true);
+      } else if (originParam === 'settings') {
+        setIsSettingsModalOpen(true);
+      }
       setSyncStatus('success');
       setSyncMessage('Google Диск успешно подключён!');
       params.delete('drive_connected');
+      params.delete('origin');
     }
 
     const newSearch = params.toString();

@@ -113,7 +113,7 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
     const googleToken = currentUser && currentUser.google_access_token;
 
     if (!googleToken) {
-      window.location.href = '/api/auth/google-drive';
+      window.location.href = '/api/auth/google-drive?origin=task';
       return;
     }
 
@@ -371,7 +371,7 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
                   </div>
                 </div>
                 <a
-                  href="/api/auth/google-drive"
+                  href="/api/auth/google-drive?origin=task"
                   className="btn btn-secondary"
                   style={{
                     padding: '0.4rem 0.75rem',

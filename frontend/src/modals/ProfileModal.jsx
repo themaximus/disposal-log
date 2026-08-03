@@ -82,7 +82,7 @@ export default function ProfileModal({ user, onClose, onLogout, onRefreshUser })
             </button>
           ) : (
             <a
-              href="/api/auth/google-drive"
+              href="/api/auth/google-drive?origin=profile"
               className="btn btn-secondary"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', width: '100%', fontSize: '0.82rem', textDecoration: 'none', background: 'rgba(56, 139, 253, 0.1)', color: '#58a6ff', borderColor: 'rgba(56, 139, 253, 0.4)', fontWeight: 600 }}
             >
