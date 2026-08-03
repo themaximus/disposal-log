@@ -321,18 +321,39 @@ app.get(['/api/auth/google', '/auth/google'], (req, res) => {
     res.redirect(googleUrl);
 });
 
+function extractGoogleDriveFileId(url) {
+    if (!url || typeof url !== 'string') return null;
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : null;
+}
+
 // 2b. Google Drive Consent Route (Called only when user explicitly connects Google Drive for media uploads!)
 app.get(['/api/auth/google-drive', '/auth/google-drive'], (req, res) => {
     const clientId = getEnvVar('GOOGLE_CLIENT_ID');
     if (!clientId) return res.status(500).send('GOOGLE_CLIENT_ID не настроен в вашей панели Railway.');
     const redirectUri = `${getAppUrl(req)}/api/auth/google/callback`;
-    const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.file&access_type=offline&prompt=consent`;
+    const referer = req.headers.referer || '/';
+    const state = encodeURIComponent(referer);
+    const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20profile%20email%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.file&access_type=offline&prompt=consent&state=${state}`;
     res.redirect(googleUrl);
 });
 
 app.get(['/api/auth/google/callback', '/auth/google/callback'], sessionMiddleware, async (req, res) => {
     const code = req.query.code;
+    const stateParam = req.query.state ? decodeURIComponent(req.query.state) : '/';
     if (!code) return res.redirect('/?auth_error=code_missing');
+
+    const buildReturnUrl = (token, extraParams = {}) => {
+        let returnUrl;
+        try {
+            returnUrl = new URL(stateParam.startsWith('http') ? stateParam : `${getAppUrl(req)}${stateParam}`);
+        } catch (e) {
+            returnUrl = new URL(`${getAppUrl(req)}/`);
+        }
+        if (token) returnUrl.searchParams.set('session', token);
+        Object.keys(extraParams).forEach(k => returnUrl.searchParams.set(k, extraParams[k]));
+        return returnUrl.toString();
+    };
 
     try {
         const clientId = getEnvVar('GOOGLE_CLIENT_ID');
@@ -371,7 +392,7 @@ app.get(['/api/auth/google/callback', '/auth/google/callback'], sessionMiddlewar
                 if (err) console.error('Failed to link Google Drive token to user:', err.message);
                 const cookies = parseCookies(req);
                 const token = cookies.session_token || req.headers['x-session-token'];
-                res.redirect(`/?session=${token || ''}&drive_connected=true`);
+                res.redirect(buildReturnUrl(token, { drive_connected: 'true' }));
             });
             return;
         }
@@ -381,7 +402,7 @@ app.get(['/api/auth/google/callback', '/auth/google/callback'], sessionMiddlewar
             createSession(user.id, (err, token) => {
                 if (err) return res.redirect('/?auth_error=session_failed');
                 res.setHeader('Set-Cookie', `session_token=${token}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`);
-                res.redirect(`/?session=${token}&drive_connected=true`);
+                res.redirect(buildReturnUrl(token, { drive_connected: 'true' }));
             });
         });
     } catch(e) {
@@ -396,6 +417,32 @@ app.post(['/api/auth/google-drive/unlink', '/auth/google-drive/unlink'], session
         if (err) return res.status(500).json({ error: 'Ошибка отключения Google Диска' });
         res.json({ success: true });
     });
+});
+
+// Delete file from Google Drive Endpoint
+app.post(['/api/upload/google-drive/delete', '/api/upload/delete'], sessionMiddleware, async (req, res) => {
+    const { url } = req.body || {};
+    if (!url) return res.status(400).json({ error: 'URL файла не указан' });
+
+    const fileId = extractGoogleDriveFileId(url);
+    if (!fileId) {
+        return res.json({ success: true, message: 'Не Google Drive файл' });
+    }
+
+    if (!req.user || !req.user.google_access_token) {
+        return res.json({ success: true, message: 'Google токен отсутствует' });
+    }
+
+    try {
+        await fetchJson(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${req.user.google_access_token}` }
+        });
+        res.json({ success: true, deletedFileId: fileId });
+    } catch (err) {
+        console.error('Failed to delete Google Drive file:', err.message);
+        res.status(500).json({ error: 'Ошибка удаления файла с Google Диска' });
+    }
 });
 // Google Drive Direct Upload Endpoint
 app.post('/api/upload/google-drive', sessionMiddleware, async (req, res) => {

@@ -133,7 +133,21 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
   };
 
   const handleRemoveImage = (index) => {
+    const targetUrl = images[index];
     setImages(prev => prev.filter((_, i) => i !== index));
+
+    if (targetUrl) {
+      const token = localStorage.getItem('session_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+      fetch('/api/upload/google-drive/delete', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ url: targetUrl })
+      }).catch(console.error);
+    }
   };
 
   const handleAddSubtask = () => {
@@ -411,6 +425,26 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
                 + Ссылка
               </button>
             </div>
+
+            {isUploading && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.6rem',
+                padding: '0.75rem',
+                background: 'rgba(56, 139, 253, 0.1)',
+                border: '1px dashed #388bfd',
+                borderRadius: '8px',
+                color: '#58a6ff',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                marginBottom: '0.6rem'
+              }}>
+                <span className="spinner-loader"></span>
+                <span>Идёт загрузка медиафайла на Google Диск...</span>
+              </div>
+            )}
 
             <label className="custom-upload-zone">
               <input

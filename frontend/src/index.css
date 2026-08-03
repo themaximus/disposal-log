@@ -2199,3 +2199,19 @@ body {
         max-width: 90vw !important;
     }
 }
+
+/* Media Upload Spinner Loader */
+.spinner-loader {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(88, 166, 255, 0.3);
+    border-top-color: #58a6ff;
+    border-radius: 50%;
+    animation: spinLoader 0.8s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+@keyframes spinLoader {
+    to { transform: rotate(360deg); }
+}

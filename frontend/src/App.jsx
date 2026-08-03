@@ -105,10 +105,19 @@ export default function App() {
     if (sessionTokenParam) {
       localStorage.setItem('session_token', sessionTokenParam);
       params.delete('session');
-      const newSearch = params.toString();
-      const newUrl = `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`;
-      window.history.replaceState({}, document.title, newUrl);
     }
+
+    const driveConnectedParam = params.get('drive_connected');
+    if (driveConnectedParam === 'true') {
+      setIsProfileModalOpen(true);
+      setSyncStatus('success');
+      setSyncMessage('Google Диск успешно подключён!');
+      params.delete('drive_connected');
+    }
+
+    const newSearch = params.toString();
+    const newUrl = `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`;
+    window.history.replaceState({}, document.title, newUrl);
 
     const urlBoardId = getInitialBoardIdFromUrl();
 
