@@ -72,13 +72,29 @@ export default function App() {
     });
   };
 
+  const authFetch = (url, options = {}) => {
+    const token = localStorage.getItem('session_token');
+    const headers = {
+      ...(options && options.headers ? options.headers : {}),
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+    return fetch(url, { ...options, headers });
+  };
+
   const checkAuthStatus = () => {
-    fetch('/api/auth/me')
+    const params = new URLSearchParams(window.location.search);
+    const sessionTokenParam = params.get('session');
+    if (sessionTokenParam) {
+      localStorage.setItem('session_token', sessionTokenParam);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    authFetch('/api/auth/me')
       .then(res => res.json())
       .then(data => {
         if (data && data.user) {
           setCurrentUser(data.user);
-          if (currentTab === 'landing') setCurrentTab('boards');
+          setCurrentTab('boards');
           fetchUserBoards();
         } else {
           initGuestMode();
@@ -114,7 +130,7 @@ export default function App() {
   };
 
   const fetchUserBoards = () => {
-    fetch('/api/boards')
+    authFetch('/api/boards')
       .then(res => res.json())
       .then(onlineBoards => {
         const offlineBoards = getOfflineBoards();
@@ -150,7 +166,7 @@ export default function App() {
 
   const fetchBoardColumns = (boardId) => {
     if (!boardId || String(boardId).startsWith('off_')) return;
-    fetch(`/api/boards/${boardId}/columns`)
+    authFetch(`/api/boards/${boardId}/columns`)
       .then(res => res.json())
       .then(cols => {
         if (Array.isArray(cols)) setColumns(cols);
@@ -160,7 +176,7 @@ export default function App() {
 
   const fetchBoardTasks = (boardId) => {
     if (!boardId || String(boardId).startsWith('off_')) return;
-    fetch(`/api/tasks?board_id=${boardId}`)
+    authFetch(`/api/tasks?board_id=${boardId}`)
       .then(res => res.json())
       .then(tList => {
         if (Array.isArray(tList)) setTasks(tList);
@@ -509,19 +525,21 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <Header
-        currentUser={currentUser}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
-        onOpenProfile={() => setIsProfileModalOpen(true)}
-        onOpenSettings={() => setIsSettingsModalOpen(true)}
-        viewMode={viewMode}
-        onChangeViewMode={(mode) => setViewMode(mode)}
-        onToggleMobileDrawer={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
-        currentTab={currentTab}
-        onSelectTab={handleSelectTab}
-      />
+      {currentTab === 'landing' && (
+        <Header
+          currentUser={currentUser}
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          viewMode={viewMode}
+          onChangeViewMode={(mode) => setViewMode(mode)}
+          onToggleMobileDrawer={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+          currentTab={currentTab}
+          onSelectTab={handleSelectTab}
+        />
+      )}
 
-      <div className={`workspace-wrapper ${currentTab === 'landing' ? 'full-height' : ''}`}>
+      <div className="workspace-wrapper full-height">
         <Sidebar
           currentUser={currentUser}
           currentTab={currentTab}
