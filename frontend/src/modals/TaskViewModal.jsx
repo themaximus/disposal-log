@@ -208,7 +208,7 @@ export default function TaskViewModal({ task, columns, onClose, onEdit, onSubtas
             <div>
               <h4 style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>collections</span>
-                Прикреплённые медиафайлы ({mediaList.length}) — Нажмите для увеличения
+                Медиафайлы
               </h4>
 
               <div
@@ -236,8 +236,26 @@ export default function TaskViewModal({ task, columns, onClose, onEdit, onSubtas
                     className="media-gallery-thumb"
                   >
                     {isVideoUrl(mediaUrl) ? (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: '#388bfd' }}>play_circle</span>
+                      <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000' }}>
+                        <video
+                          src={`${mediaUrl}#t=0.1`}
+                          preload="metadata"
+                          muted
+                          playsInline
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'rgba(0, 0, 0, 0.35)'
+                        }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '2.4rem', color: '#ffffff', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))' }}>
+                            play_circle
+                          </span>
+                        </div>
                       </div>
                     ) : (
                       <img
