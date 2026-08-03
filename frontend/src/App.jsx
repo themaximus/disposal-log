@@ -162,8 +162,9 @@ export default function App() {
     }
 
     const urlBoardId = getInitialBoardIdFromUrl();
-    if (urlBoardId || forceGuest) setCurrentTab('boards');
-    if (targetBoardId) selectBoard(targetBoardId);
+    const shouldSwitch = !!urlBoardId || forceGuest;
+    if (shouldSwitch) setCurrentTab('boards');
+    if (targetBoardId) selectBoard(targetBoardId, shouldSwitch);
   };
 
   const fetchUserBoards = () => {
@@ -186,15 +187,18 @@ export default function App() {
           targetBoardId = combined[0].id;
         }
 
-        if (targetBoardId) selectBoard(targetBoardId);
+        if (targetBoardId) selectBoard(targetBoardId, !!urlBoardId);
       })
       .catch(() => initGuestMode());
   };
 
-  const selectBoard = (boardId) => {
+  const selectBoard = (boardId, shouldSwitchTab = true) => {
     setCurrentBoardId(boardId);
     localStorage.setItem('last_selected_board_id', boardId);
-    updateUrl('boards', boardId);
+    if (shouldSwitchTab) {
+      setCurrentTab('boards');
+    }
+    updateUrl(shouldSwitchTab ? 'boards' : currentTab, boardId);
 
     const isOfflineBoard = String(boardId).startsWith('off_');
     const activeBoard = boards.find(b => String(b.id) === String(boardId));
