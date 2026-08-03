@@ -346,7 +346,7 @@ export default function Sidebar({
             title="Корзина удаленных задач (30 дней)"
             style={{ marginBottom: '0.35rem' }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#f85149' }}>delete</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
             {!isCollapsed && <span>Корзина задач</span>}
           </button>
         )}
