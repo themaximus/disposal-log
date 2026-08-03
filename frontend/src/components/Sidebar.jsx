@@ -89,7 +89,7 @@ export default function Sidebar({
           </button>
 
           <button
-            className={`sidebar-nav-btn ${currentTab === 'workspace' ? 'active' : ''}`}
+            className={`sidebar-nav-btn ${(currentTab === 'workspace' || currentTab === 'boards') ? 'active' : ''}`}
             onClick={() => handleMobileNavClick(() => onSelectTab('workspace'))}
             title="Рабочее пространство Задачи"
           >
@@ -98,7 +98,7 @@ export default function Sidebar({
           </button>
 
           {/* Collapsible Filter / View Modes Dropdown Panel */}
-          {currentTab === 'workspace' && (
+          {(currentTab === 'workspace' || currentTab === 'boards') && (
             <div className="sidebar-filter-wrapper" style={{ position: 'relative' }}>
               <button
                 className={`sidebar-nav-btn ${isFilterPanelOpen ? 'active' : ''}`}
@@ -119,28 +119,29 @@ export default function Sidebar({
 
               {isFilterPanelOpen && !isCollapsed && (
                 <div className="sidebar-filter-panel">
-                  <div className="filter-panel-section">
-                    <span className="filter-section-title">Количество карточек в ряд:</span>
-                    <div className="view-modes-panel-grid">
-                      <button
-                        className={`btn-view-panel ${viewMode === 1 ? 'active' : ''}`}
-                        onClick={() => onChangeViewMode(1)}
-                      >
-                        1 столбик
-                      </button>
-                      <button
-                        className={`btn-view-panel ${viewMode === 2 ? 'active' : ''}`}
-                        onClick={() => onChangeViewMode(2)}
-                      >
-                        2 столбика
-                      </button>
-                      <button
-                        className={`btn-view-panel ${viewMode === 3 ? 'active' : ''}`}
-                        onClick={() => onChangeViewMode(3)}
-                      >
-                        3 столбика
-                      </button>
-                    </div>
+                  <div className="filter-group">
+                    <span className="filter-title">Режим отображения</span>
+                    <button
+                      className={`filter-option ${viewMode === 'list' ? 'active' : ''}`}
+                      onClick={() => onChangeViewMode('list')}
+                    >
+                      <span className="material-symbols-outlined">view_agenda</span>
+                      <span>Компактный список</span>
+                    </button>
+                    <button
+                      className={`filter-option ${viewMode === 'cards' || !viewMode ? 'active' : ''}`}
+                      onClick={() => onChangeViewMode('cards')}
+                    >
+                      <span className="material-symbols-outlined">grid_view</span>
+                      <span>Карточки</span>
+                    </button>
+                    <button
+                      className={`filter-option ${viewMode === 'grid2' ? 'active' : ''}`}
+                      onClick={() => onChangeViewMode('grid2')}
+                    >
+                      <span className="material-symbols-outlined">view_column</span>
+                      <span>Сетка 2x2</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -163,7 +164,7 @@ export default function Sidebar({
           {boards.map(b => (
             <div
               key={b.id}
-              className={`board-item ${b.id === currentBoardId ? 'active' : ''}`}
+              className={`board-item ${String(b.id) === String(currentBoardId) ? 'active' : ''}`}
               onClick={() => handleMobileNavClick(() => onSelectBoard(b.id))}
               style={{ position: 'relative' }}
             >
