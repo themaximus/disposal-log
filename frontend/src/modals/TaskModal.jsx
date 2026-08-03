@@ -455,18 +455,49 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
           </div>
 
           <div className="form-group">
-            <label>Сложность (Звёзды)</label>
-            <div className="star-rating-picker">
-              {[1, 2, 3].map(d => (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>palette</span>
+              Цвет метки карточки
+            </label>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {[
+                { level: 1, color: '#3fb950', name: 'Зелёный' },
+                { level: 2, color: '#d29922', name: 'Жёлтый' },
+                { level: 3, color: '#f85149', name: 'Красный' },
+                { level: 4, color: '#388bfd', name: 'Синий' },
+                { level: 5, color: '#a371f7', name: 'Фиолетовый' },
+                { level: 6, color: '#8b949e', name: 'Серый' }
+              ].map(item => (
                 <button
-                  key={d}
+                  key={item.level}
                   type="button"
-                  className={`star-picker-btn ${difficulty === d ? 'active' : ''}`}
-                  onClick={() => setDifficulty(d)}
+                  onClick={() => setDifficulty(item.level)}
+                  style={{
+                    flex: 1,
+                    minWidth: '55px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.45rem 0.25rem',
+                    background: 'var(--github-canvas)',
+                    border: difficulty === item.level ? `2px solid ${item.color}` : '1px solid var(--github-border)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: difficulty === item.level ? `0 0 10px ${item.color}40` : 'none'
+                  }}
+                  title={item.name}
                 >
-                  <span className="star-icons">{'★'.repeat(d)}</span>
-                  <span className="star-label">
-                    {d === 1 ? 'Низкая' : d === 2 ? 'Средняя' : 'Высокая'}
+                  <span style={{
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color,
+                    boxShadow: `0 0 6px ${item.color}80`
+                  }} />
+                  <span style={{ fontSize: '0.7rem', fontWeight: 600, color: difficulty === item.level ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                    {item.name}
                   </span>
                 </button>
               ))}

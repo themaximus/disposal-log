@@ -1685,9 +1685,12 @@ body {
     z-index: 1000;
 }
 
-.task-card[data-diff="1"] { border-left: 4px solid var(--diff-1); }
-.task-card[data-diff="2"] { border-left: 4px solid var(--diff-2); }
-.task-card[data-diff="3"] { border-left: 4px solid var(--diff-3); }
+.task-card[data-diff="1"] { border-left: 4px solid #3fb950; }
+.task-card[data-diff="2"] { border-left: 4px solid #d29922; }
+.task-card[data-diff="3"] { border-left: 4px solid #f85149; }
+.task-card[data-diff="4"] { border-left: 4px solid #388bfd; }
+.task-card[data-diff="5"] { border-left: 4px solid #a371f7; }
+.task-card[data-diff="6"] { border-left: 4px solid #8b949e; }
 
 /* Strict Uniform Card Dimensions for Stacked Cards */
 .task-card.in-stack {

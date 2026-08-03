@@ -15,8 +15,6 @@ export default function TaskCard({ task, isInStack, isDwellStackReady, onEdit, o
     }
   }, [task.subtasks, task.subtasks_json]);
 
-  const diffStars = '★'.repeat(task.difficulty || 1) + '☆'.repeat(3 - (task.difficulty || 1));
-  
   const isVideoUrl = (url) => typeof url === 'string' && /\.(mp4|webm|mov|ogg)$/i.test(url);
 
   const getMediaList = () => {
@@ -145,7 +143,6 @@ export default function TaskCard({ task, isInStack, isDwellStackReady, onEdit, o
       <div className="card-content">
         <div className="card-header">
           <h3 className="card-title">{task.title}</h3>
-          <span className="card-stars">{diffStars}</span>
         </div>
 
         {task.description && (
