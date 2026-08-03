@@ -97,25 +97,6 @@ export default function Sidebar({
             {!isCollapsed && <span>Задачи</span>}
           </button>
 
-          {/* Primary Create Task Button */}
-          <button
-            className="sidebar-nav-btn"
-            style={{
-              background: 'var(--github-green)',
-              color: '#ffffff',
-              borderColor: 'var(--github-green-hover)',
-              marginTop: '0.2rem',
-              marginBottom: '0.2rem'
-            }}
-            onClick={() => {
-              if (typeof onAddTask === 'function') onAddTask();
-            }}
-            title="Создать новую задачу"
-          >
-            <span className="material-symbols-outlined" style={{ color: '#fff' }}>add_circle</span>
-            {!isCollapsed && <span>Новая задача</span>}
-          </button>
-
           {/* Collapsible Filter / View Modes Dropdown Panel */}
           {currentTab === 'workspace' && (
             <div className="sidebar-filter-wrapper" style={{ position: 'relative' }}>
