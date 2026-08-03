@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function TaskViewModal({ task, onClose, onEdit, onSubtasksChange }) {
+export default function TaskViewModal({ task, columns, onClose, onEdit, onSubtasksChange }) {
   const [subtasks, setSubtasks] = useState([]);
   const [activeMediaIndex, setActiveMediaIndex] = useState(null); // Lightbox state: null or index
 
@@ -63,6 +63,13 @@ export default function TaskViewModal({ task, onClose, onEdit, onSubtasksChange 
     6: '#8b949e'
   };
 
+  const currentColumn = Array.isArray(columns)
+    ? columns.find(c => c.column_key === task.status || String(c.id) === String(task.status))
+    : null;
+
+  const columnTitle = currentColumn ? currentColumn.title : (task.status || 'Задачи');
+  const columnColor = currentColumn ? currentColumn.color : (diffColors[task.difficulty || 1] || '#3fb950');
+
   const currentMedia = activeMediaIndex !== null ? mediaList[activeMediaIndex] : null;
 
   return (
@@ -82,11 +89,11 @@ export default function TaskViewModal({ task, onClose, onEdit, onSubtasksChange 
                   width: '10px',
                   height: '10px',
                   borderRadius: '50%',
-                  background: diffColors[task.difficulty || 1] || '#3fb950'
+                  background: columnColor
                 }}
               />
-              <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
-                Статус: {task.status ? task.status.toUpperCase() : 'ЗАДАЧА'}
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                {columnTitle}
               </span>
             </div>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, lineHeight: 1.35 }}>

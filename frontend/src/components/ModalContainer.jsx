@@ -150,6 +150,7 @@ export default function ModalContainer({
       {taskToView && (
         <TaskViewModal
           task={taskToView}
+          columns={columns}
           onClose={() => setTaskToView(null)}
           onEdit={(t) => {
             setTaskToView(null);
