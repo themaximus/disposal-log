@@ -135,8 +135,10 @@ export default function App() {
     setCurrentBoardId(boardId);
     localStorage.setItem('last_selected_board_id', boardId);
 
+    const isOfflineBoard = String(boardId).startsWith('off_');
     const activeBoard = boards.find(b => String(b.id) === String(boardId));
-    if (activeBoard && activeBoard.is_offline) {
+
+    if (isOfflineBoard || (activeBoard && activeBoard.is_offline)) {
       const offlineData = getOfflineBoardData(boardId);
       setColumns(offlineData.columns || []);
       setTasks(offlineData.tasks || []);
@@ -147,6 +149,7 @@ export default function App() {
   };
 
   const fetchBoardColumns = (boardId) => {
+    if (!boardId || String(boardId).startsWith('off_')) return;
     fetch(`/api/boards/${boardId}/columns`)
       .then(res => res.json())
       .then(cols => {
@@ -156,6 +159,7 @@ export default function App() {
   };
 
   const fetchBoardTasks = (boardId) => {
+    if (!boardId || String(boardId).startsWith('off_')) return;
     fetch(`/api/tasks?board_id=${boardId}`)
       .then(res => res.json())
       .then(tList => {

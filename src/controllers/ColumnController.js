@@ -3,6 +3,7 @@ const ColumnRepository = require('../repositories/ColumnRepository');
 class ColumnController {
     static getColumns(req, res) {
         const boardId = req.params.boardId;
+        if (!boardId || String(boardId).startsWith('off_')) return res.json([]);
         ColumnRepository.findByBoardId(boardId, (err, cols) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json(cols || []);

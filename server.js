@@ -888,6 +888,7 @@ app.delete('/api/boards/:id/share/invite', sessionMiddleware, requireUser, (req,
 // Dynamic Columns API
 app.get('/api/boards/:boardId/columns', sessionMiddleware, (req, res) => {
     const boardId = req.params.boardId;
+    if (!boardId || String(boardId).startsWith('off_')) return res.json([]);
     ensureDefaultColumnsForBoard(boardId, (err, cols) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(cols || []);
