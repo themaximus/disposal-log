@@ -1350,10 +1350,12 @@ const publicDir = path.join(__dirname, 'public');
 const staticDir = fs.existsSync(distDir) ? distDir : publicDir;
 
 app.use(express.static(staticDir, {
-    etag: false,
-    maxAge: 0,
-    setHeaders: (res) => {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+        } else {
+            res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+        }
     }
 }));
 

@@ -16,6 +16,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         console.log('Connected to SQLite database at:', dbPath);
 
         db.run("PRAGMA journal_mode = WAL;");
+        db.run("PRAGMA cache_size = -2000;"); // Limits SQLite page cache to ~2MB RAM
         db.run("PRAGMA foreign_keys = ON;");
 
         // Users table for Google & GitHub OAuth

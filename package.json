@@ -4,7 +4,7 @@
   "description": "Game Dev Mechanics Task Manager - Vite React Edition",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node --max-old-space-size=384 server.js",
     "build": "vite build",
     "postinstall": "npm run build",
     "dev": "vite",
