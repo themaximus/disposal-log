@@ -672,6 +672,26 @@ export default function App() {
     });
   };
 
+  const handleAddColumn = (newCol) => {
+    const colObj = { ...newCol, id: `col_${Date.now()}`, column_key: `col_${Date.now()}` };
+    const updated = [...columns, colObj];
+    setColumns(updated);
+
+    const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
+    if (activeBoard && activeBoard.is_offline) {
+      saveOfflineBoardData(currentBoardId, { columns: updated, tasks });
+      setSyncStatus('synced');
+      setSyncMessage('💾 Колонка создана');
+      return;
+    }
+
+    fetch(`/api/boards/${currentBoardId}/columns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newCol)
+    }).then(() => fetchBoardColumns(currentBoardId));
+  };
+
   const handleDeleteBoard = (boardToDelete) => {
     if (!boardToDelete) return;
 
