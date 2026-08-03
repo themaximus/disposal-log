@@ -118,7 +118,7 @@ export default function App() {
         const user = data && (data.user || (data.id ? data : null));
         if (user) {
           setCurrentUser(user);
-          setCurrentTab('boards');
+          if (urlBoardId) setCurrentTab('boards');
           fetchUserBoards();
         } else {
           if (urlBoardId) setCurrentTab('boards');
