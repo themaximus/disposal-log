@@ -537,6 +537,10 @@ export default function App() {
           onOpenSettings={() => setIsSettingsModalOpen(true)}
           onOpenTrash={() => setIsTrashModalOpen(true)}
           onOpenBoardSettings={(b) => setBoardSettingsModal(b)}
+          onAddTask={() => {
+            setTaskToEdit({ status: columns[0]?.column_key || 'todo', difficulty: 1 });
+            setIsTaskModalOpen(true);
+          }}
           onLogout={handleLogout}
           boards={boards}
           currentBoardId={currentBoardId}
@@ -575,6 +579,10 @@ export default function App() {
                 onDeleteColumn={handleDeleteColumn}
                 onSubtasksChange={handleSubtasksChange}
                 onUnlinkGroup={handleUnlinkGroup}
+                onAddTask={(colKey) => {
+                  setTaskToEdit({ status: colKey, difficulty: 1 });
+                  setIsTaskModalOpen(true);
+                }}
                 onQuickAddTask={(colKey) => {
                   setTaskToEdit({ status: colKey, difficulty: 1 });
                   setIsTaskModalOpen(true);

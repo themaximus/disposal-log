@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 import TaskStack from './TaskStack';
 
-export default function Column({ column, groupedItems, viewMode, dwellStackTargetId, onAddTask, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onSubtasksChange, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
+export default function Column({ column, groupedItems, viewMode, dwellStackTargetId, onAddTask, onQuickAddTask, onEditColumn, onDeleteColumn, onEditTask, onDeleteTask, onSubtasksChange, onUnlinkGroup, onDragStartTask, onDragOverTask, onDropTask, onDropColumn }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const handleAdd = onAddTask || onQuickAddTask;
 
   // Total task count
   const totalCount = groupedItems.reduce((acc, item) => item.isStack ? acc + item.tasks.length : acc + 1, 0);
@@ -16,10 +17,10 @@ export default function Column({ column, groupedItems, viewMode, dwellStackTarge
         </h2>
         
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-          {typeof onAddTask === 'function' && (
+          {typeof handleAdd === 'function' && (
             <button
               className="btn-dots-menu"
-              onClick={() => onAddTask(column.column_key)}
+              onClick={() => handleAdd(column.column_key)}
               title={`Добавить задачу в "${column.title}"`}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>add</span>
@@ -146,11 +147,11 @@ export default function Column({ column, groupedItems, viewMode, dwellStackTarge
         </div>
 
         {/* Linear/Trello-style quick add task row at bottom of column */}
-        {typeof onAddTask === 'function' && (
+        {typeof handleAdd === 'function' && (
           <button
             type="button"
             className="btn-quick-add-task-col"
-            onClick={() => onAddTask(column.column_key)}
+            onClick={() => handleAdd(column.column_key)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>add</span>
             Добавить задачу

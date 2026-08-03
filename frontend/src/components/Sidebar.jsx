@@ -11,6 +11,7 @@ export default function Sidebar({
   onOpenSettings,
   onOpenTrash,
   onOpenBoardSettings,
+  onAddTask,
   onLogout,
   boards,
   currentBoardId,
@@ -36,8 +37,8 @@ export default function Sidebar({
   }, [isCollapsed]);
 
   const handleMobileNavClick = (action) => {
+    if (typeof action === 'function') action();
     if (typeof onCloseMobileDrawer === 'function') onCloseMobileDrawer();
-    action();
   };
 
   const getAvatarUrl = (user) => {
@@ -55,7 +56,7 @@ export default function Sidebar({
         <div
           className="sidebar-brand-header"
           onClick={onToggleCollapse}
-          title={isCollapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар'}
+          title={isCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
         >
           <div className="sidebar-logo-block">
             <div className="sidebar-folder-wrapper">
@@ -80,7 +81,7 @@ export default function Sidebar({
         <div className="sidebar-nav-section">
           <button
             className={`sidebar-nav-btn ${currentTab === 'landing' ? 'active' : ''}`}
-            onClick={() => onSelectTab('landing')}
+            onClick={() => handleMobileNavClick(() => onSelectTab('landing'))}
             title="Главная страница"
           >
             <span className="material-symbols-outlined">home</span>
@@ -94,6 +95,25 @@ export default function Sidebar({
           >
             <span className="material-symbols-outlined">space_dashboard</span>
             {!isCollapsed && <span>Задачи</span>}
+          </button>
+
+          {/* Primary Create Task Button */}
+          <button
+            className="sidebar-nav-btn"
+            style={{
+              background: 'var(--github-green)',
+              color: '#ffffff',
+              borderColor: 'var(--github-green-hover)',
+              marginTop: '0.2rem',
+              marginBottom: '0.2rem'
+            }}
+            onClick={() => {
+              if (typeof onAddTask === 'function') onAddTask();
+            }}
+            title="Создать новую задачу"
+          >
+            <span className="material-symbols-outlined" style={{ color: '#fff' }}>add_circle</span>
+            {!isCollapsed && <span>Новая задача</span>}
           </button>
 
           {/* Collapsible Filter / View Modes Dropdown Panel */}
