@@ -330,7 +330,7 @@ app.get(['/api/auth/google-drive', '/auth/google-drive'], (req, res) => {
     res.redirect(googleUrl);
 });
 
-app.get(['/api/auth/google/callback', '/auth/google/callback'], async (req, res) => {
+app.get(['/api/auth/google/callback', '/auth/google/callback'], sessionMiddleware, async (req, res) => {
     const code = req.query.code;
     if (!code) return res.redirect('/?auth_error=code_missing');
 
@@ -365,18 +365,37 @@ app.get(['/api/auth/google/callback', '/auth/google/callback'], async (req, res)
         const avatarUrl = profile.picture || '';
         const providerId = String(profile.id);
 
+        // If user is already logged in (e.g. via GitHub or existing session), link Google Drive token to their current account!
+        if (req.user) {
+            db.run(`UPDATE users SET google_access_token = ? WHERE id = ?`, [accessToken, req.user.id], (err) => {
+                if (err) console.error('Failed to link Google Drive token to user:', err.message);
+                const cookies = parseCookies(req);
+                const token = cookies.session_token || req.headers['x-session-token'];
+                res.redirect(`/?session=${token || ''}&drive_connected=true`);
+            });
+            return;
+        }
+
         createOrGetUser('google', providerId, email, name, avatarUrl, accessToken, (err, user) => {
             if (err || !user) return res.redirect('/?auth_error=user_create_failed');
             createSession(user.id, (err, token) => {
                 if (err) return res.redirect('/?auth_error=session_failed');
                 res.setHeader('Set-Cookie', `session_token=${token}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`);
-                res.redirect(`/?session=${token}&tab=workspace`);
+                res.redirect(`/?session=${token}&drive_connected=true`);
             });
         });
     } catch(e) {
         console.error('Google OAuth error:', e);
         res.redirect('/?auth_error=google_exception');
     }
+});
+
+// Disconnect Google Drive Endpoint
+app.post(['/api/auth/google-drive/unlink', '/auth/google-drive/unlink'], sessionMiddleware, requireUser, (req, res) => {
+    db.run(`UPDATE users SET google_access_token = NULL WHERE id = ?`, [req.user.id], (err) => {
+        if (err) return res.status(500).json({ error: 'Ошибка отключения Google Диска' });
+        res.json({ success: true });
+    });
 });
 // Google Drive Direct Upload Endpoint
 app.post('/api/upload/google-drive', sessionMiddleware, async (req, res) => {

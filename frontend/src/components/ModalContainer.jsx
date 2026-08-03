@@ -20,6 +20,7 @@ export default function ModalContainer({
   setIsProfileModalOpen,
   currentUser,
   handleLogout,
+  checkAuthStatus,
   isSettingsModalOpen,
   setIsSettingsModalOpen,
   isTrashModalOpen,
@@ -83,6 +84,7 @@ export default function ModalContainer({
           user={currentUser}
           onClose={() => setIsProfileModalOpen(false)}
           onLogout={handleLogout}
+          onRefreshUser={checkAuthStatus}
         />
       )}
 

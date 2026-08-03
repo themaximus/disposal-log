@@ -1,11 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-export default function ProfileModal({ user, onClose, onLogout }) {
+export default function ProfileModal({ user, onClose, onLogout, onRefreshUser }) {
+  const [unlinkStatus, setUnlinkStatus] = useState('');
+
   if (!user) return null;
 
+  const handleUnlinkDrive = () => {
+    const token = localStorage.getItem('session_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+
+    setUnlinkStatus('Отключение...');
+    fetch('/api/auth/google-drive/unlink', { method: 'POST', headers })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setUnlinkStatus('✅ Диск отключён');
+          if (typeof onRefreshUser === 'function') onRefreshUser();
+          setTimeout(() => setUnlinkStatus(''), 2000);
+        } else {
+          setUnlinkStatus('❌ Ошибка');
+        }
+      })
+      .catch(() => setUnlinkStatus('❌ Ошибка'));
+  };
+
   return (
-    <div className="modal-overlay active">
-      <div className="modal" style={{ maxWidth: '420px' }}>
+    <div className="modal-overlay active" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>👤 Профиль Пользователя</h2>
           <button className="btn-close" onClick={onClose}>✕</button>
@@ -24,6 +48,48 @@ export default function ProfileModal({ user, onClose, onLogout }) {
               Провайдер: {user.provider === 'github' ? 'GitHub 🐙' : 'Google 🔴'}
             </span>
           </div>
+        </div>
+
+        {/* Google Drive Integration Card */}
+        <div style={{ marginBottom: '1.25rem', background: 'var(--github-surface)', border: '1px solid var(--github-border)', padding: '0.85rem', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+            <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: user.google_access_token ? '#3fb950' : '#8b949e' }}>
+                {user.google_access_token ? 'cloud_done' : 'cloud_off'}
+              </span>
+              Google Диск
+            </div>
+            <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600, background: user.google_access_token ? 'rgba(63, 185, 80, 0.15)' : 'rgba(139, 148, 158, 0.15)', color: user.google_access_token ? '#3fb950' : '#8b949e' }}>
+              {user.google_access_token ? 'Подключён 🟢' : 'Не подключён ⚪'}
+            </span>
+          </div>
+
+          <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0', lineHeight: 1.4 }}>
+            {user.google_access_token
+              ? 'Google Диск подключён к вашему аккаунту для хранения медиафайлов.'
+              : 'Подключите ваш Google Диск для сохранения прикреплённых фото/видео к задачам.'}
+          </p>
+
+          {user.google_access_token ? (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ width: '100%', fontSize: '0.8rem', color: '#f85149', borderColor: 'rgba(248, 81, 73, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+              onClick={handleUnlinkDrive}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '0.95rem' }}>link_off</span>
+              {unlinkStatus || 'Отключить Google Диск'}
+            </button>
+          ) : (
+            <a
+              href="/api/auth/google-drive"
+              className="btn btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', width: '100%', fontSize: '0.82rem', textDecoration: 'none', background: 'rgba(56, 139, 253, 0.1)', color: '#58a6ff', borderColor: 'rgba(56, 139, 253, 0.4)', fontWeight: 600 }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>add_to_drive</span>
+              Подключить Google Диск
+            </a>
+          )}
         </div>
 
         <div style={{ marginBottom: '1.5rem', background: 'var(--github-surface)', border: '1px solid var(--github-border)', padding: '0.85rem', borderRadius: '8px' }}>

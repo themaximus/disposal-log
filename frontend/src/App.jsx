@@ -664,6 +664,7 @@ export default function App() {
         setIsProfileModalOpen={setIsProfileModalOpen}
         currentUser={currentUser}
         handleLogout={handleLogout}
+        checkAuthStatus={checkAuthStatus}
         isSettingsModalOpen={isSettingsModalOpen}
         setIsSettingsModalOpen={setIsSettingsModalOpen}
         isTrashModalOpen={isTrashModalOpen}
