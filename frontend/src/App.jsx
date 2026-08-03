@@ -81,13 +81,36 @@ export default function App() {
     return fetch(url, { ...options, headers });
   };
 
+  const updateUrl = (tab, boardId) => {
+    const url = new URL(window.location.href);
+    if (tab === 'landing') {
+      url.searchParams.delete('board');
+      url.searchParams.delete('tab');
+    } else {
+      if (boardId) {
+        url.searchParams.set('board', boardId);
+      }
+    }
+    window.history.replaceState({ tab, boardId }, '', url.toString());
+  };
+
+  const getInitialBoardIdFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('board');
+  };
+
   const checkAuthStatus = () => {
     const params = new URLSearchParams(window.location.search);
     const sessionTokenParam = params.get('session');
     if (sessionTokenParam) {
       localStorage.setItem('session_token', sessionTokenParam);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      params.delete('session');
+      const newSearch = params.toString();
+      const newUrl = `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`;
+      window.history.replaceState({}, document.title, newUrl);
     }
+
+    const urlBoardId = getInitialBoardIdFromUrl();
 
     authFetch('/api/auth/me')
       .then(res => res.json())
@@ -98,14 +121,20 @@ export default function App() {
           setCurrentTab('boards');
           fetchUserBoards();
         } else {
+          if (urlBoardId) setCurrentTab('boards');
           initGuestMode();
         }
       })
-      .catch(() => initGuestMode());
+      .catch(() => {
+        if (urlBoardId) setCurrentTab('boards');
+        initGuestMode();
+      });
   };
 
   const initGuestMode = (forceGuest = false) => {
     const offlineBoards = getOfflineBoards();
+    let targetBoardId = null;
+
     if (offlineBoards.length === 0) {
       const defaultOfflineBoard = {
         id: 'off_board_default',
@@ -117,17 +146,24 @@ export default function App() {
       };
       saveOfflineBoards([defaultOfflineBoard]);
       setBoards([defaultOfflineBoard]);
-      selectBoard(defaultOfflineBoard.id);
+      targetBoardId = defaultOfflineBoard.id;
     } else {
       setBoards(offlineBoards);
+      const urlBoardId = getInitialBoardIdFromUrl();
       const lastSelectedId = localStorage.getItem('last_selected_board_id');
-      if (lastSelectedId && offlineBoards.some(b => String(b.id) === String(lastSelectedId))) {
-        selectBoard(lastSelectedId);
+
+      if (urlBoardId && offlineBoards.some(b => String(b.id) === String(urlBoardId))) {
+        targetBoardId = urlBoardId;
+      } else if (lastSelectedId && offlineBoards.some(b => String(b.id) === String(lastSelectedId))) {
+        targetBoardId = lastSelectedId;
       } else {
-        selectBoard(offlineBoards[0].id);
+        targetBoardId = offlineBoards[0].id;
       }
     }
-    if (forceGuest) setCurrentTab('boards');
+
+    const urlBoardId = getInitialBoardIdFromUrl();
+    if (urlBoardId || forceGuest) setCurrentTab('boards');
+    if (targetBoardId) selectBoard(targetBoardId);
   };
 
   const fetchUserBoards = () => {
@@ -138,12 +174,19 @@ export default function App() {
         const combined = [...(Array.isArray(onlineBoards) ? onlineBoards : []), ...offlineBoards];
         setBoards(combined);
 
+        const urlBoardId = getInitialBoardIdFromUrl();
         const lastSelectedId = localStorage.getItem('last_selected_board_id');
-        if (lastSelectedId && combined.some(b => String(b.id) === String(lastSelectedId))) {
-          selectBoard(lastSelectedId);
+
+        let targetBoardId = null;
+        if (urlBoardId && combined.some(b => String(b.id) === String(urlBoardId))) {
+          targetBoardId = urlBoardId;
+        } else if (lastSelectedId && combined.some(b => String(b.id) === String(lastSelectedId))) {
+          targetBoardId = lastSelectedId;
         } else if (combined.length > 0) {
-          selectBoard(combined[0].id);
+          targetBoardId = combined[0].id;
         }
+
+        if (targetBoardId) selectBoard(targetBoardId);
       })
       .catch(() => initGuestMode());
   };
@@ -151,6 +194,7 @@ export default function App() {
   const selectBoard = (boardId) => {
     setCurrentBoardId(boardId);
     localStorage.setItem('last_selected_board_id', boardId);
+    updateUrl('boards', boardId);
 
     const isOfflineBoard = String(boardId).startsWith('off_');
     const activeBoard = boards.find(b => String(b.id) === String(boardId));
@@ -493,6 +537,13 @@ export default function App() {
 
   const handleSelectTab = (tabId) => {
     setCurrentTab(tabId);
+    if (tabId === 'landing') {
+      updateUrl('landing');
+    } else {
+      if (currentBoardId) {
+        updateUrl('boards', currentBoardId);
+      }
+    }
   };
 
   const getGroupedItemsForColumn = (columnKey) => {
