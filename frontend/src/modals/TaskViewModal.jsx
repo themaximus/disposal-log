@@ -111,7 +111,9 @@ export default function TaskViewModal({ task, columns, onClose, onEdit, onSubtas
               <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>edit</span>
               Редактировать
             </button>
-            <button className="btn-close" onClick={onClose}>✕</button>
+            <button className="btn-close" onClick={onClose} title="Закрыть">
+              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+            </button>
           </div>
         </div>
 
@@ -323,22 +325,12 @@ export default function TaskViewModal({ task, columns, onClose, onEdit, onSubtas
               Медиафайл {activeMediaIndex + 1} из {mediaList.length}
             </div>
             <button
+              className="btn-close"
               onClick={() => setActiveMediaIndex(null)}
-              style={{
-                background: 'rgba(255,255,255,0.15)',
-                border: 'none',
-                color: '#fff',
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                cursor: 'pointer',
-                fontSize: '1.2rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
+              title="Закрыть"
+              style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff' }}
             >
-              ✕
+              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
             </button>
           </div>
 

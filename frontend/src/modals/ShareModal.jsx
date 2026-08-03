@@ -54,7 +54,9 @@ export default function ShareModal({ board, onClose }) {
             <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: 'var(--github-blue-text)' }}>share</span>
             Доступ к доске: {board.name}
           </h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <button className="btn-close" onClick={onClose} title="Закрыть">
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+          </button>
         </div>
 
         <div className="option-cards-group">

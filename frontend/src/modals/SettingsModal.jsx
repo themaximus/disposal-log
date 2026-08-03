@@ -48,7 +48,9 @@ export default function SettingsModal({ onClose }) {
       <div className="modal settings-modal" style={{ maxWidth: '580px' }}>
         <div className="modal-header" style={{ borderBottom: '1px solid var(--github-border)', paddingBottom: '0.85rem', justifyContent: 'space-between' }}>
           <h2>⚙️ Панель Настроек</h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <button className="btn-close" onClick={onClose} title="Закрыть">
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+          </button>
         </div>
 
         <div className="settings-tabs-nav" style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--github-border)', padding: '0.75rem 0', marginBottom: '1rem' }}>

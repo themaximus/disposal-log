@@ -56,7 +56,9 @@ export default function ManageColumnsModal({ board, columns, onClose, onSaveColu
             <span className="material-symbols-outlined" style={{ color: 'var(--github-blue-text)' }}>view_column</span>
             Порядок и Колоноки Доски
           </h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <button className="btn-close" onClick={onClose} title="Закрыть">
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+          </button>
         </div>
 
         <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>

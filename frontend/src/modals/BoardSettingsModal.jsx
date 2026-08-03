@@ -215,9 +215,10 @@ export default function BoardSettingsModal({
           <button
             className="btn-close"
             onClick={onClose}
+            title="Закрыть"
             style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', zIndex: 10 }}
           >
-            ✕
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
           </button>
 
           <div style={{ padding: '1.75rem 2rem', flex: 1 }}>

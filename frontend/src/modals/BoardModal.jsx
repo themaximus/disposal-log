@@ -21,7 +21,9 @@ export default function BoardModal({ onClose, onSave }) {
             <span className="material-symbols-outlined" style={{ color: 'var(--github-blue-text)' }}>space_dashboard</span>
             Новая Доска
           </h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <button className="btn-close" onClick={onClose} title="Закрыть">
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+          </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">

@@ -192,7 +192,9 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
       <div className="modal" style={{ maxWidth: '520px' }}>
         <div className="modal-header">
           <h2>{activeTask ? 'Редактировать Механику' : 'Новая Механика'}</h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <button className="btn-close" onClick={onClose} title="Закрыть">
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+          </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -299,11 +301,11 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
                     </label>
                     <button
                       type="button"
+                      className="btn-dots-menu"
                       onClick={() => handleRemoveSubtask(idx)}
-                      style={{ background: 'transparent', border: 'none', color: 'var(--github-red-text)', cursor: 'pointer', fontSize: '0.75rem', padding: '0.1rem 0.3rem' }}
                       title="Удалить пункт"
                     >
-                      ✕
+                      <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>close</span>
                     </button>
                   </div>
                 ))}
@@ -476,11 +478,12 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
                     )}
                     <button
                       type="button"
-                      className="btn-remove-media"
+                      className="btn-dots-menu"
                       onClick={() => handleRemoveImage(idx)}
                       title="Удалить файл"
+                      style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.75)', color: '#fff', zIndex: 5 }}
                     >
-                      ✕
+                      <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>close</span>
                     </button>
                   </div>
                 ))}

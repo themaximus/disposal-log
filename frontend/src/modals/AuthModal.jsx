@@ -13,7 +13,9 @@ export default function AuthModal({ onClose, onOpenGuestMode }) {
             </span>
             {viewMode === 'guest_info' ? 'Работа без аккаунта' : 'Вход в аккаунт'}
           </h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <button className="btn-close" onClick={onClose} title="Закрыть">
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+          </button>
         </div>
 
         {viewMode === 'select' ? (

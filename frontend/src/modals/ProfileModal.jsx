@@ -32,7 +32,9 @@ export default function ProfileModal({ user, onClose, onLogout, onRefreshUser })
       <div className="modal" style={{ maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>👤 Профиль Пользователя</h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <button className="btn-close" onClick={onClose} title="Закрыть">
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+          </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem', background: 'var(--github-canvas)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--github-border)' }}>

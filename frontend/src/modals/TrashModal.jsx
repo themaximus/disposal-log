@@ -150,7 +150,9 @@ export default function TrashModal({ boardId, currentUser, onClose, onRestoreTas
             <span className="material-symbols-outlined" style={{ color: 'var(--github-red-text)' }}>delete</span>
             Корзина Задач (30 дней)
           </h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <button className="btn-close" onClick={onClose} title="Закрыть">
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+          </button>
         </div>
 
         <div style={{ padding: '0.5rem 0' }}>
@@ -245,20 +247,12 @@ export default function TrashModal({ boardId, currentUser, onClose, onRestoreTas
                         ↩️ Восстановить
                       </button>
                       <button
-                        type="button"
-                        className="btn btn-secondary"
+                        className="btn-dots-menu"
                         disabled={isDeleting}
                         onClick={() => handlePermanentDelete(task)}
-                        style={{
-                          padding: '0.35rem 0.65rem',
-                          fontSize: '0.78rem',
-                          background: 'rgba(248, 81, 73, 0.1)',
-                          color: '#f85149',
-                          borderColor: 'rgba(248, 81, 73, 0.25)'
-                        }}
                         title="Удалить навсегда из базы и Google Диска"
                       >
-                        ✕
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#f85149' }}>close</span>
                       </button>
                     </div>
                   </div>

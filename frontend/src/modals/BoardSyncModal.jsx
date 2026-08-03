@@ -15,8 +15,8 @@ export default function BoardSyncModal({ board, onClose, onToggleBoardMode }) {
             </span>
             <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Синхронизация доски</h2>
           </div>
-          <button className="btn-icon" onClick={onClose} title="Закрыть">
-            <span className="material-symbols-outlined">close</span>
+          <button className="btn-close" onClick={onClose} title="Закрыть">
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
           </button>
         </div>
 
