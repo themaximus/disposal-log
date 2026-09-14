@@ -4635,6 +4635,10 @@ select,
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 20px rgba(255, 68, 85, 0.35);
 }
 
+.react-flow__node-sectionNode {
+    overflow: visible !important;
+}
+
 /* Section Header Bar */
 .section-node-header {
     display: flex;
@@ -4648,6 +4652,8 @@ select,
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
+    overflow: hidden;
+    min-width: 0;
 }
 
 .section-node-header:active {

@@ -97,13 +97,20 @@ export class DiagramGroupingService {
       id: sectionId,
       type: 'sectionNode',
       position: { x: sectionX, y: sectionY },
+      width: sectionW,
+      height: sectionH,
+      initialWidth: sectionW,
+      initialHeight: sectionH,
+      measured: { width: sectionW, height: sectionH },
       style: { width: sectionW, height: sectionH },
       data: {
         label: options.label || `Секция (${nodesToGroup.length} эл.)`,
         theme: options.theme || 'crimson',
         borderStyle: options.borderStyle || 'dashed',
         icon: options.icon || '📁',
-        childCount: nodesToGroup.length
+        childCount: nodesToGroup.length,
+        width: sectionW,
+        height: sectionH
       },
       zIndex: -1
     };
@@ -186,11 +193,13 @@ export class DiagramGroupingService {
     const sectionNode = currentNodes.find(n => n.id === sectionId);
     if (!sectionNode) return currentNodes;
 
-    const curW = sectionNode.style?.width || sectionNode.width || sectionNode.measured?.width || 620;
-    const curH = sectionNode.style?.height || sectionNode.height || sectionNode.measured?.height || 420;
+    const rawW = sectionNode.width || sectionNode.style?.width || sectionNode.measured?.width || 620;
+    const rawH = sectionNode.height || sectionNode.style?.height || sectionNode.measured?.height || 420;
+    const curW = typeof rawW === 'string' ? parseFloat(rawW) : rawW;
+    const curH = typeof rawH === 'string' ? parseFloat(rawH) : rawH;
 
-    const newW = Math.max(260, Math.round(curW * factor));
-    const newH = Math.max(160, Math.round(curH * factor));
+    const newW = Math.max(120, Math.round(curW * factor));
+    const newH = Math.max(80, Math.round(curH * factor));
     const actualFactor = newW / curW;
 
     const curSecScale = sectionNode.data?.scale || 1;
@@ -200,6 +209,11 @@ export class DiagramGroupingService {
       if (n.id === sectionId) {
         return {
           ...n,
+          width: newW,
+          height: newH,
+          initialWidth: newW,
+          initialHeight: newH,
+          measured: { width: newW, height: newH },
           style: {
             ...(n.style || {}),
             width: newW,
@@ -207,6 +221,8 @@ export class DiagramGroupingService {
           },
           data: {
             ...n.data,
+            width: newW,
+            height: newH,
             scale: newSecScale
           }
         };
@@ -217,11 +233,17 @@ export class DiagramGroupingService {
         const newChildScale = Math.min(3.0, Math.max(0.3, Math.round((curChildScale * actualFactor) * 100) / 100));
 
         const updatedStyle = { ...(n.style || {}) };
-        if (updatedStyle.width) updatedStyle.width = Math.round(updatedStyle.width * actualFactor);
-        if (updatedStyle.height) updatedStyle.height = Math.round(updatedStyle.height * actualFactor);
+        const rawChildW = n.width || updatedStyle.width;
+        const rawChildH = n.height || updatedStyle.height;
+        const newChildW = rawChildW ? Math.round(rawChildW * actualFactor) : undefined;
+        const newChildH = rawChildH ? Math.round(rawChildH * actualFactor) : undefined;
+        if (newChildW) updatedStyle.width = newChildW;
+        if (newChildH) updatedStyle.height = newChildH;
 
         return {
           ...n,
+          ...(newChildW ? { width: newChildW, initialWidth: newChildW } : {}),
+          ...(newChildH ? { height: newChildH, initialHeight: newChildH } : {}),
           position: {
             x: Math.round(n.position.x * actualFactor),
             y: Math.round(n.position.y * actualFactor)
@@ -248,6 +270,27 @@ export class DiagramGroupingService {
     const avgRatio = (widthRatio + heightRatio) / 2;
 
     return currentNodes.map(n => {
+      if (n.id === sectionId) {
+        return {
+          ...n,
+          width: newW,
+          height: newH,
+          initialWidth: newW,
+          initialHeight: newH,
+          measured: { width: newW, height: newH },
+          style: {
+            ...(n.style || {}),
+            width: newW,
+            height: newH
+          },
+          data: {
+            ...n.data,
+            width: newW,
+            height: newH
+          }
+        };
+      }
+
       if (n.parentId !== sectionId) return n;
 
       const curChildScale = n.data?.scale || 1;
@@ -371,6 +414,11 @@ export class DiagramGroupingService {
       id: sectionId,
       type: 'sectionNode',
       position: options.position || { x: 250, y: 120 },
+      width: 620,
+      height: 420,
+      initialWidth: 620,
+      initialHeight: 420,
+      measured: { width: 620, height: 420 },
       style: options.style || { width: 620, height: 420 },
       data: {
         label: options.label || 'Новая секция',
@@ -378,7 +426,9 @@ export class DiagramGroupingService {
         borderStyle: options.borderStyle || 'dashed',
         icon: options.icon || '📁',
         childCount: 0,
-        scale: 1.0
+        scale: 1.0,
+        width: 620,
+        height: 420
       },
       zIndex: -1
     };

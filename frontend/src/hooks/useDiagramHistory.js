@@ -25,11 +25,13 @@ export function useDiagramHistory({
   }, []);
 
   // Сделать снимок состояния перед любым действием
-  const takeSnapshot = useCallback(() => {
+  const takeSnapshot = useCallback((explicitNodes, explicitEdges) => {
     if (isUndoRedoActionRef.current) return;
+    const currentNodes = (explicitNodes && explicitNodes.length > 0) ? explicitNodes : nodesRef.current;
+    const currentEdges = (explicitEdges && explicitEdges.length > 0) ? explicitEdges : edgesRef.current;
     const snapshot = {
-      nodes: JSON.parse(JSON.stringify(nodesRef.current)),
-      edges: JSON.parse(JSON.stringify(edgesRef.current))
+      nodes: JSON.parse(JSON.stringify(currentNodes)),
+      edges: JSON.parse(JSON.stringify(currentEdges))
     };
     pastRef.current.push(snapshot);
     if (pastRef.current.length > 60) {
@@ -97,14 +99,17 @@ export function useDiagramHistory({
       if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
 
       if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-        if (e.key.toLowerCase() === 'z') {
+        const isZ = e.code === 'KeyZ' || e.key?.toLowerCase() === 'z' || e.key?.toLowerCase() === 'я' || e.keyCode === 90;
+        const isY = e.code === 'KeyY' || e.key?.toLowerCase() === 'y' || e.key?.toLowerCase() === 'н' || e.keyCode === 89;
+
+        if (isZ) {
           e.preventDefault();
           if (e.shiftKey) {
             redo();
           } else {
             undo();
           }
-        } else if (e.key.toLowerCase() === 'y') {
+        } else if (isY) {
           e.preventDefault();
           redo();
         }

@@ -1,4 +1,4 @@
-﻿// useSectionCornerScale.js - Хук интерактивного масштабирования секции и всех вложенных блоков за угол
+// useSectionCornerScale.js - Хук интерактивного масштабирования секции и всех вложенных блоков за угол
 import { useState, useCallback, useContext } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { DiagramActionsContext } from '../components/DiagramActionsContext';
@@ -15,9 +15,10 @@ export function useSectionCornerScale({ id, data }) {
     e.stopPropagation();
     e.preventDefault();
 
+    const allNodes = rf.getNodes ? rf.getNodes() : [];
     // Снимок для Undo (Ctrl+Z) перед началом изменения
     if (actions?.takeSnapshot) {
-      actions.takeSnapshot();
+      actions.takeSnapshot(allNodes);
     }
 
     const handleEl = e.currentTarget;
@@ -28,13 +29,14 @@ export function useSectionCornerScale({ id, data }) {
     const zoom = rf.getViewport ? (rf.getViewport().zoom || 1) : 1;
     const startPointer = { x: e.clientX, y: e.clientY };
 
-    const allNodes = rf.getNodes ? rf.getNodes() : [];
     const secNode = allNodes.find(n => n.id === id);
     if (!secNode) return;
 
     const startSecPos = { ...secNode.position };
-    const startSecW = secNode.style?.width || secNode.measured?.width || 620;
-    const startSecH = secNode.style?.height || secNode.measured?.height || 420;
+    const rawW = secNode.data?.width || secNode.width || secNode.style?.width || secNode.measured?.width || 620;
+    const rawH = secNode.data?.height || secNode.height || secNode.style?.height || secNode.measured?.height || 420;
+    const startSecW = typeof rawW === 'string' ? (parseFloat(rawW) || 620) : rawW;
+    const startSecH = typeof rawH === 'string' ? (parseFloat(rawH) || 420) : rawH;
     const startSecScale = secNode.data?.scale || 1.0;
 
     // Сохраняем начальные координаты и масштабы всех детей секции
@@ -45,8 +47,8 @@ export function useSectionCornerScale({ id, data }) {
         startX: c.position.x,
         startY: c.position.y,
         startScale: c.data?.scale || 1.0,
-        startW: c.style?.width,
-        startH: c.style?.height
+        startW: c.style?.width || c.width,
+        startH: c.style?.height || c.height
       }));
 
     setIsScaling(true);
@@ -68,9 +70,9 @@ export function useSectionCornerScale({ id, data }) {
         delta = (-rawDx - rawDy) / 2;
       }
 
-      const factor = Math.max(0.2, (startSecW + delta) / startSecW);
-      const newSecW = Math.max(260, Math.round(startSecW * factor));
-      const newSecH = Math.max(160, Math.round(startSecH * factor));
+      const factor = Math.max(0.15, (startSecW + delta) / startSecW);
+      const newSecW = Math.max(120, Math.round(startSecW * factor));
+      const newSecH = Math.max(80, Math.round(startSecH * factor));
       const actualFactor = newSecW / startSecW;
 
       let newSecX = startSecPos.x;
@@ -93,20 +95,29 @@ export function useSectionCornerScale({ id, data }) {
           if (n.id === id) {
             return {
               ...n,
+              width: newSecW,
+              height: newSecH,
+              initialWidth: newSecW,
+              initialHeight: newSecH,
+              measured: { width: newSecW, height: newSecH },
               position: { x: newSecX, y: newSecY },
               style: { ...(n.style || {}), width: newSecW, height: newSecH },
-              data: { ...n.data, scale: newSecScale }
+              data: { ...n.data, scale: newSecScale, width: newSecW, height: newSecH }
             };
           }
           const childData = childMap.get(n.id);
           if (childData) {
             const newChildScale = Math.min(3.0, Math.max(0.3, Math.round(childData.startScale * actualFactor * 100) / 100));
             const updatedStyle = { ...(n.style || {}) };
-            if (childData.startW) updatedStyle.width = Math.round(childData.startW * actualFactor);
-            if (childData.startH) updatedStyle.height = Math.round(childData.startH * actualFactor);
+            const newChildW = childData.startW ? Math.round(childData.startW * actualFactor) : undefined;
+            const newChildH = childData.startH ? Math.round(childData.startH * actualFactor) : undefined;
+            if (newChildW) updatedStyle.width = newChildW;
+            if (newChildH) updatedStyle.height = newChildH;
 
             return {
               ...n,
+              ...(newChildW ? { width: newChildW, initialWidth: newChildW } : {}),
+              ...(newChildH ? { height: newChildH, initialHeight: newChildH } : {}),
               position: {
                 x: Math.round(childData.startX * actualFactor),
                 y: Math.round(childData.startY * actualFactor)
@@ -147,7 +158,8 @@ export function useSectionCornerScale({ id, data }) {
     e.stopPropagation();
     e.preventDefault();
 
-    if (actions?.takeSnapshot) actions.takeSnapshot();
+    const allNodes = rf.getNodes ? rf.getNodes() : [];
+    if (actions?.takeSnapshot) actions.takeSnapshot(allNodes);
 
     const handleEl = e.currentTarget;
     try {
@@ -157,13 +169,14 @@ export function useSectionCornerScale({ id, data }) {
     const zoom = rf.getViewport ? (rf.getViewport().zoom || 1) : 1;
     const startPointer = { x: e.clientX, y: e.clientY };
 
-    const allNodes = rf.getNodes ? rf.getNodes() : [];
     const secNode = allNodes.find(n => n.id === id);
     if (!secNode) return;
 
     const startSecPos = { ...secNode.position };
-    const startSecW = secNode.style?.width || secNode.measured?.width || 620;
-    const startSecH = secNode.style?.height || secNode.measured?.height || 420;
+    const rawW = secNode.data?.width || secNode.width || secNode.style?.width || secNode.measured?.width || 620;
+    const rawH = secNode.data?.height || secNode.height || secNode.style?.height || secNode.measured?.height || 420;
+    const startSecW = typeof rawW === 'string' ? (parseFloat(rawW) || 620) : rawW;
+    const startSecH = typeof rawH === 'string' ? (parseFloat(rawH) || 420) : rawH;
 
     const onPointerMove = (moveEvt) => {
       const rawDx = (moveEvt.clientX - startPointer.x) / zoom;
@@ -175,14 +188,14 @@ export function useSectionCornerScale({ id, data }) {
       let newY = startSecPos.y;
 
       if (edge === 'right') {
-        newW = Math.max(260, Math.round(startSecW + rawDx));
+        newW = Math.max(120, Math.round(startSecW + rawDx));
       } else if (edge === 'bottom') {
-        newH = Math.max(160, Math.round(startSecH + rawDy));
+        newH = Math.max(80, Math.round(startSecH + rawDy));
       } else if (edge === 'left') {
-        newW = Math.max(260, Math.round(startSecW - rawDx));
+        newW = Math.max(120, Math.round(startSecW - rawDx));
         newX = Math.round(startSecPos.x + (startSecW - newW));
       } else if (edge === 'top') {
-        newH = Math.max(160, Math.round(startSecH - rawDy));
+        newH = Math.max(80, Math.round(startSecH - rawDy));
         newY = Math.round(startSecPos.y + (startSecH - newH));
       }
 
@@ -191,8 +204,14 @@ export function useSectionCornerScale({ id, data }) {
           if (n.id !== id) return n;
           return {
             ...n,
+            width: newW,
+            height: newH,
+            initialWidth: newW,
+            initialHeight: newH,
+            measured: { width: newW, height: newH },
             position: { x: newX, y: newY },
-            style: { ...(n.style || {}), width: newW, height: newH }
+            style: { ...(n.style || {}), width: newW, height: newH },
+            data: { ...(n.data || {}), width: newW, height: newH }
           };
         }));
       }

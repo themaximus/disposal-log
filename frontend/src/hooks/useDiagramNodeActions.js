@@ -122,6 +122,7 @@ export function useDiagramNodeActions({
 
   // Quick add item directly from card
   const handleQuickAdd = useCallback((nodeId) => {
+    if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       if (n.type === 'hierarchyNode') {
@@ -157,10 +158,11 @@ export function useDiagramNodeActions({
       }
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Inline update for hierarchy item
   const handleUpdateHierarchyItem = useCallback((nodeId, itemIndex, updatedItem) => {
+    if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       const items = [...(n.data.items || [])];
@@ -170,10 +172,11 @@ export function useDiagramNodeActions({
       return { ...n, data: { ...n.data, items } };
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Inline delete for hierarchy item
   const handleDeleteHierarchyItem = useCallback((nodeId, itemIndex) => {
+    if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       const items = (n.data.items || []).filter((_, idx) => idx !== itemIndex);
@@ -183,10 +186,11 @@ export function useDiagramNodeActions({
       return { ...n, data: { ...n.data, items } };
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Add sub-item (child node in hierarchy tree)
   const handleAddHierarchySubItem = useCallback((nodeId, parentIndex) => {
+    if (takeSnapshot) takeSnapshot();
     let newIndex = parentIndex + 1;
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
@@ -214,10 +218,11 @@ export function useDiagramNodeActions({
     }));
     triggerAutoSave();
     return newIndex;
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Add sibling item right after item and its subtree
   const handleAddHierarchySiblingItem = useCallback((nodeId, itemIndex) => {
+    if (takeSnapshot) takeSnapshot();
     let newIndex = itemIndex + 1;
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
@@ -244,10 +249,11 @@ export function useDiagramNodeActions({
     }));
     triggerAutoSave();
     return newIndex;
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Indent / outdent hierarchy item
   const handleIndentHierarchyItem = useCallback((nodeId, itemIndex, delta) => {
+    if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       const items = [...(n.data.items || [])];
@@ -259,19 +265,21 @@ export function useDiagramNodeActions({
       return { ...n, data: { ...n.data, items } };
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Inline update for hierarchy root path
   const handleUpdateHierarchyRoot = useCallback((nodeId, newRootPath) => {
+    if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       return { ...n, data: { ...n.data, rootPath: newRootPath } };
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Inline update for logic line
   const handleUpdateLogicLine = useCallback((nodeId, lineIndex, updatedLine) => {
+    if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       const lines = [...(n.data.lines || [])];
@@ -281,20 +289,22 @@ export function useDiagramNodeActions({
       return { ...n, data: { ...n.data, lines } };
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Inline delete for logic line
   const handleDeleteLogicLine = useCallback((nodeId, lineIndex) => {
+    if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       const lines = (n.data.lines || []).filter((_, idx) => idx !== lineIndex);
       return { ...n, data: { ...n.data, lines } };
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Add sub-line (nested child line in logic step tree)
   const handleAddLogicSubLine = useCallback((nodeId, parentIndex) => {
+    if (takeSnapshot) takeSnapshot();
     let newIndex = parentIndex + 1;
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
@@ -319,10 +329,12 @@ export function useDiagramNodeActions({
     }));
     triggerAutoSave();
     return newIndex;
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Add sibling line right after current line and its subtree
   const handleAddLogicSiblingLine = useCallback((nodeId, lineIndex) => {
+    if (takeSnapshot) takeSnapshot();
+    let newIndex = lineIndex + 1;
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       const lines = [...(n.data.lines || [])];
@@ -333,6 +345,7 @@ export function useDiagramNodeActions({
       while (insertIdx < lines.length && (lines[insertIdx].level || 0) > curLevel) {
         insertIdx++;
       }
+      newIndex = insertIdx;
 
       const newLine = {
         level: curLevel,
@@ -345,10 +358,12 @@ export function useDiagramNodeActions({
       return { ...n, data: { ...n.data, lines } };
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+    return newIndex;
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Indent / outdent logic line
   const handleIndentLogicLine = useCallback((nodeId, lineIndex, delta) => {
+    if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       const lines = [...(n.data.lines || [])];
@@ -360,16 +375,17 @@ export function useDiagramNodeActions({
       return { ...n, data: { ...n.data, lines } };
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Inline update for logic method title
   const handleUpdateLogicTitle = useCallback((nodeId, newTitle) => {
+    if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       return { ...n, data: { ...n.data, title: newTitle } };
     }));
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave]);
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Open Tag / Mention Modal
   const handleOpenTagModal = useCallback((nodeId) => {
@@ -384,6 +400,7 @@ export function useDiagramNodeActions({
   // Save Tag from Tag Modal
   const handleSaveTag = useCallback(() => {
     if (!tagModalNodeId) return;
+    if (takeSnapshot) takeSnapshot();
     const finalVal = tagInputValue.trim().toUpperCase();
 
     setNodes(nds => nds.map(n => {
@@ -397,7 +414,7 @@ export function useDiagramNodeActions({
 
     setIsTagModalOpen(false);
     triggerAutoSave();
-  }, [tagModalNodeId, tagInputValue, setNodes, triggerAutoSave]);
+  }, [tagModalNodeId, tagInputValue, setNodes, triggerAutoSave, takeSnapshot]);
 
   // Open Block Inspector Modal
   const handleOpenInspector = useCallback((nodeId) => {

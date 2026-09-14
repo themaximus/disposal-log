@@ -1,4 +1,4 @@
-﻿// useBlockCornerScale.js - Хук интерактивного масштабирования отдельного блока за угол
+// useBlockCornerScale.js - Хук интерактивного масштабирования отдельного блока за угол
 import { useState, useCallback, useContext } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { DiagramActionsContext } from '../components/DiagramActionsContext';
@@ -13,9 +13,10 @@ export function useBlockCornerScale({ id, data, cardRef }) {
     e.stopPropagation();
     e.preventDefault();
 
+    const allNodes = rf.getNodes ? rf.getNodes() : [];
     // Снимок для Undo (Ctrl+Z) перед началом масштабирования
     if (actions?.takeSnapshot) {
-      actions.takeSnapshot();
+      actions.takeSnapshot(allNodes);
     }
 
     const handleEl = e.currentTarget;

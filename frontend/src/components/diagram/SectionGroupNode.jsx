@@ -12,7 +12,7 @@ const THEMES = [
   { id: 'slate', label: 'Slate Grey', color: '#8b949e', border: '#444c56', bg: 'rgba(139, 148, 158, 0.06)' },
 ];
 
-export default function SectionGroupNode({ id, data, selected }) {
+export default function SectionGroupNode({ id, data, selected, width, height }) {
   const actions = useContext(DiagramActionsContext);
   const onUngroup = actions?.onUngroup;
   const onDeleteSection = actions?.onDeleteSection || actions?.onDeleteNode;
@@ -92,8 +92,8 @@ export default function SectionGroupNode({ id, data, selected }) {
     <div
       className={`diagram-section-node theme-${currentTheme.id} style-${borderStyle} ${selected ? 'is-selected' : ''}`}
       style={{
-        width: '100%',
-        height: '100%',
+        width: data?.width ? `${data.width}px` : (width ? `${width}px` : '100%'),
+        height: data?.height ? `${data.height}px` : (height ? `${height}px` : '100%'),
         borderColor: currentTheme.border,
         borderStyle: borderStyle,
         backgroundColor: currentTheme.bg

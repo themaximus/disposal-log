@@ -61,7 +61,8 @@ export function useDiagramGrouping({ nodes, setNodes, nodesRef, triggerAutoSave,
       const tag = e.target.tagName?.toLowerCase();
       if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+      const isG = e.code === 'KeyG' || e.key?.toLowerCase() === 'g' || e.key?.toLowerCase() === 'п' || e.keyCode === 71;
+      if ((e.ctrlKey || e.metaKey) && isG) {
         e.preventDefault();
         if (e.shiftKey) {
           const selectedSection = nodesRef.current.find(n => n.selected && n.type === 'sectionNode');
