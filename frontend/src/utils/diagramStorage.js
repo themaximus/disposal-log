@@ -63,10 +63,10 @@ export const STARTER_PRESETS = [
             nodeType: 'GAMEPLAY SCRIPT',
             title: 'PlayerController.cs',
             lines: [
-              { prefix: '├── ', icon: '🎮', code: 'HandleMovement(WASD, Sprint)', comment: 'Физический сдвиг' },
-              { prefix: '├── ', icon: '👁️', code: 'RotateCameraWithMouse(pitch, yaw)', comment: 'Вращение взгляда' },
-              { prefix: '├── ', icon: '🎯', code: 'DropCurrentHeldItem(PointDrop)', comment: 'Вызов спавна' },
-              { prefix: '└── ', icon: '🔊', code: 'AudioSource.PlayOneShot(stepSound)', comment: 'Звук шага' }
+              { level: 0, prefix: '├── ', icon: '🎮', code: 'HandleMovement(WASD, Sprint)', comment: 'Физический сдвиг' },
+              { level: 0, prefix: '├── ', icon: '👁️', code: 'RotateCameraWithMouse(pitch, yaw)', comment: 'Вращение взгляда' },
+              { level: 0, prefix: '├── ', icon: '🎯', code: 'DropCurrentHeldItem(PointDrop)', comment: 'Вызов спавна' },
+              { level: 0, prefix: '└── ', icon: '🔊', code: 'AudioSource.PlayOneShot(stepSound)', comment: 'Звук шага' }
             ]
           }
         },
@@ -155,10 +155,10 @@ export const STARTER_PRESETS = [
             nodeType: 'FSM LOGIC',
             title: 'EnemyStateMachine.Tick()',
             lines: [
-              { prefix: '├── ', icon: '🟢', code: 'State: PATROL', comment: 'Случайные путевые точки' },
-              { prefix: '├── ', icon: '🟠', code: 'State: CHASE (Distance < 15m)', comment: 'Преследование игрока' },
-              { prefix: '├── ', icon: '🔴', code: 'State: ATTACK (Distance < 1.8m)', comment: 'Нанесение урона' },
-              { prefix: '└── ', icon: '💀', code: 'State: DEAD (HP <= 0)', comment: 'Включение рэгдолла' }
+              { level: 0, prefix: '├── ', icon: '🟢', code: 'State: PATROL', comment: 'Случайные путевые точки' },
+              { level: 0, prefix: '├── ', icon: '🟠', code: 'State: CHASE (Distance < 15m)', comment: 'Преследование игрока' },
+              { level: 0, prefix: '├── ', icon: '🔴', code: 'State: ATTACK (Distance < 1.8m)', comment: 'Нанесение урона' },
+              { level: 0, prefix: '└── ', icon: '💀', code: 'State: DEAD (HP <= 0)', comment: 'Включение рэгдолла' }
             ]
           }
         }
@@ -401,10 +401,11 @@ export const DEFAULT_BLOCK_PREFABS = [
       title: 'EnemyStateMachine.Tick()',
       theme: 'crimson',
       lines: [
-        { prefix: '├── ', icon: '👁️', code: 'if (CanSeeTarget(player))', comment: 'Проверка видимости' },
-        { prefix: '├── ', icon: '🏃', code: 'SetState(AIState.ChaseTarget);', comment: 'Преследование' },
-        { prefix: '├── ', icon: '⚔️', code: 'if (InAttackRange()) Attack();', comment: 'Удар в радиусе' },
-        { prefix: '└── ', icon: '🔄', code: 'else PatrolWaypoints();', comment: 'Патрулирование точек' }
+        { level: 0, prefix: '├── ', icon: '👁️', code: 'if (CanSeeTarget(player))', comment: 'Проверка видимости' },
+        { level: 1, prefix: '├── ', icon: '🏃', code: 'SetState(AIState.ChaseTarget);', comment: 'Преследование' },
+        { level: 0, prefix: '├── ', icon: '⚔️', code: 'if (InAttackRange())', comment: 'Удар в радиусе' },
+        { level: 1, prefix: '├── ', icon: '💥', code: 'Attack();', comment: 'Нанесение урона' },
+        { level: 0, prefix: '└── ', icon: '🔄', code: 'else PatrolWaypoints();', comment: 'Патрулирование точек' }
       ]
     }
   },
@@ -421,9 +422,9 @@ export const DEFAULT_BLOCK_PREFABS = [
       title: 'NetworkSyncManager.Update()',
       theme: 'cyberpunk',
       lines: [
-        { prefix: '├── ', icon: '📡', code: '[ServerRpc] SendPlayerInput(inputState)', comment: 'Клиент -> Сервер' },
-        { prefix: '├── ', icon: '⚡', code: 'ValidateAndApplyMovement(deltaTime)', comment: 'Авторитетная физика' },
-        { prefix: '└── ', icon: '🌐', code: '[ClientRpc] BroadcastPosition(serverPos)', comment: 'Сервер -> Клиенты' }
+        { level: 0, prefix: '├── ', icon: '📡', code: '[ServerRpc] SendPlayerInput(inputState)', comment: 'Клиент -> Сервер' },
+        { level: 1, prefix: '├── ', icon: '⚡', code: 'ValidateAndApplyMovement(deltaTime)', comment: 'Авторитетная физика' },
+        { level: 0, prefix: '└── ', icon: '🌐', code: '[ClientRpc] BroadcastPosition(serverPos)', comment: 'Сервер -> Клиенты' }
       ]
     }
   },

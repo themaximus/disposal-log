@@ -124,18 +124,45 @@ export default function BlockInspectorModal({
     const items = [...(formData.items || [])];
     const parentItem = items[index];
     const parentLevel = parentItem ? (parentItem.level || 0) : 0;
-    let insertIdx = index + 1;
-    while (insertIdx < items.length && (items[insertIdx].level || 0) > parentLevel) {
-      insertIdx++;
-    }
+    const insertIdx = (index >= 0 && index < items.length) ? index + 1 : items.length;
     items.splice(insertIdx, 0, {
       level: parentLevel + 1,
-      isLast: true,
+      isLast: false,
       icon: '⚙️',
       name: 'NewChildObject',
       details: 'Component, Script'
     });
+    items.forEach((it, idx) => {
+      it.isLast = idx === items.length - 1;
+    });
     handleFieldChange('items', items);
+  };
+
+  const handleIndentLogicLine = (index, delta) => {
+    const lines = [...(formData.lines || [])];
+    if (index >= 0 && index < lines.length) {
+      const curLevel = lines[index].level || 0;
+      lines[index] = { ...lines[index], level: Math.max(0, Math.min(6, curLevel + delta)) };
+      handleFieldChange('lines', lines);
+    }
+  };
+
+  const handleAddSubLogicLine = (index) => {
+    const lines = [...(formData.lines || [])];
+    const parentLine = lines[index];
+    const parentLevel = parentLine ? (parentLine.level || 0) : 0;
+    const insertIdx = (index >= 0 && index < lines.length) ? index + 1 : lines.length;
+    lines.splice(insertIdx, 0, {
+      level: parentLevel + 1,
+      prefix: '├── ',
+      icon: '⚡',
+      code: 'ExecuteSubAction()',
+      comment: 'Вложенное действие'
+    });
+    lines.forEach((l, idx) => {
+      l.prefix = idx === lines.length - 1 ? '└── ' : '├── ';
+    });
+    handleFieldChange('lines', lines);
   };
 
   const handleMoveLogicLine = (index, direction) => {
@@ -308,6 +335,46 @@ export default function BlockInspectorModal({
                       title={acc.label}
                     />
                   ))}
+                </div>
+              </div>
+
+              {/* Scale Control in Inspector */}
+              <div className="form-group" style={{ marginTop: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Масштаб блока (Scale)</label>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#58a6ff' }}>
+                    {Math.round((formData.scale || 1) * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.4"
+                  max="2.2"
+                  step="0.05"
+                  className="form-range"
+                  value={formData.scale || 1}
+                  onChange={(e) => handleFieldChange('scale', parseFloat(e.target.value))}
+                  style={{ width: '100%', accentColor: '#58a6ff', cursor: 'pointer' }}
+                />
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                  {[0.5, 0.75, 0.9, 1.0, 1.1, 1.25, 1.5, 2.0].map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={`scale-preset-chip ${(formData.scale || 1) === s ? 'active' : ''}`}
+                      onClick={() => handleFieldChange('scale', s)}
+                    >
+                      {Math.round(s * 100)}%
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="scale-preset-chip reset-btn"
+                    onClick={() => handleFieldChange('scale', 1.0)}
+                    title="Сбросить масштаб на 100%"
+                  >
+                    Сброс (100%)
+                  </button>
                 </div>
               </div>
             </div>
@@ -494,6 +561,37 @@ export default function BlockInspectorModal({
                         {line.comment && <span className="reorder-item-comment">({line.comment})</span>}
                       </div>
                       <div className="reorder-item-actions">
+                        <div className="inspector-level-stepper">
+                          <button
+                            type="button"
+                            className="btn-order-action"
+                            disabled={(line.level || 0) <= 0}
+                            onClick={() => handleIndentLogicLine(idx, -1)}
+                            title="Уменьшить вложенность (⇤)"
+                          >
+                            ⇤
+                          </button>
+                          <span className="reorder-item-level-pill" title={`Уровень: ${line.level || 0}`}>
+                            L{line.level || 0}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-order-action"
+                            disabled={(line.level || 0) >= 6}
+                            onClick={() => handleIndentLogicLine(idx, 1)}
+                            title="Увеличить вложенность (⇥)"
+                          >
+                            ⇥
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-order-action btn-add-sub-modal"
+                          onClick={() => handleAddSubLogicLine(idx)}
+                          title="Добавить вложенный шаг (↳)"
+                        >
+                          ↳+
+                        </button>
                         <button
                           type="button"
                           className="btn-order-action"

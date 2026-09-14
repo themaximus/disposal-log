@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { NodeResizer } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 import EmojiPickerPopover from './EmojiPickerPopover';
+import useSectionCornerScale from '../../hooks/useSectionCornerScale';
 
 const THEMES = [
   { id: 'crimson', label: 'Crimson Red', color: '#ff4455', border: '#ff4455', bg: 'rgba(255, 68, 85, 0.06)' },
@@ -17,6 +17,15 @@ export default function SectionGroupNode({ id, data, selected }) {
   const onUngroup = actions?.onUngroup;
   const onDeleteSection = actions?.onDeleteSection || actions?.onDeleteNode;
   const onUpdateSection = actions?.onUpdateSection;
+  const onScaleSection = actions?.onScaleSection;
+
+  const {
+    handleCornerPointerDown,
+    handleEdgePointerDown,
+    isScaling,
+    liveScalePercent,
+    activeCorner
+  } = useSectionCornerScale({ id, data });
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(data.label || 'Новая секция');
@@ -90,15 +99,65 @@ export default function SectionGroupNode({ id, data, selected }) {
         backgroundColor: currentTheme.bg
       }}
     >
-      {/* Resizer controls when section is selected */}
-      <NodeResizer
-        isVisible={selected}
-        minWidth={260}
-        minHeight={160}
-        lineClassName="section-resizer-line"
-        handleClassName="section-resizer-handle"
-        color={currentTheme.color}
-      />
+      {/* Interactive resize and corner scale handles when section is selected */}
+      {selected && (
+        <>
+          {/* 4 Edges for boundary adjustment */}
+          <div
+            className="section-edge-handle section-edge-top nodrag"
+            onPointerDown={(e) => handleEdgePointerDown('top', e)}
+            title="Изменить верхнюю границу секции"
+          />
+          <div
+            className="section-edge-handle section-edge-bottom nodrag"
+            onPointerDown={(e) => handleEdgePointerDown('bottom', e)}
+            title="Изменить нижнюю границу секции"
+          />
+          <div
+            className="section-edge-handle section-edge-left nodrag"
+            onPointerDown={(e) => handleEdgePointerDown('left', e)}
+            title="Изменить левую границу секции"
+          />
+          <div
+            className="section-edge-handle section-edge-right nodrag"
+            onPointerDown={(e) => handleEdgePointerDown('right', e)}
+            title="Изменить правую границу секции"
+          />
+
+          {/* 4 Corners for proportional scaling of section AND all child blocks */}
+          <div
+            className="section-corner-handle section-corner-tl nodrag"
+            style={{ backgroundColor: currentTheme.color, borderColor: '#161b22' }}
+            onPointerDown={(e) => handleCornerPointerDown('top-left', e)}
+            title="Масштабировать группу и все блоки внутри (угол ВЛ)"
+          />
+          <div
+            className="section-corner-handle section-corner-tr nodrag"
+            style={{ backgroundColor: currentTheme.color, borderColor: '#161b22' }}
+            onPointerDown={(e) => handleCornerPointerDown('top-right', e)}
+            title="Масштабировать группу и все блоки внутри (угол ВП)"
+          />
+          <div
+            className="section-corner-handle section-corner-bl nodrag"
+            style={{ backgroundColor: currentTheme.color, borderColor: '#161b22' }}
+            onPointerDown={(e) => handleCornerPointerDown('bottom-left', e)}
+            title="Масштабировать группу и все блоки внутри (угол НЛ)"
+          />
+          <div
+            className="section-corner-handle section-corner-br nodrag"
+            style={{ backgroundColor: currentTheme.color, borderColor: '#161b22' }}
+            onPointerDown={(e) => handleCornerPointerDown('bottom-right', e)}
+            title="Масштабировать группу и все блоки внутри (угол НП)"
+          />
+
+          {/* Live scale percentage tooltip badge during corner scaling */}
+          {isScaling && liveScalePercent && (
+            <div className={`section-scale-live-pill corner-${activeCorner}`}>
+              Масштаб группы: {liveScalePercent}%
+            </div>
+          )}
+        </>
+      )}
 
       {/* Section Header Bar - Grabbing here moves section and children */}
       <div
@@ -164,6 +223,58 @@ export default function SectionGroupNode({ id, data, selected }) {
 
         {/* Action icons */}
         <div className="section-header-actions nodrag">
+          {/* Section & Group Scale Control */}
+          <div className="node-scale-control section-scale-control nodrag">
+            <button
+              type="button"
+              className="btn-scale-step"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onScaleSection) onScaleSection(id, 0.9);
+              }}
+              title="Уменьшить масштаб группы (-10%)"
+            >
+              -
+            </button>
+            <span
+              className="scale-value-label"
+              title="Масштаб группы (клик для сброса на 100%)"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onScaleSection && (data.scale || 1) !== 1) {
+                  onScaleSection(id, 1 / (data.scale || 1));
+                }
+              }}
+            >
+              {Math.round((data.scale || 1) * 100)}%
+            </span>
+            <button
+              type="button"
+              className="btn-scale-step"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onScaleSection) onScaleSection(id, 1.1);
+              }}
+              title="Увеличить масштаб группы (+10%)"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Toggle proportional child scaling with resizer */}
+          <button
+            type="button"
+            className={`section-action-btn ${scaleChildrenOnResize ? 'active-toggle' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setScaleChildrenOnResize(prev => !prev);
+            }}
+            title={scaleChildrenOnResize ? 'Пропорциональное масштабирование блоков при ресайзе: ВКЛ' : 'Пропорциональное масштабирование блоков при ресайзе: ВЫКЛ'}
+            style={{ fontSize: '0.85rem' }}
+          >
+            📐
+          </button>
+
           {/* Theme Palette Picker */}
           <div style={{ position: 'relative' }}>
             <button

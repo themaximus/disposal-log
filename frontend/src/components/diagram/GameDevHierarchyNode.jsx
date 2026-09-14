@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 import EmojiPickerPopover from './EmojiPickerPopover';
+import useBlockCornerScale from '../../hooks/useBlockCornerScale';
 
 // Calculate dynamic tree branches (├──, └──, │   ,     ) based on nesting hierarchy
 export const computeTreePrefix = (items = [], index = 0) => {
@@ -15,7 +16,8 @@ export const computeTreePrefix = (items = [], index = 0) => {
   }
 
   let prefix = '';
-  for (let depth = 1; depth < currentLevel; depth++) {
+  // Each ancestor depth from 0 to currentLevel - 1 provides 4 characters
+  for (let depth = 0; depth < currentLevel; depth++) {
     let hasMoreAtDepth = false;
     for (let j = index + 1; j < items.length; j++) {
       const nextLevel = items[j].level || 0;
@@ -42,12 +44,13 @@ export const computeTreePrefix = (items = [], index = 0) => {
   return prefix;
 };
 
-export default function GameDevHierarchyNode({ id, data, isConnectable }) {
+export default function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
   const actions = useContext(DiagramActionsContext);
   const onOpenInspector = actions?.onOpenInspector || actions?.onEditNode || data?.onEdit;
   const onDeleteNode = actions?.onDeleteNode || data?.onDelete;
   const onQuickAdd = actions?.onQuickAdd || data?.onQuickAdd;
   const onOpenTagModal = actions?.onOpenTagModal || data?.onOpenTagModal;
+  const onScaleNode = actions?.onScaleNode;
   const onUpdateHierarchyItem = actions?.onUpdateHierarchyItem;
   const onDeleteHierarchyItem = actions?.onDeleteHierarchyItem;
   const onAddHierarchySubItem = actions?.onAddHierarchySubItem;
@@ -57,6 +60,7 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
 
   const [copied, setCopied] = useState(false);
   const [editingRowIdx, setEditingRowIdx] = useState(null);
+  const [selectedRowIdx, setSelectedRowIdx] = useState(null);
   const [rowDraft, setRowDraft] = useState({ name: '', details: '', icon: '⚙️', level: 0 });
   const [editingRoot, setEditingRoot] = useState(false);
   const [rootDraft, setRootDraft] = useState(data.rootPath || 'Assets/Prefabs/Player/Player.prefab');
@@ -67,6 +71,13 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
   const treeItems = data.items || [];
   const nameInputRef = useRef(null);
   const rootInputRef = useRef(null);
+  const cardRef = useRef(null);
+
+  const {
+    handleCornerPointerDown,
+    isScaling,
+    liveScalePercent
+  } = useBlockCornerScale({ id, data, cardRef });
 
   useEffect(() => {
     setRootDraft(rootPath);
@@ -131,20 +142,17 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
   };
 
   const handleAddSubRow = (e, idx) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     const parentItem = treeItems[idx];
     const parentLevel = parentItem ? (parentItem.level || 0) : 0;
     const subLevel = parentLevel + 1;
-
-    let insertIdx = idx + 1;
-    while (insertIdx < treeItems.length && (treeItems[insertIdx].level || 0) > parentLevel) {
-      insertIdx++;
-    }
+    const insertIdx = idx + 1;
 
     if (onAddHierarchySubItem) {
       onAddHierarchySubItem(id, idx);
     }
     setEditingRowIdx(insertIdx);
+    setSelectedRowIdx(insertIdx);
     setRowDraft({
       level: subLevel,
       icon: '⚙️',
@@ -154,7 +162,7 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
   };
 
   const handleAddSiblingRow = (e, idx) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     const currentItem = treeItems[idx];
     const currentLevel = currentItem ? (currentItem.level || 0) : 0;
 
@@ -167,6 +175,7 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
       onAddHierarchySiblingItem(id, idx);
     }
     setEditingRowIdx(insertIdx);
+    setSelectedRowIdx(insertIdx);
     setRowDraft({
       level: currentLevel,
       icon: '⚙️',
@@ -227,19 +236,27 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
     }
   };
 
+  const handleSaveAndAddSub = (idx) => {
+    if (onUpdateHierarchyItem && rowDraft.name.trim()) {
+      onUpdateHierarchyItem(id, idx, rowDraft);
+    }
+    handleAddSubRow(null, idx);
+  };
+
   const handleQuickAddClick = (e) => {
     e.stopPropagation();
-    if (onQuickAdd) {
-      onQuickAdd(id);
-      // Give the new item immediate edit focus
-      setEditingRowIdx(treeItems.length);
-      setRowDraft({
-        level: treeItems.length > 0 ? (treeItems[treeItems.length - 1].level || 1) : 0,
-        icon: '⚙️',
-        name: 'NewComponent',
-        details: 'Script, Component'
-      });
+    if (treeItems.length === 0) {
+      if (onQuickAdd) onQuickAdd(id);
+      return;
     }
+    const targetIdx = editingRowIdx !== null 
+      ? editingRowIdx 
+      : (selectedRowIdx !== null && selectedRowIdx < treeItems.length ? selectedRowIdx : treeItems.length - 1);
+
+    if (editingRowIdx !== null && onUpdateHierarchyItem && rowDraft.name.trim()) {
+      onUpdateHierarchyItem(id, editingRowIdx, rowDraft);
+    }
+    handleAddSiblingRow(e, targetIdx);
   };
 
   const handleQuickAddSubClick = (e) => {
@@ -248,15 +265,23 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
       handleQuickAddClick(e);
       return;
     }
-    const lastIdx = treeItems.length - 1;
-    handleAddSubRow(e, lastIdx);
+    const targetParentIdx = editingRowIdx !== null 
+      ? editingRowIdx 
+      : (selectedRowIdx !== null && selectedRowIdx < treeItems.length ? selectedRowIdx : treeItems.length - 1);
+
+    if (editingRowIdx !== null && onUpdateHierarchyItem && rowDraft.name.trim()) {
+      onUpdateHierarchyItem(id, editingRowIdx, rowDraft);
+    }
+    handleAddSubRow(e, targetParentIdx);
   };
 
+  const currentScale = data.scale || 1;
   const cardStyle = {
     background: data.customBg,
     borderColor: data.customBorder,
     borderStyle: data.borderStyle || 'solid',
-    boxShadow: data.glow ? `0 0 18px ${data.glowColor || 'rgba(88, 166, 255, 0.45)'}` : undefined
+    boxShadow: data.glow ? `0 0 18px ${data.glowColor || 'rgba(88, 166, 255, 0.45)'}` : undefined,
+    zoom: currentScale
   };
 
   const handleStyle = data.customAccent ? {
@@ -266,9 +291,49 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
 
   return (
     <div
-      className={`gamedev-hierarchy-card ${data.theme ? `theme-${data.theme}` : ''} ${data.glow ? 'has-glow' : ''}`}
+      ref={cardRef}
+      className={`gamedev-hierarchy-card ${data.theme ? `theme-${data.theme}` : ''} ${data.glow ? 'has-glow' : ''} ${selected ? 'selected' : ''}`}
       style={cardStyle}
     >
+      {/* 4 Corner handles for interactive proportional scaling */}
+      {selected && (
+        <>
+          <div
+            className="block-corner-scale-handle block-corner-tl nodrag"
+            style={{ backgroundColor: data.customAccent || '#58a6ff' }}
+            onPointerDown={(e) => handleCornerPointerDown('top-left', e)}
+            title="Масштабировать блок (угол ВЛ)"
+          />
+          <div
+            className="block-corner-scale-handle block-corner-tr nodrag"
+            style={{ backgroundColor: data.customAccent || '#58a6ff' }}
+            onPointerDown={(e) => handleCornerPointerDown('top-right', e)}
+            title="Масштабировать блок (угол ВП)"
+          />
+          <div
+            className="block-corner-scale-handle block-corner-bl nodrag"
+            style={{ backgroundColor: data.customAccent || '#58a6ff' }}
+            onPointerDown={(e) => handleCornerPointerDown('bottom-left', e)}
+            title="Масштабировать блок (угол НЛ)"
+          />
+          <div
+            className="block-corner-scale-handle block-corner-br nodrag"
+            style={{ backgroundColor: data.customAccent || '#58a6ff' }}
+            onPointerDown={(e) => handleCornerPointerDown('bottom-right', e)}
+            title="Масштабировать блок (угол НП)"
+          >
+            <span className="scale-grip-dots">⠿</span>
+          </div>
+
+          {/* Live scale percentage tooltip badge during scaling */}
+          {isScaling && liveScalePercent && (
+            <div className="block-scale-live-pill">
+              Масштаб: {liveScalePercent}%
+            </div>
+          )}
+        </>
+      )}
+
       {/* Handles for connections (Multiple connections allowed) */}
       <Handle
         type="target"
@@ -337,21 +402,60 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
 
       {/* Top action bar */}
       <div className="card-top-action-bar">
-        {data.tag && (
-          <span
-            className="card-custom-badge nodrag"
-            onClick={handleTagClick}
-            style={{
-              cursor: 'pointer',
-              background: data.badgeBg,
-              color: data.badgeText,
-              borderColor: data.badgeText
-            }}
-            title="Кликните для изменения привязки"
-          >
-            {data.tag}
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {data.tag && (
+            <span
+              className="card-custom-badge nodrag"
+              onClick={handleTagClick}
+              style={{
+                cursor: 'pointer',
+                background: data.badgeBg,
+                color: data.badgeText,
+                borderColor: data.badgeText
+              }}
+              title="Кликните для изменения привязки"
+            >
+              {data.tag}
+            </span>
+          )}
+
+          {/* Quick scale control */}
+          <div className="node-scale-control nodrag">
+            <button
+              type="button"
+              className="btn-scale-step"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onScaleNode) onScaleNode(id, (data.scale || 1) - 0.1);
+              }}
+              title="Уменьшить масштаб (-10%)"
+            >
+              -
+            </button>
+            <span
+              className="scale-value-label"
+              title="Текущий масштаб (клик для сброса на 100%)"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onScaleNode) onScaleNode(id, 1.0);
+              }}
+            >
+              {Math.round((data.scale || 1) * 100)}%
+            </span>
+            <button
+              type="button"
+              className="btn-scale-step"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onScaleNode) onScaleNode(id, (data.scale || 1) + 0.1);
+              }}
+              title="Увеличить масштаб (+10%)"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
         <div className="card-icons-group nodrag">
           <button
             className="card-action-icon-btn"
@@ -504,6 +608,7 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
                     placeholder="Компоненты"
                   />
                   <button className="row-inline-save-btn" onClick={() => handleSaveRow(idx)} title="Сохранить (Enter)">✓</button>
+                  <button type="button" className="row-inline-save-btn row-inline-sub-btn" onClick={() => handleSaveAndAddSub(idx)} title="Сохранить и создать вложенную строку под этой (↳ +)">↳+</button>
                   <button className="row-inline-del-btn" onClick={(e) => handleDeleteRow(e, idx)} title="Удалить строку">✕</button>
                 </div>
               );
@@ -512,9 +617,10 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
             return (
               <div
                 key={idx}
-                className="tree-item-row tree-item-interactive"
+                className={`tree-item-row tree-item-interactive ${selectedRowIdx === idx ? 'row-selected' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
+                  setSelectedRowIdx(idx);
                   handleStartRowEdit(idx, item);
                 }}
                 title="Кликните, чтобы редактировать этот элемент"
@@ -553,6 +659,24 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
                   </span>
                 )}
                 <div className="row-hover-actions nodrag">
+                  <button
+                    type="button"
+                    className="row-hover-indent-btn"
+                    onClick={(e) => { e.stopPropagation(); if (onIndentHierarchyItem) onIndentHierarchyItem(id, idx, -1); }}
+                    disabled={(item.level || 0) <= 0}
+                    title="Уменьшить вложенность (⇤)"
+                  >
+                    ⇤
+                  </button>
+                  <button
+                    type="button"
+                    className="row-hover-indent-btn"
+                    onClick={(e) => { e.stopPropagation(); if (onIndentHierarchyItem) onIndentHierarchyItem(id, idx, 1); }}
+                    disabled={(item.level || 0) >= 6}
+                    title="Увеличить вложенность (⇥)"
+                  >
+                    ⇥
+                  </button>
                   <button
                     type="button"
                     className="row-hover-sub-btn"

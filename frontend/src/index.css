@@ -2568,8 +2568,12 @@ body {
     border-radius: 12px;
     padding: 8px 16px 14px 16px;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
-    min-width: 480px;
-    max-width: 680px;
+    min-width: 280px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
     position: relative;
     cursor: grab;
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
@@ -2706,6 +2710,8 @@ select,
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
+    min-height: 0;
 }
 
 .tree-root-row {
@@ -2737,6 +2743,9 @@ select,
     font-family: 'JetBrains Mono', 'Fira Code', Consolas, 'SF Mono', monospace;
     font-size: 0.88rem;
     line-height: 1.5;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .tree-item-row {
@@ -3366,6 +3375,39 @@ select,
     color: #0d1117;
     box-shadow: 0 0 8px rgba(88, 166, 255, 0.5);
     transform: scale(1.08);
+}
+
+.row-hover-indent-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #8b949e;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 1px 4px;
+    border-radius: 4px;
+    line-height: 1.2;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.row-hover-indent-btn:hover:not(:disabled) {
+    background: rgba(88, 166, 255, 0.2);
+    color: #58a6ff;
+    border-color: rgba(88, 166, 255, 0.4);
+    transform: scale(1.08);
+}
+
+.row-hover-indent-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.tree-item-row.row-selected {
+    background: rgba(88, 166, 255, 0.12) !important;
+    border-left: 3px solid #58a6ff !important;
+    border-radius: 3px;
 }
 
 .row-hover-add-btn {
@@ -4789,3 +4831,381 @@ select,
     border: 2px solid #111419 !important;
     background: #ff4455 !important;
 }
+
+/* Individual Node Resizer lines & handles */
+.node-resizer-line {
+    border-color: rgba(88, 166, 255, 0.45) !important;
+    border-style: dashed !important;
+}
+
+.node-resizer-handle {
+    width: 9px !important;
+    height: 9px !important;
+    border-radius: 2px !important;
+    border: 1.5px solid #111419 !important;
+    background: #58a6ff !important;
+    transition: transform 0.12s ease, background-color 0.15s ease;
+}
+
+.node-resizer-handle:hover {
+    transform: scale(1.35);
+    background: #79c0ff !important;
+}
+
+/* Compact scale widget in card top bar and section header */
+.node-scale-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(22, 27, 34, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 2px 4px;
+    font-size: 0.76rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    user-select: none;
+    line-height: 1;
+}
+
+.node-scale-control .btn-scale-step {
+    background: transparent;
+    border: none;
+    color: var(--text-muted, #8b949e);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    border-radius: 3px;
+    transition: all 0.12s ease;
+}
+
+.node-scale-control .btn-scale-step:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #f0f6fc;
+}
+
+.node-scale-control .scale-value-label {
+    color: #58a6ff;
+    font-weight: 600;
+    padding: 0 3px;
+    cursor: pointer;
+    min-width: 34px;
+    text-align: center;
+}
+
+.node-scale-control .scale-value-label:hover {
+    text-decoration: underline;
+}
+
+.section-scale-control {
+    background: rgba(13, 17, 23, 0.95);
+    border-color: rgba(255, 68, 85, 0.35);
+}
+
+.section-scale-control .scale-value-label {
+    color: #ff4455;
+}
+
+.section-action-btn.active-toggle {
+    background: rgba(255, 68, 85, 0.25) !important;
+    border-color: #ff4455 !important;
+    color: #ff4455 !important;
+}
+
+/* Floating Selection Bar Group Scale Controls */
+.floating-scale-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.8rem;
+}
+
+.floating-scale-label {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--text-muted, #8b949e);
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-right: 2px;
+}
+
+.floating-btn-scale {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #f0f6fc;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: all 0.12s ease;
+}
+
+.floating-btn-scale:hover {
+    background: rgba(88, 166, 255, 0.25);
+    border-color: #58a6ff;
+    color: #58a6ff;
+}
+
+.floating-scale-chip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #c9d1d9;
+    font-size: 0.74rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.floating-scale-chip:hover {
+    background: rgba(88, 166, 255, 0.2);
+    border-color: #58a6ff;
+    color: #58a6ff;
+}
+
+/* Inspector Modal Scale Chips */
+.scale-preset-chip {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-muted, #8b949e);
+    font-size: 0.76rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.scale-preset-chip:hover {
+    background: rgba(88, 166, 255, 0.18);
+    color: #58a6ff;
+    border-color: #58a6ff;
+}
+
+.scale-preset-chip.active {
+    background: rgba(88, 166, 255, 0.25);
+    border-color: #58a6ff;
+    color: #58a6ff;
+    font-weight: 700;
+}
+
+.scale-preset-chip.reset-btn {
+    color: #ff7b72;
+    border-color: rgba(248, 81, 73, 0.3);
+}
+
+.scale-preset-chip.reset-btn:hover {
+    background: rgba(248, 81, 73, 0.15);
+    border-color: #f85149;
+    color: #f85149;
+}
+
+/* =========================================================
+   Interactive Corner Scaling & Edge Resizing Handles
+   ========================================================= */
+
+/* Section Corner Handles (Live Group Scaling) */
+.section-corner-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #161b22;
+    border-radius: 3px;
+    z-index: 1000;
+    pointer-events: all;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.section-corner-handle:hover,
+.section-corner-handle:active {
+    transform: scale(1.35);
+    box-shadow: 0 0 12px rgba(255, 68, 85, 0.85);
+}
+
+.section-corner-handle.section-corner-tl {
+    top: -7px;
+    left: -7px;
+    cursor: nwse-resize;
+}
+
+.section-corner-handle.section-corner-tr {
+    top: -7px;
+    right: -7px;
+    cursor: nesw-resize;
+}
+
+.section-corner-handle.section-corner-bl {
+    bottom: -7px;
+    left: -7px;
+    cursor: nesw-resize;
+}
+
+.section-corner-handle.section-corner-br {
+    bottom: -7px;
+    right: -7px;
+    cursor: nwse-resize;
+}
+
+/* Section Edge Handles (Boundary adjustment without scaling blocks) */
+.section-edge-handle {
+    position: absolute;
+    z-index: 999;
+    pointer-events: all;
+    background: transparent;
+}
+
+.section-edge-handle.section-edge-top {
+    top: -5px;
+    left: 14px;
+    right: 14px;
+    height: 10px;
+    cursor: ns-resize;
+}
+
+.section-edge-handle.section-edge-bottom {
+    bottom: -5px;
+    left: 14px;
+    right: 14px;
+    height: 10px;
+    cursor: ns-resize;
+}
+
+.section-edge-handle.section-edge-left {
+    left: -5px;
+    top: 14px;
+    bottom: 14px;
+    width: 10px;
+    cursor: ew-resize;
+}
+
+.section-edge-handle.section-edge-right {
+    right: -5px;
+    top: 14px;
+    bottom: 14px;
+    width: 10px;
+    cursor: ew-resize;
+}
+
+/* Live scale percentage tooltip for section */
+.section-scale-live-pill {
+    position: absolute;
+    padding: 4px 10px;
+    background: rgba(22, 27, 34, 0.95);
+    border: 1px solid #ff4455;
+    color: #ff4455;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    border-radius: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+    z-index: 2000;
+    white-space: nowrap;
+}
+
+.section-scale-live-pill.corner-bottom-right {
+    bottom: -34px;
+    right: 0;
+}
+
+.section-scale-live-pill.corner-bottom-left {
+    bottom: -34px;
+    left: 0;
+}
+
+.section-scale-live-pill.corner-top-right {
+    top: -34px;
+    right: 0;
+}
+
+.section-scale-live-pill.corner-top-left {
+    top: -34px;
+    left: 0;
+}
+
+/* Block Corner Scale Handles (Individual Block Scaling) */
+.block-corner-scale-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #161b22;
+    border-radius: 3px;
+    z-index: 1000;
+    pointer-events: all;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+    transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.block-corner-scale-handle:hover,
+.block-corner-scale-handle:active {
+    transform: scale(1.3);
+    filter: brightness(1.25);
+    box-shadow: 0 0 10px rgba(88, 166, 255, 0.8);
+}
+
+.block-corner-scale-handle.block-corner-tl {
+    top: -6px;
+    left: -6px;
+    cursor: nwse-resize;
+}
+
+.block-corner-scale-handle.block-corner-tr {
+    top: -6px;
+    right: -6px;
+    cursor: nesw-resize;
+}
+
+.block-corner-scale-handle.block-corner-bl {
+    bottom: -6px;
+    left: -6px;
+    cursor: nesw-resize;
+}
+
+.block-corner-scale-handle.block-corner-br {
+    bottom: -8px;
+    right: -8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    cursor: nwse-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.block-corner-scale-handle .scale-grip-dots {
+    font-size: 11px;
+    line-height: 1;
+    color: #161b22;
+    font-weight: 900;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Live scale percentage tooltip for block */
+.block-scale-live-pill {
+    position: absolute;
+    bottom: -32px;
+    right: 0;
+    padding: 3px 9px;
+    background: rgba(22, 27, 34, 0.95);
+    border: 1px solid #58a6ff;
+    color: #58a6ff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+    z-index: 2000;
+    white-space: nowrap;
+}
+

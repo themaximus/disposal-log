@@ -3,13 +3,15 @@ import { Handle, Position } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 import { computeTreePrefix } from './GameDevHierarchyNode';
 import EmojiPickerPopover from './EmojiPickerPopover';
+import useBlockCornerScale from '../../hooks/useBlockCornerScale';
 
-export default function LogicStepNode({ id, data, isConnectable }) {
+export default function LogicStepNode({ id, data, isConnectable, selected }) {
   const actions = useContext(DiagramActionsContext);
   const onOpenInspector = actions?.onOpenInspector || actions?.onEditNode || data?.onEdit;
   const onDeleteNode = actions?.onDeleteNode || data?.onDelete;
   const onQuickAdd = actions?.onQuickAdd || data?.onQuickAdd;
   const onOpenTagModal = actions?.onOpenTagModal || data?.onOpenTagModal;
+  const onScaleNode = actions?.onScaleNode;
   const onUpdateLogicLine = actions?.onUpdateLogicLine;
   const onDeleteLogicLine = actions?.onDeleteLogicLine;
   const onAddLogicSubLine = actions?.onAddLogicSubLine;
@@ -19,6 +21,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
 
   const [copied, setCopied] = useState(false);
   const [editingRowIdx, setEditingRowIdx] = useState(null);
+  const [selectedRowIdx, setSelectedRowIdx] = useState(null);
   const [lineDraft, setLineDraft] = useState({ code: '', comment: '', icon: '⚡', level: 0, prefix: '├── ' });
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(data.title || 'ExecuteLogicStep()');
@@ -30,6 +33,13 @@ export default function LogicStepNode({ id, data, isConnectable }) {
   const lines = data.lines || [];
   const codeInputRef = useRef(null);
   const titleInputRef = useRef(null);
+  const cardRef = useRef(null);
+
+  const {
+    handleCornerPointerDown,
+    isScaling,
+    liveScalePercent
+  } = useBlockCornerScale({ id, data, cardRef });
 
   useEffect(() => {
     setTitleDraft(title);
@@ -69,6 +79,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
   };
 
   const handleStartRowEdit = (idx, line) => {
+    setSelectedRowIdx(idx);
     setEditingRowIdx(idx);
     setLineDraft({
       code: line.code || '',
@@ -86,21 +97,25 @@ export default function LogicStepNode({ id, data, isConnectable }) {
     setEditingRowIdx(null);
   };
 
+  const handleSaveAndAddSub = (idx) => {
+    if (onUpdateLogicLine && lineDraft.code.trim()) {
+      onUpdateLogicLine(id, idx, lineDraft);
+    }
+    handleAddSubRow(null, idx);
+  };
+
   const handleAddSubRow = (e, idx) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     const parentLine = lines[idx];
     const parentLevel = parentLine ? (parentLine.level || 0) : 0;
     const subLevel = parentLevel + 1;
-
-    let insertIdx = idx + 1;
-    while (insertIdx < lines.length && (lines[insertIdx].level || 0) > parentLevel) {
-      insertIdx++;
-    }
+    const insertIdx = idx + 1;
 
     if (onAddLogicSubLine) {
       onAddLogicSubLine(id, idx);
     }
     setEditingRowIdx(insertIdx);
+    setSelectedRowIdx(insertIdx);
     setLineDraft({
       level: subLevel,
       icon: '⚡',
@@ -110,7 +125,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
   };
 
   const handleAddSiblingRow = (e, idx) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     const curLine = lines[idx];
     const curLevel = curLine ? (curLine.level || 0) : 0;
 
@@ -123,6 +138,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
       onAddLogicSiblingLine(id, idx);
     }
     setEditingRowIdx(insertIdx);
+    setSelectedRowIdx(insertIdx);
     setLineDraft({
       level: curLevel,
       icon: '⚡',
@@ -185,16 +201,18 @@ export default function LogicStepNode({ id, data, isConnectable }) {
 
   const handleQuickAddClick = (e) => {
     e.stopPropagation();
-    if (onQuickAdd) {
-      onQuickAdd(id);
-      setEditingRowIdx(lines.length);
-      setLineDraft({
-        level: lines.length > 0 ? (lines[lines.length - 1].level || 0) : 0,
-        icon: '⚡',
-        code: 'ExecuteAction()',
-        comment: 'Новый шаг логики'
-      });
+    if (lines.length === 0) {
+      if (onQuickAdd) onQuickAdd(id);
+      return;
     }
+    const targetIdx = editingRowIdx !== null 
+      ? editingRowIdx 
+      : (selectedRowIdx !== null && selectedRowIdx < lines.length ? selectedRowIdx : lines.length - 1);
+
+    if (editingRowIdx !== null && onUpdateLogicLine && lineDraft.code.trim()) {
+      onUpdateLogicLine(id, editingRowIdx, lineDraft);
+    }
+    handleAddSiblingRow(e, targetIdx);
   };
 
   const handleQuickAddSubClick = (e) => {
@@ -203,15 +221,23 @@ export default function LogicStepNode({ id, data, isConnectable }) {
       handleQuickAddClick(e);
       return;
     }
-    const lastIdx = lines.length - 1;
-    handleAddSubRow(e, lastIdx);
+    const targetParentIdx = editingRowIdx !== null 
+      ? editingRowIdx 
+      : (selectedRowIdx !== null && selectedRowIdx < lines.length ? selectedRowIdx : lines.length - 1);
+
+    if (editingRowIdx !== null && onUpdateLogicLine && lineDraft.code.trim()) {
+      onUpdateLogicLine(id, editingRowIdx, lineDraft);
+    }
+    handleAddSubRow(e, targetParentIdx);
   };
 
+  const currentScale = data.scale || 1;
   const cardStyle = {
     background: data.customBg,
     borderColor: data.customBorder,
     borderStyle: data.borderStyle || 'solid',
-    boxShadow: data.glow ? `0 0 18px ${data.glowColor || 'rgba(88, 166, 255, 0.45)'}` : undefined
+    boxShadow: data.glow ? `0 0 18px ${data.glowColor || 'rgba(88, 166, 255, 0.45)'}` : undefined,
+    zoom: currentScale
   };
 
   const handleStyle = data.customAccent ? {
@@ -221,9 +247,49 @@ export default function LogicStepNode({ id, data, isConnectable }) {
 
   return (
     <div
-      className={`gamedev-hierarchy-card logic-step-card ${data.theme ? `theme-${data.theme}` : ''} ${data.glow ? 'has-glow' : ''}`}
+      ref={cardRef}
+      className={`gamedev-hierarchy-card logic-step-card ${data.theme ? `theme-${data.theme}` : ''} ${data.glow ? 'has-glow' : ''} ${selected ? 'selected' : ''}`}
       style={cardStyle}
     >
+      {/* 4 Corner handles for interactive proportional scaling */}
+      {selected && (
+        <>
+          <div
+            className="block-corner-scale-handle block-corner-tl nodrag"
+            style={{ backgroundColor: data.customAccent || '#d29922' }}
+            onPointerDown={(e) => handleCornerPointerDown('top-left', e)}
+            title="Масштабировать блок (угол ВЛ)"
+          />
+          <div
+            className="block-corner-scale-handle block-corner-tr nodrag"
+            style={{ backgroundColor: data.customAccent || '#d29922' }}
+            onPointerDown={(e) => handleCornerPointerDown('top-right', e)}
+            title="Масштабировать блок (угол ВП)"
+          />
+          <div
+            className="block-corner-scale-handle block-corner-bl nodrag"
+            style={{ backgroundColor: data.customAccent || '#d29922' }}
+            onPointerDown={(e) => handleCornerPointerDown('bottom-left', e)}
+            title="Масштабировать блок (угол НЛ)"
+          />
+          <div
+            className="block-corner-scale-handle block-corner-br nodrag"
+            style={{ backgroundColor: data.customAccent || '#d29922' }}
+            onPointerDown={(e) => handleCornerPointerDown('bottom-right', e)}
+            title="Масштабировать блок (угол НП)"
+          >
+            <span className="scale-grip-dots">⠿</span>
+          </div>
+
+          {/* Live scale percentage tooltip badge during scaling */}
+          {isScaling && liveScalePercent && (
+            <div className="block-scale-live-pill">
+              Масштаб: {liveScalePercent}%
+            </div>
+          )}
+        </>
+      )}
+
       <Handle type="target" position={Position.Left} id="target-left" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-left" />
       <Handle type="source" position={Position.Left} id="source-left" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-left" />
       <Handle type="source" position={Position.Right} id="source-right" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-right" />
@@ -234,19 +300,57 @@ export default function LogicStepNode({ id, data, isConnectable }) {
       <Handle type="target" position={Position.Bottom} id="target-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
 
       <div className="card-top-action-bar">
-        <span
-          className="card-type-badge nodrag"
-          onClick={handleTagClick}
-          style={{
-            cursor: 'pointer',
-            background: data.badgeBg,
-            color: data.badgeText,
-            borderColor: data.badgeText
-          }}
-          title="Кликните для изменения тега"
-        >
-          {nodeType}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span
+            className="card-type-badge nodrag"
+            onClick={handleTagClick}
+            style={{
+              cursor: 'pointer',
+              background: data.badgeBg,
+              color: data.badgeText,
+              borderColor: data.badgeText
+            }}
+            title="Кликните для изменения тега"
+          >
+            {nodeType}
+          </span>
+
+          {/* Quick scale control */}
+          <div className="node-scale-control nodrag">
+            <button
+              type="button"
+              className="btn-scale-step"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onScaleNode) onScaleNode(id, (data.scale || 1) - 0.1);
+              }}
+              title="Уменьшить масштаб (-10%)"
+            >
+              -
+            </button>
+            <span
+              className="scale-value-label"
+              title="Текущий масштаб (клик для сброса на 100%)"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onScaleNode) onScaleNode(id, 1.0);
+              }}
+            >
+              {Math.round((data.scale || 1) * 100)}%
+            </span>
+            <button
+              type="button"
+              className="btn-scale-step"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onScaleNode) onScaleNode(id, (data.scale || 1) + 0.1);
+              }}
+              title="Увеличить масштаб (+10%)"
+            >
+              +
+            </button>
+          </div>
+        </div>
         <div className="card-icons-group nodrag">
           <button className="card-action-icon-btn" onClick={handleTagClick} title="Привязать к задаче или тегу (@)">@</button>
           <button className={`card-action-icon-btn ${copied ? 'copied' : ''}`} onClick={handleCopy} title="Копировать код (❐)">
@@ -386,6 +490,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
                     placeholder="Комментарий"
                   />
                   <button className="row-inline-save-btn" onClick={() => handleSaveLine(idx)} title="Сохранить (Enter)">✓</button>
+                  <button type="button" className="row-inline-save-btn row-inline-sub-btn" onClick={() => handleSaveAndAddSub(idx)} title="Сохранить и создать вложенную строку под этой (↳ +)">↳+</button>
                   <button className="row-inline-del-btn" onClick={(e) => handleDeleteLine(e, idx)} title="Удалить строку">✕</button>
                 </div>
               );
@@ -394,9 +499,10 @@ export default function LogicStepNode({ id, data, isConnectable }) {
             return (
               <div
                 key={idx}
-                className="tree-item-row logic-code-row tree-item-interactive"
+                className={`tree-item-row logic-code-row tree-item-interactive ${selectedRowIdx === idx ? 'row-selected' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
+                  setSelectedRowIdx(idx);
                   handleStartRowEdit(idx, line);
                 }}
                 title="Кликните, чтобы редактировать этот шаг"
@@ -429,6 +535,24 @@ export default function LogicStepNode({ id, data, isConnectable }) {
                 <code className="logic-code-text">{line.code}</code>
                 {line.comment && <span className="item-details-text logic-comment">({line.comment})</span>}
                 <div className="row-hover-actions nodrag">
+                  <button
+                    type="button"
+                    className="row-hover-indent-btn"
+                    onClick={(e) => { e.stopPropagation(); if (onIndentLogicLine) onIndentLogicLine(id, idx, -1); }}
+                    disabled={(line.level || 0) <= 0}
+                    title="Уменьшить вложенность (⇤)"
+                  >
+                    ⇤
+                  </button>
+                  <button
+                    type="button"
+                    className="row-hover-indent-btn"
+                    onClick={(e) => { e.stopPropagation(); if (onIndentLogicLine) onIndentLogicLine(id, idx, 1); }}
+                    disabled={(line.level || 0) >= 6}
+                    title="Увеличить вложенность (⇥)"
+                  >
+                    ⇥
+                  </button>
                   <button
                     type="button"
                     className="row-hover-sub-btn"
