@@ -17,6 +17,9 @@ export function useDragAndDrop({ tasks, setTasks, boards, currentBoardId, column
   };
 
   const handleDragStartTask = (e, task) => {
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+    }
     clearDwellTimer();
     setDraggedTaskId(task.id);
     e.dataTransfer.setData('text/plain', String(task.id));

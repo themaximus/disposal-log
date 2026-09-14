@@ -204,7 +204,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
 
       <div className="card-tree-content">
         {editingTitle ? (
-          <div className="tree-root-row-edit" onClick={(e) => e.stopPropagation()}>
+          <div className="tree-root-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
             <span className="logic-icon">⚙️</span>
             <input
               ref={titleInputRef}
@@ -236,7 +236,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
 
             if (isEditing) {
               return (
-                <div key={idx} className="tree-item-row-edit" onClick={(e) => e.stopPropagation()}>
+                <div key={idx} className="tree-item-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
                   <span className="tree-branch-prefix">{line.prefix || '├── '}</span>
                   <input
                     type="text"

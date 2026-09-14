@@ -75,6 +75,11 @@
     padding: 0;
 }
 
+::selection {
+    background: rgba(56, 139, 253, 0.35);
+    color: #ffffff;
+}
+
 /* Custom GitHub Dark Scrollbars */
 ::-webkit-scrollbar {
     width: 6px;
@@ -1316,6 +1321,8 @@ body {
     overflow-x: auto;
     overflow-y: hidden;
     padding: 1.25rem 2rem;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .column {
@@ -1324,6 +1331,8 @@ body {
     flex-direction: column;
     min-width: 320px;
     min-height: 0;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .column-header {
@@ -1335,6 +1344,8 @@ body {
     justify-content: space-between;
     border-radius: 8px 8px 0 0;
     background: var(--github-surface);
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .column-header h2 {
@@ -1366,6 +1377,8 @@ body {
     justify-content: flex-start;
     min-height: 0;
     overflow-x: hidden !important;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .task-list {
@@ -1377,6 +1390,8 @@ body {
     width: 100%;
     box-sizing: border-box;
     padding-right: 0.45rem;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* Task Cards */
@@ -1390,6 +1405,8 @@ body {
     cursor: pointer;
     width: 100%;
     box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .task-card:hover {
@@ -2511,7 +2528,8 @@ body {
     position: relative;
     cursor: grab;
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
-    user-select: text;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .gamedev-hierarchy-card:hover {
@@ -2522,6 +2540,55 @@ body {
 .gamedev-hierarchy-card.selected {
     border-color: #58a6ff !important;
     box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3), 0 16px 36px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Prevent accidental text selection across diagram workspace & nodes */
+.diagram-workspace-container,
+.diagram-canvas-wrapper,
+.diagram-top-bar,
+.diagram-sidebar,
+.react-flow,
+.react-flow__pane,
+.react-flow__node,
+.react-flow__edge {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Allow deliberate text selection in inputs, textareas, modals, and preview areas */
+input,
+textarea,
+select,
+[contenteditable="true"],
+.modal,
+.modal-content,
+.modal-body,
+.task-view-modal,
+.task-modal-description,
+.task-desc-modal,
+.task-comments,
+.comment-text,
+.comment-body,
+.inspector-modal-content,
+.code-preview-block,
+.selectable-text,
+[data-selectable="true"] {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+/* Allow deliberate text selection when editing inline inside diagram cards */
+.gamedev-hierarchy-card input,
+.gamedev-hierarchy-card textarea,
+.root-inline-input,
+.row-inline-icon-input,
+.row-inline-name-input,
+.row-inline-details-input,
+.row-inline-code-input,
+.row-inline-comment-input {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    cursor: text !important;
 }
 
 /* Top Action Bar with @ and Copy Icon */
