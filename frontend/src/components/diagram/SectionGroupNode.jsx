@@ -261,20 +261,6 @@ export default function SectionGroupNode({ id, data, selected }) {
             </button>
           </div>
 
-          {/* Toggle proportional child scaling with resizer */}
-          <button
-            type="button"
-            className={`section-action-btn ${scaleChildrenOnResize ? 'active-toggle' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              setScaleChildrenOnResize(prev => !prev);
-            }}
-            title={scaleChildrenOnResize ? 'Пропорциональное масштабирование блоков при ресайзе: ВКЛ' : 'Пропорциональное масштабирование блоков при ресайзе: ВЫКЛ'}
-            style={{ fontSize: '0.85rem' }}
-          >
-            📐
-          </button>
-
           {/* Theme Palette Picker */}
           <div style={{ position: 'relative' }}>
             <button
