@@ -12,6 +12,7 @@ import '@xyflow/react/dist/style.css';
 
 import GameDevHierarchyNode from './diagram/GameDevHierarchyNode';
 import LogicStepNode from './diagram/LogicStepNode';
+import SectionGroupNode from './diagram/SectionGroupNode';
 import DeletableEdge from './diagram/DeletableEdge';
 import BlockInspectorModal from './diagram/BlockInspectorModal';
 import BlockPrefabsModal from './diagram/BlockPrefabsModal';
@@ -26,10 +27,28 @@ import {
 
 const COMMON_ICONS = ['🟢', '👁️', '📷', '🎯', '📱', '📦', '⚔️', '🛡️', '⚙️', '💀', '💡', '🔊', '🎮', '✨', '🧟', '🦴', '⚡', '🔄', '📡', '🏷️'];
 
+// Utility: Ensure section/parent nodes always come before child nodes in the array
+const sortNodesParentsFirst = (nds = []) => {
+  const sections = [];
+  const children = [];
+  const others = [];
+  nds.forEach(n => {
+    if (n.type === 'sectionNode') {
+      sections.push(n);
+    } else if (n.parentId) {
+      children.push(n);
+    } else {
+      others.push(n);
+    }
+  });
+  return [...sections, ...others, ...children];
+};
+
 // Static types registry for React Flow
 const nodeTypes = {
   hierarchyNode: GameDevHierarchyNode,
-  logicNode: LogicStepNode
+  logicNode: LogicStepNode,
+  sectionNode: SectionGroupNode
 };
 
 const edgeTypes = {
@@ -45,6 +64,13 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   // Nodes & Edges state
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // Canvas interaction mode: 'pan' (hand drag) | 'select' (marquee drag)
+  const [interactionMode, setInteractionMode] = useState('pan');
+  const [selectedNodes, setSelectedNodes] = useState([]);
+  const handleSelectionChange = useCallback(({ nodes: selNodes }) => {
+    setSelectedNodes(selNodes || []);
+  }, []);
 
   // Modals
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -280,6 +306,202 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     triggerAutoSave();
   }, [setNodes, triggerAutoSave]);
 
+  // Group currently selected nodes into a new Section
+  const handleGroupSelectedNodes = useCallback(() => {
+    const currentNodes = nodesRef.current;
+    // Nodes to group: selected and NOT sections themselves
+    const nodesToGroup = currentNodes.filter(n => n.selected && n.type !== 'sectionNode');
+    if (nodesToGroup.length === 0) return;
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    // Determine absolute positions for every node to be grouped
+    const nodesWithAbsPos = nodesToGroup.map(node => {
+      let absX = node.position.x;
+      let absY = node.position.y;
+      if (node.parentId) {
+        const parent = currentNodes.find(p => p.id === node.parentId);
+        if (parent) {
+          absX += parent.position.x;
+          absY += parent.position.y;
+        }
+      }
+      const width = node.measured?.width || node.width || (node.type === 'hierarchyNode' ? 520 : 480);
+      const height = node.measured?.height || node.height || 260;
+      return {
+        node,
+        absX,
+        absY,
+        width,
+        height
+      };
+    });
+
+    nodesWithAbsPos.forEach(({ absX, absY, width, height }) => {
+      if (absX < minX) minX = absX;
+      if (absY < minY) minY = absY;
+      if (absX + width > maxX) maxX = absX + width;
+      if (absY + height > maxY) maxY = absY + height;
+    });
+
+    const padding = 45;
+    const headerHeight = 60;
+    const sectionX = Math.round(minX - padding);
+    const sectionY = Math.round(minY - padding - headerHeight);
+    const sectionW = Math.round((maxX - minX) + padding * 2);
+    const sectionH = Math.round((maxY - minY) + padding * 2 + headerHeight);
+
+    const sectionId = `section-${Date.now()}`;
+    const newSection = {
+      id: sectionId,
+      type: 'sectionNode',
+      position: { x: sectionX, y: sectionY },
+      style: { width: sectionW, height: sectionH },
+      data: {
+        label: `Секция (${nodesToGroup.length} эл.)`,
+        theme: 'crimson',
+        borderStyle: 'dashed',
+        icon: '📁',
+        childCount: nodesToGroup.length
+      },
+      zIndex: -1
+    };
+
+    const groupedIds = new Set(nodesToGroup.map(n => n.id));
+    const updatedNodes = currentNodes.map(n => {
+      if (!groupedIds.has(n.id)) return n;
+      const item = nodesWithAbsPos.find(i => i.node.id === n.id);
+      return {
+        ...n,
+        parentId: sectionId,
+        position: {
+          x: Math.round(item.absX - sectionX),
+          y: Math.round(item.absY - sectionY)
+        },
+        selected: false
+      };
+    });
+
+    const sorted = sortNodesParentsFirst([newSection, ...updatedNodes]);
+    setNodes(sorted);
+    setSelectedNodes([]);
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Ungroup section
+  const handleUngroup = useCallback((sectionId) => {
+    const currentNodes = nodesRef.current;
+    const sectionNode = currentNodes.find(n => n.id === sectionId);
+    if (!sectionNode) return;
+
+    const groupPos = sectionNode.position;
+    const updatedNodes = currentNodes
+      .filter(n => n.id !== sectionId)
+      .map(n => {
+        if (n.parentId === sectionId) {
+          const { parentId, ...rest } = n;
+          return {
+            ...rest,
+            position: {
+              x: Math.round(n.position.x + groupPos.x),
+              y: Math.round(n.position.y + groupPos.y)
+            },
+            selected: true
+          };
+        }
+        return n;
+      });
+
+    setNodes(updatedNodes);
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Update section data (theme, label, icon, borderStyle)
+  const handleUpdateSection = useCallback((sectionId, updatedData) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== sectionId) return n;
+      return {
+        ...n,
+        data: { ...n.data, ...updatedData }
+      };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Delete section (safely dissolves section and preserves child blocks)
+  const handleDeleteSection = useCallback((sectionId) => {
+    handleUngroup(sectionId);
+  }, [handleUngroup]);
+
+  // Add empty section
+  const handleAddEmptySection = useCallback(() => {
+    const sectionId = `section-${Date.now()}`;
+    const newSection = {
+      id: sectionId,
+      type: 'sectionNode',
+      position: { x: 250, y: 120 },
+      style: { width: 620, height: 420 },
+      data: {
+        label: 'Новая секция',
+        theme: 'crimson',
+        borderStyle: 'dashed',
+        icon: '📁',
+        childCount: 0
+      },
+      zIndex: -1
+    };
+    setNodes(nds => sortNodesParentsFirst([newSection, ...nds]));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Recalculate child count for each section dynamically
+  const nodesWithAccurateChildCounts = useMemo(() => {
+    const counts = {};
+    nodes.forEach(n => {
+      if (n.parentId) {
+        counts[n.parentId] = (counts[n.parentId] || 0) + 1;
+      }
+    });
+    return nodes.map(n => {
+      if (n.type === 'sectionNode') {
+        const count = counts[n.id] || 0;
+        if (n.data?.childCount !== count) {
+          return {
+            ...n,
+            data: { ...n.data, childCount: count }
+          };
+        }
+      }
+      return n;
+    });
+  }, [nodes]);
+
+  // Keyboard shortcut listener: Ctrl+G (group), Ctrl+Shift+G (ungroup)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const tag = e.target.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          const selectedSection = nodesRef.current.find(n => n.selected && n.type === 'sectionNode');
+          if (selectedSection) {
+            handleUngroup(selectedSection.id);
+          }
+        } else {
+          handleGroupSelectedNodes();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleGroupSelectedNodes, handleUngroup]);
+
   // Save prefab handler
   const handleSavePrefab = useCallback((prefab) => {
     saveBlockPrefab(prefab);
@@ -367,7 +589,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             });
             setDiagrams(formatted);
             setCurrentDiagramId(formatted[0].id);
-            setNodes(formatted[0].nodes || []);
+            setNodes(sortNodesParentsFirst(formatted[0].nodes || []));
             setEdges(formatted[0].edges || []);
             return;
           }
@@ -381,7 +603,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     setDiagrams(offline);
     if (offline.length > 0) {
       setCurrentDiagramId(offline[0].id);
-      setNodes(offline[0].nodes || []);
+      setNodes(sortNodesParentsFirst(offline[0].nodes || []));
       setEdges(offline[0].edges || []);
     }
   }, [currentUser, setNodes, setEdges]);
@@ -404,7 +626,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   // Trigger autosave when nodes or edges change
   const handleNodesChange = (changes) => {
     onNodesChange(changes);
-    const hasPositionOrRemove = changes.some(c => c.type === 'position' && c.dragging === false || c.type === 'remove');
+    const hasPositionOrRemove = changes.some(c => (c.type === 'position' && c.dragging === false) || c.type === 'remove' || c.type === 'dimensions');
     if (hasPositionOrRemove) {
       triggerAutoSave();
     }
@@ -422,7 +644,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     if (!target) return;
 
     setCurrentDiagramId(target.id);
-    setNodes(target.nodes || []);
+    setNodes(sortNodesParentsFirst(target.nodes || []));
     setEdges(target.edges || []);
   };
 
@@ -761,6 +983,26 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
 
         {/* Right: Actions */}
         <div className="diagram-bar-right">
+          {/* Interaction Mode Toggle: Pan vs Selection Box */}
+          <div className="diagram-mode-toggle nodrag">
+            <button
+              className={`btn-mode-pill ${interactionMode === 'pan' ? 'active' : ''}`}
+              onClick={() => setInteractionMode('pan')}
+              title="Режим руки: перемещение холста (зажмите Shift для выделения рамкой)"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>pan_tool</span>
+              <span>Рука</span>
+            </button>
+            <button
+              className={`btn-mode-pill ${interactionMode === 'select' ? 'active' : ''}`}
+              onClick={() => setInteractionMode('select')}
+              title="Режим рамки выделения: тяните мышь для выбора нескольких блоков"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>select_all</span>
+              <span>Выделение</span>
+            </button>
+          </div>
+
           <button
             className="btn-diagram-tool btn-primary-diagram"
             onClick={handleAddHierarchyNode}
@@ -778,6 +1020,26 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--github-yellow)' }}>code</span>
             <span>+ Логика</span>
           </button>
+
+          <button
+            className="btn-diagram-tool btn-section-tool"
+            onClick={handleAddEmptySection}
+            title="Создать новую рамку секции на холсте"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#ff4455' }}>crop_free</span>
+            <span>+ Секция</span>
+          </button>
+
+          {selectedNodes.filter(n => n.type !== 'sectionNode').length >= 2 && (
+            <button
+              className="btn-diagram-tool btn-group-active"
+              onClick={handleGroupSelectedNodes}
+              title="Сгруппировать выбранные блоки в секцию (Ctrl+G)"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#ff4455' }}>folder_zip</span>
+              <span>Сгруппировать ({selectedNodes.filter(n => n.type !== 'sectionNode').length})</span>
+            </button>
+          )}
 
           <button
             className="btn-diagram-tool btn-prefabs-library"
@@ -833,11 +1095,14 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             onDeleteLogicLine: handleDeleteLogicLine,
             onUpdateLogicTitle: handleUpdateLogicTitle,
             onDeleteEdge: handleDeleteEdge,
-            onUpdateEdgeLabel: handleUpdateEdgeLabel
+            onUpdateEdgeLabel: handleUpdateEdgeLabel,
+            onUngroup: handleUngroup,
+            onUpdateSection: handleUpdateSection,
+            onDeleteSection: handleDeleteSection
           }}
         >
           <ReactFlow
-            nodes={nodes}
+            nodes={nodesWithAccurateChildCounts}
             edges={edges}
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
@@ -850,6 +1115,13 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             deleteKeyCode={['Backspace', 'Delete']}
             edgesFocusable={true}
             edgesReconnectable={true}
+            selectionOnDrag={interactionMode === 'select'}
+            panOnDrag={interactionMode === 'select' ? [1, 2] : true}
+            selectionMode="partial"
+            selectionKeyCode={['Shift', 'Control']}
+            multiSelectionKeyCode={['Shift', 'Control', 'Meta']}
+            onSelectionChange={handleSelectionChange}
+            elevateNodesOnSelect={false}
             defaultEdgeOptions={{
               type: 'deletable',
               animated: true,
@@ -864,6 +1136,65 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
               maskColor="rgba(13, 17, 23, 0.75)"
             />
           </ReactFlow>
+
+          {/* Floating selection bar when multiple nodes are selected */}
+          {selectedNodes.length >= 2 && (
+            <div className="diagram-floating-selection-bar nodrag">
+              <div className="selection-badge">
+                <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: '#58a6ff' }}>check_box</span>
+                <span>Выбрано: <strong>{selectedNodes.length}</strong></span>
+              </div>
+
+              {selectedNodes.some(n => n.type !== 'sectionNode') && (
+                <button
+                  className="floating-btn-action btn-group-primary"
+                  onClick={handleGroupSelectedNodes}
+                  title="Сгруппировать выбранные блоки в секцию (Ctrl+G)"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>crop_free</span>
+                  <span>Сгруппировать</span>
+                  <kbd>Ctrl+G</kbd>
+                </button>
+              )}
+
+              {selectedNodes.some(n => n.type === 'sectionNode') && (
+                <button
+                  className="floating-btn-action btn-ungroup-action"
+                  onClick={() => {
+                    selectedNodes.filter(n => n.type === 'sectionNode').forEach(s => handleUngroup(s.id));
+                  }}
+                  title="Разгруппировать секции (Ctrl+Shift+G)"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>lock_open</span>
+                  <span>Разгруппировать</span>
+                  <kbd>Ctrl+Shift+G</kbd>
+                </button>
+              )}
+
+              <button
+                className="floating-btn-action btn-delete-sel"
+                onClick={() => {
+                  selectedNodes.forEach(n => handleDeleteNode(n.id));
+                  setSelectedNodes([]);
+                }}
+                title="Удалить выбранные элементы (Delete)"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
+                <span>Удалить</span>
+              </button>
+
+              <button
+                className="floating-btn-close"
+                onClick={() => {
+                  setNodes(nds => nds.map(n => ({ ...n, selected: false })));
+                  setSelectedNodes([]);
+                }}
+                title="Снять выделение (Esc)"
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </DiagramActionsContext.Provider>
       </div>
 
