@@ -155,9 +155,9 @@ export default function LogicStepNode({ id, data, isConnectable }) {
       <Handle type="source" position={Position.Bottom} id="source-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
       <Handle type="target" position={Position.Bottom} id="target-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
 
-      <div className="card-top-action-bar nodrag">
+      <div className="card-top-action-bar">
         <span
-          className="card-type-badge"
+          className="card-type-badge nodrag"
           onClick={handleTagClick}
           style={{
             cursor: 'pointer',
@@ -169,7 +169,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
         >
           {nodeType}
         </span>
-        <div className="card-icons-group">
+        <div className="card-icons-group nodrag">
           <button className="card-action-icon-btn" onClick={handleTagClick} title="Привязать к задаче или тегу (@)">@</button>
           <button className={`card-action-icon-btn ${copied ? 'copied' : ''}`} onClick={handleCopy} title="Копировать код (❐)">
             {copied ? '✓' : (

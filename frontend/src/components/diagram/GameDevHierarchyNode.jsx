@@ -224,10 +224,10 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
       />
 
       {/* Top action bar */}
-      <div className="card-top-action-bar nodrag">
+      <div className="card-top-action-bar">
         {data.tag && (
           <span
-            className="card-custom-badge"
+            className="card-custom-badge nodrag"
             onClick={handleTagClick}
             style={{
               cursor: 'pointer',
@@ -240,7 +240,7 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
             {data.tag}
           </span>
         )}
-        <div className="card-icons-group">
+        <div className="card-icons-group nodrag">
           <button
             className="card-action-icon-btn"
             onClick={handleTagClick}

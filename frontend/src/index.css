@@ -2627,9 +2627,14 @@ select,
     align-items: center;
     justify-content: flex-end;
     gap: 6px;
-    min-height: 20px;
+    min-height: 22px;
     margin-bottom: 6px;
     user-select: none;
+    cursor: grab;
+}
+
+.card-top-action-bar:active {
+    cursor: grabbing;
 }
 
 .card-type-badge,
@@ -2644,12 +2649,14 @@ select,
     color: #58a6ff;
     border: 1px solid rgba(56, 139, 253, 0.25);
     text-transform: uppercase;
+    cursor: pointer;
 }
 
 .card-icons-group {
     display: flex;
     align-items: center;
     gap: 4px;
+    cursor: default;
 }
 
 .card-action-icon-btn {
