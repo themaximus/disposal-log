@@ -384,9 +384,9 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
         className="diagram-handle handle-bottom"
       />
 
-      {/* Top action bar */}
-      <div className="card-top-action-bar">
-        {data.tag && (
+      {/* Top action bar (only rendered if tag exists) */}
+      {data.tag && (
+        <div className="card-top-action-bar">
           <span
             className="card-custom-badge nodrag"
             onClick={handleTagClick}
@@ -400,87 +400,88 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
           >
             {data.tag}
           </span>
-        )}
+        </div>
+      )}
 
-        <div className="card-icons-group nodrag">
-          {/* Quick scale control */}
-          <div className="node-scale-control">
-            <button
-              type="button"
-              className="btn-scale-step"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onScaleNode) onScaleNode(id, (data.scale || 1) - 0.1);
-              }}
-              title="Уменьшить масштаб (-10%)"
-            >
-              -
-            </button>
-            <span
-              className="scale-value-label"
-              title="Текущий масштаб (клик для сброса на 100%)"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onScaleNode) onScaleNode(id, 1.0);
-              }}
-            >
-              {Math.round((data.scale || 1) * 100)}%
-            </span>
-            <button
-              type="button"
-              className="btn-scale-step"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onScaleNode) onScaleNode(id, (data.scale || 1) + 0.1);
-              }}
-              title="Увеличить масштаб (+10%)"
-            >
-              +
-            </button>
-          </div>
+      {/* Floating Header Actions Overlay on Hover */}
+      <div className="card-icons-group nodrag">
+        {/* Quick scale control */}
+        <div className="node-scale-control">
           <button
-            className="card-action-icon-btn"
-            onClick={handleTagClick}
-            title={data.tag ? `Привязка: ${data.tag}` : 'Привязать к задаче или тегу (@)'}
+            type="button"
+            className="btn-scale-step"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onScaleNode) onScaleNode(id, (data.scale || 1) - 0.1);
+            }}
+            title="Уменьшить масштаб (-10%)"
           >
-            @
+            -
           </button>
-          <button
-            className={`card-action-icon-btn ${copied ? 'copied' : ''}`}
-            onClick={handleCopy}
-            title={copied ? 'Скопировано в буфер!' : 'Копировать структуру (❐)'}
+          <span
+            className="scale-value-label"
+            title="Текущий масштаб (клик для сброса на 100%)"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onScaleNode) onScaleNode(id, 1.0);
+            }}
           >
-            {copied ? '✓' : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-            )}
-          </button>
+            {Math.round((data.scale || 1) * 100)}%
+          </span>
           <button
-            className="card-action-icon-btn btn-inspector"
-            onClick={(e) => { e.stopPropagation(); if (onOpenInspector) onOpenInspector(id); }}
-            title="Свойства и стиль блока (🎨)"
+            type="button"
+            className="btn-scale-step"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onScaleNode) onScaleNode(id, (data.scale || 1) + 0.1);
+            }}
+            title="Увеличить масштаб (+10%)"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
-              <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
-              <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
-              <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
-              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>
-            </svg>
-          </button>
-          <button
-            className="card-action-icon-btn btn-trash"
-            onClick={(e) => { e.stopPropagation(); if (onDeleteNode) onDeleteNode(id); }}
-            title="Удалить этот блок (🗑️)"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
+            +
           </button>
         </div>
+        <button
+          className="card-action-icon-btn"
+          onClick={handleTagClick}
+          title={data.tag ? `Привязка: ${data.tag}` : 'Привязать к задаче или тегу (@)'}
+        >
+          @
+        </button>
+        <button
+          className={`card-action-icon-btn ${copied ? 'copied' : ''}`}
+          onClick={handleCopy}
+          title={copied ? 'Скопировано в буфер!' : 'Копировать структуру (❐)'}
+        >
+          {copied ? '✓' : (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          )}
+        </button>
+        <button
+          className="card-action-icon-btn btn-inspector"
+          onClick={(e) => { e.stopPropagation(); if (onOpenInspector) onOpenInspector(id); }}
+          title="Свойства и стиль блока (🎨)"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>
+          </svg>
+        </button>
+        <button
+          className="card-action-icon-btn btn-trash"
+          onClick={(e) => { e.stopPropagation(); if (onDeleteNode) onDeleteNode(id); }}
+          title="Удалить этот блок (🗑️)"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
       </div>
 
       {/* Card Content: Tree view */}
