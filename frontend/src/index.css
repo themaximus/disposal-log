@@ -2743,4 +2743,240 @@ body {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
+/* Deletable Custom Edge Styles */
+.diagram-edge-delete-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #161b22;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.diagram-edge-delete-btn:hover {
+    background: #f85149;
+    border-color: #f85149;
+    color: #ffffff;
+    transform: scale(1.15);
+    box-shadow: 0 0 10px rgba(248, 81, 73, 0.6);
+}
+
+.diagram-edge-label-badge {
+    background: #161b22;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    padding: 1px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.diagram-edge-label-badge:hover {
+    border-color: #58a6ff;
+    color: #58a6ff;
+}
+
+/* Card Action Hover / Trash */
+.card-action-icon-btn.btn-trash:hover {
+    color: #f85149 !important;
+    background: rgba(248, 81, 73, 0.15) !important;
+}
+
+/* Quick Add button at bottom of card */
+.btn-quick-add-tree-item {
+    width: 100%;
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: #8b949e;
+    padding: 4px 8px;
+    font-size: 0.74rem;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+    transition: all 0.15s ease;
+}
+
+.btn-quick-add-tree-item:hover {
+    border-color: #58a6ff;
+    color: #58a6ff;
+    background: rgba(88, 166, 255, 0.08);
+}
+
+/* Node Editor Modal Styles */
+.node-editor-modal {
+    max-width: 680px !important;
+}
+
+.node-editor-tabs-bar {
+    display: flex;
+    border-bottom: 1px solid var(--github-border);
+    background: rgba(0, 0, 0, 0.18);
+    padding: 0 16px;
+    gap: 8px;
+}
+
+.node-tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #8b949e;
+    padding: 10px 14px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.node-tab-btn:hover {
+    color: #f0f6fc;
+}
+
+.node-tab-btn.active {
+    color: #58a6ff;
+    border-bottom-color: #58a6ff;
+    font-weight: 600;
+}
+
+.node-builder-table {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.builder-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #161b22;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+}
+
+.builder-select-level {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #e3b341;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 0.74rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+}
+
+.builder-input-icon {
+    width: 44px;
+    text-align: center;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #f0f6fc;
+    border-radius: 4px;
+    padding: 4px 2px;
+    font-size: 0.9rem;
+}
+
+.builder-input-name {
+    flex: 1;
+    min-width: 100px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #f0f6fc;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+}
+
+.builder-input-details {
+    flex: 1;
+    min-width: 100px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+}
+
+.builder-btn-delete {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #8b949e;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    line-height: 1;
+    padding: 0;
+    transition: all 0.15s ease;
+}
+
+.builder-btn-delete:hover {
+    color: #f85149;
+    background: rgba(248, 81, 73, 0.15);
+    border-color: rgba(248, 81, 73, 0.3);
+}
+
+.icon-palette-chip {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    line-height: 1.2;
+}
+
+.icon-palette-chip:hover {
+    background: #21262d;
+    border-color: #58a6ff;
+    transform: scale(1.15);
+}
+
+/* Tag modal preset chips */
+.tag-preset-chip {
+    background: #161b22;
+    border: 1px solid #30363d;
+    color: #58a6ff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    transition: all 0.12s ease;
+}
+
+.tag-preset-chip:hover {
+    background: rgba(56, 139, 253, 0.18);
+    border-color: #58a6ff;
+    color: #ffffff;
+}
+
 
