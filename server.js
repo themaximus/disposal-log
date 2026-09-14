@@ -1339,6 +1339,72 @@ app.delete('/api/tasks/:id', sessionMiddleware, requireUser, (req, res) => {
     });
 });
 
+// Diagrams API (jgraph / diagrams.net)
+app.get('/api/diagrams', sessionMiddleware, (req, res) => {
+    if (!req.user) {
+        return res.json([]);
+    }
+    const userId = req.user.id;
+    db.all("SELECT id, user_id, title, xml, created_at, updated_at FROM diagrams WHERE user_id = ? ORDER BY updated_at DESC", [userId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows || []);
+    });
+});
+
+app.post('/api/diagrams', sessionMiddleware, requireUser, (req, res) => {
+    const { title, xml } = req.body;
+    const userId = req.user.id;
+    const diagramTitle = (title && title.trim()) || 'Новая диаграмма';
+    const diagramXml = xml || '';
+    db.run(
+        "INSERT INTO diagrams (user_id, title, xml, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+        [userId, diagramTitle, diagramXml],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({
+                id: this.lastID,
+                user_id: userId,
+                title: diagramTitle,
+                xml: diagramXml,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            });
+        }
+    );
+});
+
+app.put('/api/diagrams/:id', sessionMiddleware, requireUser, (req, res) => {
+    const { id } = req.params;
+    const { title, xml } = req.body;
+    const userId = req.user.id;
+
+    db.get("SELECT * FROM diagrams WHERE id = ? AND user_id = ?", [id, userId], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(404).json({ error: 'Диаграмма не найдена' });
+
+        const updatedTitle = title !== undefined ? title : row.title;
+        const updatedXml = xml !== undefined ? xml : row.xml;
+
+        db.run(
+            "UPDATE diagrams SET title = ?, xml = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+            [updatedTitle, updatedXml, id, userId],
+            function(err2) {
+                if (err2) return res.status(500).json({ error: err2.message });
+                res.json({ success: true, id: Number(id), title: updatedTitle, updated_at: new Date().toISOString() });
+            }
+        );
+    });
+});
+
+app.delete('/api/diagrams/:id', sessionMiddleware, requireUser, (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    db.run("DELETE FROM diagrams WHERE id = ? AND user_id = ?", [id, userId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
 // Health check endpoint (MUST respond 200 OK immediately for Railway)
 app.get('/health', (req, res) => {
     res.status(200).send('OK');

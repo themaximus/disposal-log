@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Column from './components/Column';
 import LandingHero from './components/LandingHero';
+import DiagramWorkspace from './components/DiagramWorkspace';
 import SyncToast from './components/SyncToast';
 import ModalContainer from './components/ModalContainer';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
@@ -87,7 +88,11 @@ export default function App() {
     if (tab === 'landing') {
       url.searchParams.delete('board');
       url.searchParams.delete('tab');
+    } else if (tab === 'diagrams') {
+      url.searchParams.delete('board');
+      url.searchParams.set('tab', 'diagrams');
     } else {
+      url.searchParams.delete('tab');
       if (boardId) {
         url.searchParams.set('board', boardId);
       }
@@ -122,6 +127,7 @@ export default function App() {
       params.delete('origin');
     }
 
+    const urlTab = params.get('tab');
     const newSearch = params.toString();
     const newUrl = `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`;
     window.history.replaceState({}, document.title, newUrl);
@@ -134,15 +140,27 @@ export default function App() {
         const user = data && (data.user || (data.id ? data : null));
         if (user) {
           setCurrentUser(user);
-          if (urlBoardId) setCurrentTab('boards');
+          if (urlTab === 'diagrams') {
+            setCurrentTab('diagrams');
+          } else if (urlBoardId) {
+            setCurrentTab('boards');
+          }
           fetchUserBoards();
         } else {
-          if (urlBoardId) setCurrentTab('boards');
+          if (urlTab === 'diagrams') {
+            setCurrentTab('diagrams');
+          } else if (urlBoardId) {
+            setCurrentTab('boards');
+          }
           initGuestMode();
         }
       })
       .catch(() => {
-        if (urlBoardId) setCurrentTab('boards');
+        if (urlTab === 'diagrams') {
+          setCurrentTab('diagrams');
+        } else if (urlBoardId) {
+          setCurrentTab('boards');
+        }
         initGuestMode();
       });
   };
@@ -559,6 +577,8 @@ export default function App() {
     setCurrentTab(tabId);
     if (tabId === 'landing') {
       updateUrl('landing');
+    } else if (tabId === 'diagrams') {
+      updateUrl('diagrams');
     } else {
       if (currentBoardId) {
         updateUrl('boards', currentBoardId);
@@ -635,7 +655,12 @@ export default function App() {
           <LandingHero
             currentUser={currentUser}
             onOpenAuth={() => setIsAuthModalOpen(true)}
-            onOpenBoard={() => setCurrentTab('boards')}
+            onOpenBoard={() => handleSelectTab('workspace')}
+          />
+        ) : currentTab === 'diagrams' ? (
+          <DiagramWorkspace
+            currentUser={currentUser}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
           />
         ) : (
           <main className="board" data-card-mode={viewMode}>

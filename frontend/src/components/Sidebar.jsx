@@ -97,6 +97,15 @@ export default function Sidebar({
             {!isCollapsed && <span>Задачи</span>}
           </button>
 
+          <button
+            className={`sidebar-nav-btn ${currentTab === 'diagrams' ? 'active' : ''}`}
+            onClick={() => handleMobileNavClick(() => onSelectTab('diagrams'))}
+            title="Профессиональные блок-схемы, алгоритмы и архитектура (jgraph)"
+          >
+            <span className="material-symbols-outlined">account_tree</span>
+            {!isCollapsed && <span>Диаграммы</span>}
+          </button>
+
           {/* Collapsible Filter / View Modes Dropdown Panel */}
           {(currentTab === 'workspace' || currentTab === 'boards') && (
             <div className="sidebar-filter-wrapper" style={{ position: 'relative' }}>

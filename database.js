@@ -146,6 +146,17 @@ const db = new sqlite3.Database(dbPath, (err) => {
             key TEXT PRIMARY KEY,
             value TEXT
         )`);
+
+        // Diagrams table for flowcharts, algorithms, and architectural schemas (jgraph / diagrams.net)
+        db.run(`CREATE TABLE IF NOT EXISTS diagrams (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            xml TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )`);
     }
 });
 

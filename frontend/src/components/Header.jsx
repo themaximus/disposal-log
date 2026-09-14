@@ -27,11 +27,18 @@ export default function Header({ currentUser, currentTab, viewMode, onSelectTab,
             Главная
           </button>
           <button
-            className={`btn ${currentTab === 'workspace' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`btn ${(currentTab === 'workspace' || currentTab === 'boards') ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => onSelectTab('workspace')}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', marginRight: '4px' }}>view_kanban</span>
             Задачи
+          </button>
+          <button
+            className={`btn ${currentTab === 'diagrams' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => onSelectTab('diagrams')}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', marginRight: '4px' }}>account_tree</span>
+            Диаграммы
           </button>
         </div>
       </div>

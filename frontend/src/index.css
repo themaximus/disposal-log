@@ -2223,3 +2223,277 @@ body {
 .media-gallery-thumb:hover .thumb-overlay {
     opacity: 1 !important;
 }
+
+/* ==========================================================
+   DIAGRAM WORKSPACE & JGRAPH / DIAGRAMS.NET STYLING
+   ========================================================== */
+.diagram-workspace-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    background: var(--github-canvas);
+    overflow: hidden;
+    flex: 1;
+    position: relative;
+}
+
+.diagram-workspace-container.diagram-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99999;
+}
+
+.diagram-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--github-surface);
+    border-bottom: 1px solid var(--github-border);
+    gap: 12px;
+    flex-wrap: wrap;
+    z-index: 15;
+    flex-shrink: 0;
+}
+
+.diagram-bar-left,
+.diagram-bar-center,
+.diagram-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.diagram-brand-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: var(--github-subtle);
+    border: 1px solid var(--github-border);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text-main);
+}
+
+.diagram-brand-title {
+    letter-spacing: 0.2px;
+}
+
+.diagram-selector-dropdown {
+    background: var(--github-subtle);
+    color: var(--text-main);
+    border: 1px solid var(--github-border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    min-width: 180px;
+    max-width: 280px;
+    transition: border-color 0.15s ease;
+}
+
+.diagram-selector-dropdown:focus {
+    border-color: var(--github-blue);
+}
+
+.diagram-save-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--github-border-muted);
+}
+
+.diagram-save-status .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.diagram-save-status.saved .status-dot {
+    background: var(--github-green-text);
+    box-shadow: 0 0 6px var(--github-green-text);
+}
+
+.diagram-save-status.saving .status-dot {
+    background: var(--github-yellow);
+    box-shadow: 0 0 6px var(--github-yellow);
+}
+
+.diagram-save-status.unsaved .status-dot {
+    background: var(--github-red-text);
+}
+
+.btn-diagram-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: var(--github-subtle);
+    border: 1px solid var(--github-border);
+    color: var(--text-main);
+    font-size: 0.84rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-diagram-tool:hover {
+    background: #30363d;
+    border-color: #8b949e;
+}
+
+.btn-primary-diagram {
+    background: var(--github-green) !important;
+    border-color: rgba(240, 246, 252, 0.1) !important;
+    color: #ffffff !important;
+}
+
+.btn-primary-diagram:hover {
+    background: var(--github-green-hover) !important;
+    border-color: rgba(240, 246, 252, 0.2) !important;
+}
+
+.btn-danger-tool:hover {
+    color: var(--github-red-text) !important;
+    border-color: var(--github-red) !important;
+    background: rgba(218, 54, 51, 0.15) !important;
+}
+
+.diagram-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: var(--github-surface);
+    border: 1px solid var(--github-border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    min-width: 190px;
+    overflow: hidden;
+    padding: 4px;
+}
+
+.diagram-dropdown-menu button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 0.84rem;
+    text-align: left;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.diagram-dropdown-menu button:hover {
+    background: var(--github-blue);
+    color: #ffffff;
+}
+
+.diagram-canvas-viewport {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    position: relative;
+    background: #0d1117;
+    overflow: hidden;
+}
+
+.diagram-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #0d1117;
+}
+
+.diagram-modal {
+    max-width: 660px !important;
+}
+
+.diagram-templates-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+@media (max-width: 680px) {
+    .diagram-templates-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.diagram-template-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: var(--github-surface);
+    border: 1px solid var(--github-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.diagram-template-card:hover {
+    border-color: var(--github-blue);
+    background: var(--github-subtle);
+}
+
+.diagram-template-card.selected {
+    border-color: var(--github-blue-hover);
+    background: rgba(56, 139, 253, 0.1);
+}
+
+.template-card-icon {
+    color: var(--github-blue-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 2px;
+}
+
+.template-card-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text-main);
+    margin-bottom: 2px;
+}
+
+.template-card-desc {
+    font-size: 0.77rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+.template-selected-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: var(--github-blue-text);
+    font-size: 1.1rem;
+}
+
