@@ -13,6 +13,7 @@ import '@xyflow/react/dist/style.css';
 import GameDevHierarchyNode from './diagram/GameDevHierarchyNode';
 import LogicStepNode from './diagram/LogicStepNode';
 import DeletableEdge from './diagram/DeletableEdge';
+import { DiagramActionsContext } from './DiagramActionsContext';
 import {
   STARTER_PRESETS,
   getOfflineDiagrams,
@@ -21,6 +22,16 @@ import {
 } from '../utils/diagramStorage';
 
 const COMMON_ICONS = ['🟢', '👁️', '📷', '🎯', '📱', '📦', '⚔️', '🛡️', '⚙️', '💀', '💡', '🔊', '🎮', '✨', '🧟', '🦴', '⚡', '🔄', '📡', '🏷️'];
+
+// Static types registry for React Flow
+const nodeTypes = {
+  hierarchyNode: GameDevHierarchyNode,
+  logicNode: LogicStepNode
+};
+
+const edgeTypes = {
+  deletable: DeletableEdge
+};
 
 export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   const [diagrams, setDiagrams] = useState([]);
@@ -51,6 +62,10 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
 
   const workspaceContainerRef = useRef(null);
   const saveTimeoutRef = useRef(null);
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+  const edgesRef = useRef(edges);
+  edgesRef.current = edges;
 
   // Auth fetch helper
   const authFetch = (url, options = {}) => {
@@ -68,38 +83,34 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
     saveTimeoutRef.current = setTimeout(() => {
-      setNodes(currentNodes => {
-        setEdges(currentEdges => {
-          if (!currentDiagramId) return currentEdges;
+      const currentNodes = nodesRef.current;
+      const currentEdges = edgesRef.current;
+      if (!currentDiagramId) return;
 
-          const updatedDiag = {
-            id: currentDiagramId,
-            title: diagrams.find(d => String(d.id) === String(currentDiagramId))?.title || 'Схема',
-            nodes: currentNodes,
-            edges: currentEdges,
-            updated_at: new Date().toISOString()
-          };
+      const updatedDiag = {
+        id: currentDiagramId,
+        title: diagrams.find(d => String(d.id) === String(currentDiagramId))?.title || 'Схема',
+        nodes: currentNodes,
+        edges: currentEdges,
+        updated_at: new Date().toISOString()
+      };
 
-          saveOfflineDiagram(updatedDiag);
+      saveOfflineDiagram(updatedDiag);
 
-          if (currentUser && typeof currentDiagramId === 'number') {
-            authFetch(`/api/diagrams/${currentDiagramId}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                title: updatedDiag.title,
-                xml: JSON.stringify({ nodes: currentNodes, edges: currentEdges })
-              })
-            }).catch(console.error);
-          }
+      if (currentUser && typeof currentDiagramId === 'number') {
+        authFetch(`/api/diagrams/${currentDiagramId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: updatedDiag.title,
+            xml: JSON.stringify({ nodes: currentNodes, edges: currentEdges })
+          })
+        }).catch(console.error);
+      }
 
-          setSaveStatus('saved');
-          return currentEdges;
-        });
-        return currentNodes;
-      });
-    }, 600);
-  }, [currentDiagramId, diagrams, currentUser, setNodes, setEdges]);
+      setSaveStatus('saved');
+    }, 400);
+  }, [currentDiagramId, diagrams, currentUser]);
 
   // Delete node
   const handleDeleteNode = useCallback((nodeId) => {
@@ -111,6 +122,19 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   // Delete edge
   const handleDeleteEdge = useCallback((edgeId) => {
     setEdges(eds => eds.filter(e => e.id !== edgeId));
+    triggerAutoSave();
+  }, [setEdges, triggerAutoSave]);
+
+  // Update edge label
+  const handleUpdateEdgeLabel = useCallback((edgeId, newLabel) => {
+    setEdges(eds => eds.map(e => {
+      if (e.id !== edgeId) return e;
+      return {
+        ...e,
+        label: newLabel,
+        data: { ...(e.data || {}), label: newLabel }
+      };
+    }));
     triggerAutoSave();
   }, [setEdges, triggerAutoSave]);
 
@@ -150,102 +174,130 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     triggerAutoSave();
   }, [setNodes, triggerAutoSave]);
 
+  // Inline update for hierarchy item
+  const handleUpdateHierarchyItem = useCallback((nodeId, itemIndex, updatedItem) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const items = [...(n.data.items || [])];
+      if (itemIndex < items.length) {
+        items[itemIndex] = { ...items[itemIndex], ...updatedItem };
+      }
+      return { ...n, data: { ...n.data, items } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Inline delete for hierarchy item
+  const handleDeleteHierarchyItem = useCallback((nodeId, itemIndex) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const items = (n.data.items || []).filter((_, idx) => idx !== itemIndex);
+      if (items.length > 0) {
+        items[items.length - 1] = { ...items[items.length - 1], isLast: true };
+      }
+      return { ...n, data: { ...n.data, items } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Inline update for hierarchy root path
+  const handleUpdateHierarchyRoot = useCallback((nodeId, newRootPath) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      return { ...n, data: { ...n.data, rootPath: newRootPath } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Inline update for logic line
+  const handleUpdateLogicLine = useCallback((nodeId, lineIndex, updatedLine) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const lines = [...(n.data.lines || [])];
+      if (lineIndex < lines.length) {
+        lines[lineIndex] = { ...lines[lineIndex], ...updatedLine };
+      }
+      return { ...n, data: { ...n.data, lines } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Inline delete for logic line
+  const handleDeleteLogicLine = useCallback((nodeId, lineIndex) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const lines = (n.data.lines || []).filter((_, idx) => idx !== lineIndex);
+      if (lines.length > 0) {
+        lines[lines.length - 1] = { ...lines[lines.length - 1], prefix: '└── ' };
+      }
+      return { ...n, data: { ...n.data, lines } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Inline update for logic method title
+  const handleUpdateLogicTitle = useCallback((nodeId, newTitle) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      return { ...n, data: { ...n.data, title: newTitle } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
   // Open Tag / Mention Modal
   const handleOpenTagModal = useCallback((nodeId) => {
-    setNodes(nds => {
-      const target = nds.find(n => n.id === nodeId);
-      if (target) {
-        setTagModalNodeId(nodeId);
-        setTagInputValue(target.data.tag || target.data.nodeType || '');
-        setIsTagModalOpen(true);
-      }
-      return nds;
-    });
-  }, [setNodes]);
+    const target = nodesRef.current.find(n => n.id === nodeId);
+    if (target) {
+      setTagModalNodeId(nodeId);
+      setTagInputValue(target.data.tag || target.data.nodeType || '');
+      setIsTagModalOpen(true);
+    }
+  }, []);
 
-  // Node edit callback
+  // Node edit callback - Opens detailed modal
   const handleEditNode = useCallback((nodeId) => {
-    setNodes(currentNodes => {
-      const target = currentNodes.find(n => n.id === nodeId);
-      if (target) {
-        setEditingNodeId(nodeId);
-        if (target.type === 'hierarchyNode') {
-          const items = target.data.items || [];
-          const rawText = items.map(i => {
-            const indent = '  '.repeat(i.level || 0);
-            const branch = i.isLast ? '└── ' : '├── ';
-            const icon = i.icon ? i.icon + ' ' : '';
-            const details = i.details ? ` (${i.details})` : '';
-            return `${indent}${branch}${icon}${i.name}${details}`;
-          }).join('\n');
+    const target = nodesRef.current.find(n => n.id === nodeId);
+    if (!target) {
+      console.warn('Node not found for editing:', nodeId);
+      return;
+    }
 
-          setEditHierarchyData({
-            rootPath: target.data.rootPath || '',
-            tag: target.data.tag || 'PREFAB',
-            items: JSON.parse(JSON.stringify(items)),
-            rawText
-          });
-        } else {
-          const lines = target.data.lines || [];
-          const rawText = lines.map(l => {
-            const prefix = l.prefix || '├── ';
-            const icon = l.icon ? l.icon + ' ' : '';
-            const comment = l.comment ? ` // ${l.comment}` : '';
-            return `${prefix}${icon}${l.code}${comment}`;
-          }).join('\n');
+    setEditingNodeId(nodeId);
+    if (target.type === 'hierarchyNode') {
+      const items = target.data?.items || [];
+      const rawText = items.map(i => {
+        const indent = '  '.repeat(i.level || 0);
+        const branch = i.isLast ? '└── ' : '├── ';
+        const icon = i.icon ? i.icon + ' ' : '';
+        const details = i.details ? ` (${i.details})` : '';
+        return `${indent}${branch}${icon}${i.name}${details}`;
+      }).join('\n');
 
-          setEditLogicData({
-            title: target.data.title || '',
-            nodeType: target.data.nodeType || 'SCRIPT',
-            lines: JSON.parse(JSON.stringify(lines)),
-            rawText
-          });
-        }
-        setIsNodeEditModalOpen(true);
-      }
-      return currentNodes;
-    });
-  }, [setNodes]);
+      setEditHierarchyData({
+        rootPath: target.data?.rootPath || '',
+        tag: target.data?.tag || 'PREFAB',
+        items: JSON.parse(JSON.stringify(items)),
+        rawText
+      });
+    } else {
+      const lines = target.data?.lines || [];
+      const rawText = lines.map(l => {
+        const prefix = l.prefix || '├── ';
+        const icon = l.icon ? l.icon + ' ' : '';
+        const comment = l.comment ? ` // ${l.comment}` : '';
+        return `${prefix}${icon}${l.code}${comment}`;
+      }).join('\n');
 
-  // Define custom node types with full handlers attached
-  const nodeTypes = useMemo(() => ({
-    hierarchyNode: (props) => (
-      <GameDevHierarchyNode
-        {...props}
-        data={{
-          ...props.data,
-          onEdit: handleEditNode,
-          onDelete: handleDeleteNode,
-          onQuickAdd: handleQuickAdd,
-          onOpenTagModal: handleOpenTagModal
-        }}
-      />
-    ),
-    logicNode: (props) => (
-      <LogicStepNode
-        {...props}
-        data={{
-          ...props.data,
-          onEdit: handleEditNode,
-          onDelete: handleDeleteNode,
-          onQuickAdd: handleQuickAdd,
-          onOpenTagModal: handleOpenTagModal
-        }}
-      />
-    )
-  }), [handleEditNode, handleDeleteNode, handleQuickAdd, handleOpenTagModal]);
-
-  const edgeTypes = useMemo(() => ({
-    deletable: (props) => (
-      <DeletableEdge
-        {...props}
-        data={{
-          ...props.data,
-          onDeleteEdge: handleDeleteEdge
-        }}
-      />
-    )
-  }), [handleDeleteEdge]);
+      setEditLogicData({
+        title: target.data?.title || '',
+        nodeType: target.data?.nodeType || 'SCRIPT',
+        lines: JSON.parse(JSON.stringify(lines)),
+        rawText
+      });
+    }
+    setEditModeTab('visual');
+    setIsNodeEditModalOpen(true);
+  }, []);
 
   // Load diagrams list
   const loadDiagrams = useCallback(async () => {
@@ -714,34 +766,51 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
 
       {/* React Flow Canvas */}
       <div className="diagram-canvas-viewport">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={handleNodesChange}
-          onEdgesChange={handleEdgesChange}
-          onConnect={onConnect}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          fitView
-          colorMode="dark"
-          connectionMode="loose"
-          deleteKeyCode={['Backspace', 'Delete']}
-          edgesFocusable={true}
-          edgesReconnectable={true}
-          defaultEdgeOptions={{
-            type: 'deletable',
-            animated: true,
-            style: { stroke: '#58a6ff', strokeWidth: 2 }
+        <DiagramActionsContext.Provider
+          value={{
+            onEditNode: handleEditNode,
+            onDeleteNode: handleDeleteNode,
+            onQuickAdd: handleQuickAdd,
+            onOpenTagModal: handleOpenTagModal,
+            onUpdateHierarchyItem: handleUpdateHierarchyItem,
+            onDeleteHierarchyItem: handleDeleteHierarchyItem,
+            onUpdateHierarchyRoot: handleUpdateHierarchyRoot,
+            onUpdateLogicLine: handleUpdateLogicLine,
+            onDeleteLogicLine: handleDeleteLogicLine,
+            onUpdateLogicTitle: handleUpdateLogicTitle,
+            onDeleteEdge: handleDeleteEdge,
+            onUpdateEdgeLabel: handleUpdateEdgeLabel
           }}
         >
-          <Background variant="dots" gap={18} size={1.2} color="#30363d" />
-          <Controls className="react-flow-custom-controls" />
-          <MiniMap
-            className="react-flow-custom-minimap"
-            nodeColor={() => '#1f242c'}
-            maskColor="rgba(13, 17, 23, 0.75)"
-          />
-        </ReactFlow>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={handleNodesChange}
+            onEdgesChange={handleEdgesChange}
+            onConnect={onConnect}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            fitView
+            colorMode="dark"
+            connectionMode="loose"
+            deleteKeyCode={['Backspace', 'Delete']}
+            edgesFocusable={true}
+            edgesReconnectable={true}
+            defaultEdgeOptions={{
+              type: 'deletable',
+              animated: true,
+              style: { stroke: '#58a6ff', strokeWidth: 2 }
+            }}
+          >
+            <Background variant="dots" gap={18} size={1.2} color="#30363d" />
+            <Controls className="react-flow-custom-controls" />
+            <MiniMap
+              className="react-flow-custom-minimap"
+              nodeColor={() => '#1f242c'}
+              maskColor="rgba(13, 17, 23, 0.75)"
+            />
+          </ReactFlow>
+        </DiagramActionsContext.Provider>
       </div>
 
       {/* Modal: New Diagram with Presets */}
