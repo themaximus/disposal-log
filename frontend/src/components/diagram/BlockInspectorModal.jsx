@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BLOCK_THEMES } from '../../utils/diagramStorage';
+import EmojiPickerPopover from './EmojiPickerPopover';
 
 const ACCENT_COLORS = [
   { label: 'Синий', value: '#58a6ff' },
@@ -32,6 +33,7 @@ export default function BlockInspectorModal({
   const [prefabName, setPrefabName] = useState('');
   const [prefabDesc, setPrefabDesc] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [pickerItemIdx, setPickerItemIdx] = useState(null);
 
   useEffect(() => {
     if (node) {
@@ -338,7 +340,28 @@ export default function BlockInspectorModal({
                 <div className="inspector-reorder-list">
                   {(formData.items || []).map((item, idx) => (
                     <div key={idx} className="inspector-reorder-item">
-                      <span className="reorder-item-icon">{item.icon || '🟢'}</span>
+                      <div className="row-inline-icon-trigger-wrapper" style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          className="reorder-item-icon icon-btn-interactive"
+                          onClick={() => setPickerItemIdx(pickerItemIdx === `h_${idx}` ? null : `h_${idx}`)}
+                          title="Кликните, чтобы сменить эмодзи"
+                        >
+                          {item.icon || '🟢'}
+                        </button>
+                        {pickerItemIdx === `h_${idx}` && (
+                          <EmojiPickerPopover
+                            currentEmoji={item.icon}
+                            onSelect={(selected) => {
+                              const updatedItems = [...(formData.items || [])];
+                              updatedItems[idx] = { ...updatedItems[idx], icon: selected };
+                              handleFieldChange('items', updatedItems);
+                              setPickerItemIdx(null);
+                            }}
+                            onClose={() => setPickerItemIdx(null)}
+                          />
+                        )}
+                      </div>
                       <div className="reorder-item-content">
                         <span className="reorder-item-name">{item.name}</span>
                         {item.details && <span className="reorder-item-details">({item.details})</span>}
@@ -386,7 +409,28 @@ export default function BlockInspectorModal({
                 <div className="inspector-reorder-list">
                   {(formData.lines || []).map((line, idx) => (
                     <div key={idx} className="inspector-reorder-item">
-                      <span className="reorder-item-icon">{line.icon || '⚡'}</span>
+                      <div className="row-inline-icon-trigger-wrapper" style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          className="reorder-item-icon icon-btn-interactive"
+                          onClick={() => setPickerItemIdx(pickerItemIdx === `l_${idx}` ? null : `l_${idx}`)}
+                          title="Кликните, чтобы сменить эмодзи"
+                        >
+                          {line.icon || '⚡'}
+                        </button>
+                        {pickerItemIdx === `l_${idx}` && (
+                          <EmojiPickerPopover
+                            currentEmoji={line.icon}
+                            onSelect={(selected) => {
+                              const updatedLines = [...(formData.lines || [])];
+                              updatedLines[idx] = { ...updatedLines[idx], icon: selected };
+                              handleFieldChange('lines', updatedLines);
+                              setPickerItemIdx(null);
+                            }}
+                            onClose={() => setPickerItemIdx(null)}
+                          />
+                        )}
+                      </div>
                       <div className="reorder-item-content">
                         <code className="reorder-item-code">{line.code}</code>
                         {line.comment && <span className="reorder-item-comment">({line.comment})</span>}

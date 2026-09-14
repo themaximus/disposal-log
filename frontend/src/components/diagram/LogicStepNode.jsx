@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
+import EmojiPickerPopover from './EmojiPickerPopover';
 
 export default function LogicStepNode({ id, data, isConnectable }) {
   const actions = useContext(DiagramActionsContext);
@@ -17,6 +18,8 @@ export default function LogicStepNode({ id, data, isConnectable }) {
   const [lineDraft, setLineDraft] = useState({ code: '', comment: '', icon: '⚡', prefix: '├── ' });
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(data.title || 'ExecuteLogicStep()');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [lineEmojiPickerIdx, setLineEmojiPickerIdx] = useState(null);
 
   const title = data.title || 'ExecuteLogicStep()';
   const nodeType = data.nodeType || 'LOGIC';
@@ -238,13 +241,30 @@ export default function LogicStepNode({ id, data, isConnectable }) {
               return (
                 <div key={idx} className="tree-item-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
                   <span className="tree-branch-prefix">{line.prefix || '├── '}</span>
-                  <input
-                    type="text"
-                    className="row-inline-icon-input"
-                    value={lineDraft.icon}
-                    onChange={(e) => setLineDraft({ ...lineDraft, icon: e.target.value })}
-                    title="Иконка шага"
-                  />
+                  <div className="row-inline-icon-trigger-wrapper">
+                    <button
+                      type="button"
+                      className="row-inline-icon-picker-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowEmojiPicker(prev => !prev);
+                      }}
+                      title="Выбрать эмодзи (кликните для открытия каталога)"
+                    >
+                      <span className="current-icon">{lineDraft.icon || '⚡'}</span>
+                      <span className="picker-caret">▾</span>
+                    </button>
+                    {showEmojiPicker && (
+                      <EmojiPickerPopover
+                        currentEmoji={lineDraft.icon}
+                        onSelect={(emoji) => {
+                          setLineDraft(prev => ({ ...prev, icon: emoji }));
+                          setShowEmojiPicker(false);
+                        }}
+                        onClose={() => setShowEmojiPicker(false)}
+                      />
+                    )}
+                  </div>
                   <input
                     ref={codeInputRef}
                     type="text"
@@ -279,7 +299,30 @@ export default function LogicStepNode({ id, data, isConnectable }) {
                 title="Кликните, чтобы редактировать этот шаг"
               >
                 <span className="tree-branch-prefix">{line.prefix || '├── '}</span>
-                {line.icon && <span className="item-symbol-icon">{line.icon}</span>}
+                <div className="row-inline-icon-trigger-wrapper" style={{ display: 'inline-flex' }}>
+                  <span
+                    className="item-symbol-icon item-symbol-interactive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLineEmojiPickerIdx(lineEmojiPickerIdx === idx ? null : idx);
+                    }}
+                    title="Кликните, чтобы сменить эмодзи"
+                  >
+                    {line.icon || '⚡'}
+                  </span>
+                  {lineEmojiPickerIdx === idx && (
+                    <EmojiPickerPopover
+                      currentEmoji={line.icon}
+                      onSelect={(selected) => {
+                        if (onUpdateLogicLine) {
+                          onUpdateLogicLine(id, idx, { ...line, icon: selected });
+                        }
+                        setLineEmojiPickerIdx(null);
+                      }}
+                      onClose={() => setLineEmojiPickerIdx(null)}
+                    />
+                  )}
+                </div>
                 <code className="logic-code-text">{line.code}</code>
                 {line.comment && <span className="item-details-text logic-comment">({line.comment})</span>}
                 <div className="row-hover-actions">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
+import EmojiPickerPopover from './EmojiPickerPopover';
 
 export default function GameDevHierarchyNode({ id, data, isConnectable }) {
   const actions = useContext(DiagramActionsContext);
@@ -17,6 +18,8 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
   const [rowDraft, setRowDraft] = useState({ name: '', details: '', icon: '⚙️', level: 0 });
   const [editingRoot, setEditingRoot] = useState(false);
   const [rootDraft, setRootDraft] = useState(data.rootPath || 'Assets/Prefabs/Player/Player.prefab');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [rowEmojiPickerIdx, setRowEmojiPickerIdx] = useState(null);
 
   const rootPath = data.rootPath || 'Assets/Prefabs/Player/Player.prefab';
   const treeItems = data.items || [];
@@ -324,13 +327,30 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
               return (
                 <div key={idx} className="tree-item-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
                   <span className="tree-branch-prefix">{indentSpaces}{branchSymbol}</span>
-                  <input
-                    type="text"
-                    className="row-inline-icon-input"
-                    value={rowDraft.icon}
-                    onChange={(e) => setRowDraft({ ...rowDraft, icon: e.target.value })}
-                    title="Эмодзи иконки"
-                  />
+                  <div className="row-inline-icon-trigger-wrapper">
+                    <button
+                      type="button"
+                      className="row-inline-icon-picker-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowEmojiPicker(prev => !prev);
+                      }}
+                      title="Выбрать эмодзи (кликните для открытия окна всех эмодзи)"
+                    >
+                      <span className="current-icon">{rowDraft.icon || '⚙️'}</span>
+                      <span className="picker-caret">▾</span>
+                    </button>
+                    {showEmojiPicker && (
+                      <EmojiPickerPopover
+                        currentEmoji={rowDraft.icon}
+                        onSelect={(emoji) => {
+                          setRowDraft(prev => ({ ...prev, icon: emoji }));
+                          setShowEmojiPicker(false);
+                        }}
+                        onClose={() => setShowEmojiPicker(false)}
+                      />
+                    )}
+                  </div>
                   <input
                     ref={nameInputRef}
                     type="text"
@@ -367,7 +387,30 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
                 <span className="tree-branch-prefix">
                   {indentSpaces}{branchSymbol}
                 </span>
-                {item.icon && <span className="item-symbol-icon">{item.icon}</span>}
+                <div className="row-inline-icon-trigger-wrapper" style={{ display: 'inline-flex' }}>
+                  <span
+                    className="item-symbol-icon item-symbol-interactive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRowEmojiPickerIdx(rowEmojiPickerIdx === idx ? null : idx);
+                    }}
+                    title="Кликните, чтобы сменить эмодзи"
+                  >
+                    {item.icon || '⚙️'}
+                  </span>
+                  {rowEmojiPickerIdx === idx && (
+                    <EmojiPickerPopover
+                      currentEmoji={item.icon}
+                      onSelect={(selected) => {
+                        if (onUpdateHierarchyItem) {
+                          onUpdateHierarchyItem(id, idx, { ...item, icon: selected });
+                        }
+                        setRowEmojiPickerIdx(null);
+                      }}
+                      onClose={() => setRowEmojiPickerIdx(null)}
+                    />
+                  )}
+                </div>
                 <span className="item-name-text">{item.name}</span>
                 {item.details && (
                   <span className="item-details-text">
