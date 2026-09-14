@@ -242,6 +242,16 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
     }
   };
 
+  const handleQuickAddSubClick = (e) => {
+    e.stopPropagation();
+    if (treeItems.length === 0) {
+      handleQuickAddClick(e);
+      return;
+    }
+    const lastIdx = treeItems.length - 1;
+    handleAddSubRow(e, lastIdx);
+  };
+
   const cardStyle = {
     background: data.customBg,
     borderColor: data.customBorder,
@@ -574,14 +584,27 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
           })}
         </div>
 
-        {/* Quick Add Item Button */}
-        <button
-          className="btn-quick-add-tree-item"
-          onClick={handleQuickAddClick}
-          title="Быстро добавить компонент или дочерний объект"
-        >
-          <span>+ Добавить элемент</span>
-        </button>
+        {/* Dual Quick Add Buttons: Sibling vs Nested Sub-Tree */}
+        <div className="card-add-buttons-bar nodrag">
+          <button
+            type="button"
+            className="btn-card-add"
+            onClick={handleQuickAddClick}
+            title="Добавить строку на текущем уровне"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>add</span>
+            <span>+ Элемент</span>
+          </button>
+          <button
+            type="button"
+            className="btn-card-add btn-add-sub"
+            onClick={handleQuickAddSubClick}
+            title="Добавить вложенную строку (дочернее древо ↳)"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>subdirectory_arrow_right</span>
+            <span>↳ + Вложенная строка (Древо)</span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -2308,6 +2308,21 @@ body {
     letter-spacing: 0.2px;
 }
 
+.diagram-selector-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-schema-action {
+    padding: 6px 8px !important;
+    min-width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .diagram-selector-dropdown {
     background: var(--github-subtle);
     color: var(--text-main);
@@ -2924,6 +2939,53 @@ select,
     background: rgba(88, 166, 255, 0.08);
 }
 
+/* Dual Quick Add buttons at bottom of card */
+.card-add-buttons-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.btn-card-add {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.16);
+    border-radius: 5px;
+    color: #8b949e;
+    padding: 5px 8px;
+    font-size: 0.74rem;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.btn-card-add:hover {
+    border-color: #58a6ff;
+    color: #58a6ff;
+    background: rgba(88, 166, 255, 0.08);
+}
+
+.btn-card-add.btn-add-sub {
+    border-color: rgba(188, 140, 255, 0.28);
+    color: #bc8cff;
+    background: rgba(188, 140, 255, 0.04);
+}
+
+.btn-card-add.btn-add-sub:hover {
+    border-color: #bc8cff;
+    color: #d2a8ff;
+    background: rgba(188, 140, 255, 0.12);
+}
+
 /* Node Editor Modal Styles */
 .node-editor-modal {
     max-width: 680px !important;
@@ -3248,15 +3310,17 @@ select,
 }
 
 .tree-item-interactive .row-hover-actions {
-    display: none;
+    display: inline-flex;
+    opacity: 0.55;
     align-items: center;
     gap: 4px;
     margin-left: auto;
     padding-left: 6px;
+    transition: opacity 0.15s ease;
 }
 
 .tree-item-interactive:hover .row-hover-actions {
-    display: inline-flex;
+    opacity: 1;
 }
 
 .row-hover-pencil {

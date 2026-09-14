@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
+import { computeTreePrefix } from './GameDevHierarchyNode';
 import EmojiPickerPopover from './EmojiPickerPopover';
 
 export default function LogicStepNode({ id, data, isConnectable }) {
@@ -11,11 +12,14 @@ export default function LogicStepNode({ id, data, isConnectable }) {
   const onOpenTagModal = actions?.onOpenTagModal || data?.onOpenTagModal;
   const onUpdateLogicLine = actions?.onUpdateLogicLine;
   const onDeleteLogicLine = actions?.onDeleteLogicLine;
+  const onAddLogicSubLine = actions?.onAddLogicSubLine;
+  const onAddLogicSiblingLine = actions?.onAddLogicSiblingLine;
+  const onIndentLogicLine = actions?.onIndentLogicLine;
   const onUpdateLogicTitle = actions?.onUpdateLogicTitle;
 
   const [copied, setCopied] = useState(false);
   const [editingRowIdx, setEditingRowIdx] = useState(null);
-  const [lineDraft, setLineDraft] = useState({ code: '', comment: '', icon: '⚡', prefix: '├── ' });
+  const [lineDraft, setLineDraft] = useState({ code: '', comment: '', icon: '⚡', level: 0, prefix: '├── ' });
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(data.title || 'ExecuteLogicStep()');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -47,7 +51,10 @@ export default function LogicStepNode({ id, data, isConnectable }) {
 
   const handleCopy = (e) => {
     e.stopPropagation();
-    const text = `${nodeType}: ${title}\n` + lines.map(l => `${l.prefix || ''}${l.code || ''} // ${l.comment || ''}`).join('\n');
+    const text = `${nodeType}: ${title}\n` + lines.map((l, idx) => {
+      const pfx = computeTreePrefix(lines, idx);
+      return `${pfx}${l.icon ? l.icon + ' ' : ''}${l.code || ''}${l.comment ? ' // ' + l.comment : ''}`;
+    }).join('\n');
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -67,6 +74,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
       code: line.code || '',
       comment: line.comment || '',
       icon: line.icon || '⚡',
+      level: line.level || 0,
       prefix: line.prefix || '├── '
     });
   };
@@ -78,8 +86,69 @@ export default function LogicStepNode({ id, data, isConnectable }) {
     setEditingRowIdx(null);
   };
 
+  const handleAddSubRow = (e, idx) => {
+    e.stopPropagation();
+    const parentLine = lines[idx];
+    const parentLevel = parentLine ? (parentLine.level || 0) : 0;
+    const subLevel = parentLevel + 1;
+
+    let insertIdx = idx + 1;
+    while (insertIdx < lines.length && (lines[insertIdx].level || 0) > parentLevel) {
+      insertIdx++;
+    }
+
+    if (onAddLogicSubLine) {
+      onAddLogicSubLine(id, idx);
+    }
+    setEditingRowIdx(insertIdx);
+    setLineDraft({
+      level: subLevel,
+      icon: '⚡',
+      code: 'ExecuteSubAction()',
+      comment: 'Вложенное действие'
+    });
+  };
+
+  const handleAddSiblingRow = (e, idx) => {
+    e.stopPropagation();
+    const curLine = lines[idx];
+    const curLevel = curLine ? (curLine.level || 0) : 0;
+
+    let insertIdx = idx + 1;
+    while (insertIdx < lines.length && (lines[insertIdx].level || 0) > curLevel) {
+      insertIdx++;
+    }
+
+    if (onAddLogicSiblingLine) {
+      onAddLogicSiblingLine(id, idx);
+    }
+    setEditingRowIdx(insertIdx);
+    setLineDraft({
+      level: curLevel,
+      icon: '⚡',
+      code: 'PerformAction()',
+      comment: 'Новый шаг'
+    });
+  };
+
+  const handleIndentDraft = (e, delta) => {
+    if (e) e.stopPropagation();
+    setLineDraft(prev => ({
+      ...prev,
+      level: Math.max(0, Math.min(6, (prev.level || 0) + delta))
+    }));
+  };
+
   const handleLineKeyDown = (e, idx) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.shiftKey ? -1 : 1;
+      setLineDraft(prev => ({
+        ...prev,
+        level: Math.max(0, Math.min(6, (prev.level || 0) + delta))
+      }));
+    } else if (e.key === 'Enter') {
       e.stopPropagation();
       handleSaveLine(idx);
     } else if (e.key === 'Escape') {
@@ -118,15 +187,24 @@ export default function LogicStepNode({ id, data, isConnectable }) {
     e.stopPropagation();
     if (onQuickAdd) {
       onQuickAdd(id);
-      // Give the new line immediate focus
       setEditingRowIdx(lines.length);
       setLineDraft({
-        prefix: '└── ',
+        level: lines.length > 0 ? (lines[lines.length - 1].level || 0) : 0,
         icon: '⚡',
         code: 'ExecuteAction()',
         comment: 'Новый шаг логики'
       });
     }
+  };
+
+  const handleQuickAddSubClick = (e) => {
+    e.stopPropagation();
+    if (lines.length === 0) {
+      handleQuickAddClick(e);
+      return;
+    }
+    const lastIdx = lines.length - 1;
+    handleAddSubRow(e, lastIdx);
   };
 
   const cardStyle = {
@@ -236,11 +314,36 @@ export default function LogicStepNode({ id, data, isConnectable }) {
         <div className="tree-items-list">
           {lines.map((line, idx) => {
             const isEditing = editingRowIdx === idx;
+            const branchPrefix = computeTreePrefix(lines, idx);
 
             if (isEditing) {
               return (
                 <div key={idx} className="tree-item-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
-                  <span className="tree-branch-prefix">{line.prefix || '├── '}</span>
+                  <span className="tree-branch-prefix">{branchPrefix}</span>
+                  
+                  {/* Indentation level stepper */}
+                  <div className="row-indent-control nodrag">
+                    <button
+                      type="button"
+                      className="btn-indent"
+                      onClick={(e) => handleIndentDraft(e, -1)}
+                      disabled={(lineDraft.level || 0) <= 0}
+                      title="Уменьшить вложенность (Shift+Tab)"
+                    >
+                      ⇤
+                    </button>
+                    <span className="indent-level-badge">L{lineDraft.level || 0}</span>
+                    <button
+                      type="button"
+                      className="btn-indent"
+                      onClick={(e) => handleIndentDraft(e, 1)}
+                      disabled={(lineDraft.level || 0) >= 6}
+                      title="Увеличить вложенность (Tab)"
+                    >
+                      ⇥
+                    </button>
+                  </div>
+
                   <div className="row-inline-icon-trigger-wrapper">
                     <button
                       type="button"
@@ -298,7 +401,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
                 }}
                 title="Кликните, чтобы редактировать этот шаг"
               >
-                <span className="tree-branch-prefix">{line.prefix || '├── '}</span>
+                <span className="tree-branch-prefix">{branchPrefix}</span>
                 <div className="row-inline-icon-trigger-wrapper" style={{ display: 'inline-flex' }}>
                   <span
                     className="item-symbol-icon item-symbol-interactive"
@@ -325,9 +428,26 @@ export default function LogicStepNode({ id, data, isConnectable }) {
                 </div>
                 <code className="logic-code-text">{line.code}</code>
                 {line.comment && <span className="item-details-text logic-comment">({line.comment})</span>}
-                <div className="row-hover-actions">
-                  <span className="row-hover-pencil">✎</span>
+                <div className="row-hover-actions nodrag">
                   <button
+                    type="button"
+                    className="row-hover-sub-btn"
+                    onClick={(e) => handleAddSubRow(e, idx)}
+                    title="Добавить вложенный шаг (дочерняя строка ↳)"
+                  >
+                    ↳ +
+                  </button>
+                  <button
+                    type="button"
+                    className="row-hover-add-btn"
+                    onClick={(e) => handleAddSiblingRow(e, idx)}
+                    title="Добавить шаг на этом уровне (＋)"
+                  >
+                    ＋
+                  </button>
+                  <span className="row-hover-pencil" title="Редактировать">✎</span>
+                  <button
+                    type="button"
                     className="row-hover-delete-btn"
                     onClick={(e) => handleDeleteLine(e, idx)}
                     title="Удалить строку"
@@ -340,13 +460,27 @@ export default function LogicStepNode({ id, data, isConnectable }) {
           })}
         </div>
 
-        <button
-          className="btn-quick-add-tree-item"
-          onClick={handleQuickAddClick}
-          title="Быстро добавить строчку кода или проверку"
-        >
-          <span>+ Добавить строку</span>
-        </button>
+        {/* Dual Quick Add Buttons: Sibling vs Nested Tree */}
+        <div className="card-add-buttons-bar nodrag">
+          <button
+            type="button"
+            className="btn-card-add"
+            onClick={handleQuickAddClick}
+            title="Добавить шаг логики на текущем уровне"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>add</span>
+            <span>+ Действие</span>
+          </button>
+          <button
+            type="button"
+            className="btn-card-add btn-add-sub"
+            onClick={handleQuickAddSubClick}
+            title="Добавить вложенный шаг (дочернее древо логики ↳)"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>subdirectory_arrow_right</span>
+            <span>↳ + Вложенная строка (Древо)</span>
+          </button>
+        </div>
       </div>
     </div>
   );

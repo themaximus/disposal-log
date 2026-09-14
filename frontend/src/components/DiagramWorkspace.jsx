@@ -339,8 +339,73 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
       const lines = (n.data.lines || []).filter((_, idx) => idx !== lineIndex);
-      if (lines.length > 0) {
-        lines[lines.length - 1] = { ...lines[lines.length - 1], prefix: '└── ' };
+      return { ...n, data: { ...n.data, lines } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Add sub-line (nested child line in logic step tree)
+  const handleAddLogicSubLine = useCallback((nodeId, parentIndex) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const lines = [...(n.data.lines || [])];
+      const parentLine = lines[parentIndex];
+      const parentLevel = parentLine ? (parentLine.level || 0) : 0;
+      const subLevel = parentLevel + 1;
+
+      let insertIdx = parentIndex + 1;
+      while (insertIdx < lines.length && (lines[insertIdx].level || 0) > parentLevel) {
+        insertIdx++;
+      }
+
+      const newLine = {
+        level: subLevel,
+        icon: '⚡',
+        code: 'ExecuteSubAction()',
+        comment: 'Вложенное действие'
+      };
+
+      lines.splice(insertIdx, 0, newLine);
+      return { ...n, data: { ...n.data, lines } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Add sibling line right after current line and its subtree
+  const handleAddLogicSiblingLine = useCallback((nodeId, lineIndex) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const lines = [...(n.data.lines || [])];
+      const curLine = lines[lineIndex];
+      const curLevel = curLine ? (curLine.level || 0) : 0;
+
+      let insertIdx = lineIndex + 1;
+      while (insertIdx < lines.length && (lines[insertIdx].level || 0) > curLevel) {
+        insertIdx++;
+      }
+
+      const newLine = {
+        level: curLevel,
+        icon: '⚡',
+        code: 'PerformAction()',
+        comment: 'Новый шаг'
+      };
+
+      lines.splice(insertIdx, 0, newLine);
+      return { ...n, data: { ...n.data, lines } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Indent / outdent logic line
+  const handleIndentLogicLine = useCallback((nodeId, lineIndex, delta) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const lines = [...(n.data.lines || [])];
+      if (lineIndex >= 0 && lineIndex < lines.length) {
+        const curLevel = lines[lineIndex].level || 0;
+        const newLevel = Math.max(0, Math.min(6, curLevel + delta));
+        lines[lineIndex] = { ...lines[lineIndex], level: newLevel };
       }
       return { ...n, data: { ...n.data, lines } };
     }));
@@ -1048,6 +1113,20 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
                 </option>
               ))}
             </select>
+            <button
+              className="btn-diagram-tool btn-schema-action"
+              onClick={() => { setNewTitle(''); setIsNewModalOpen(true); }}
+              title="Создать новую схему"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1.05rem' }}>add</span>
+            </button>
+            <button
+              className="btn-diagram-tool btn-schema-action btn-danger-tool"
+              onClick={handleDeleteDiagram}
+              title="Удалить текущую схему"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1.05rem' }}>delete</span>
+            </button>
           </div>
         </div>
 
@@ -1066,18 +1145,16 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             <button
               className={`btn-mode-pill ${interactionMode === 'pan' ? 'active' : ''}`}
               onClick={() => setInteractionMode('pan')}
-              title="Режим руки: перемещение холста (зажмите Shift для выделения рамкой)"
+              title="Режим руки: перемещение холста (зажмите Shift для рамки выделения)"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>pan_tool</span>
-              <span>Рука</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.05rem' }}>pan_tool</span>
             </button>
             <button
               className={`btn-mode-pill ${interactionMode === 'select' ? 'active' : ''}`}
               onClick={() => setInteractionMode('select')}
               title="Режим рамки выделения: тяните мышь для выбора нескольких блоков"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>select_all</span>
-              <span>Выделение</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.05rem' }}>select_all</span>
             </button>
           </div>
 
@@ -1130,23 +1207,6 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
 
           <button
             className="btn-diagram-tool"
-            onClick={() => { setNewTitle(''); setIsNewModalOpen(true); }}
-            title="Создать новую схему"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>add</span>
-            <span>Новая схема</span>
-          </button>
-
-          <button
-            className="btn-diagram-tool btn-danger-tool"
-            onClick={handleDeleteDiagram}
-            title="Удалить текущую схему"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
-          </button>
-
-          <button
-            className="btn-diagram-tool"
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Выйти из полноэкранного режима' : 'Во весь экран'}
           >
@@ -1174,6 +1234,9 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             onUpdateHierarchyRoot: handleUpdateHierarchyRoot,
             onUpdateLogicLine: handleUpdateLogicLine,
             onDeleteLogicLine: handleDeleteLogicLine,
+            onAddLogicSubLine: handleAddLogicSubLine,
+            onAddLogicSiblingLine: handleAddLogicSiblingLine,
+            onIndentLogicLine: handleIndentLogicLine,
             onUpdateLogicTitle: handleUpdateLogicTitle,
             onDeleteEdge: handleDeleteEdge,
             onUpdateEdgeLabel: handleUpdateEdgeLabel,
