@@ -167,8 +167,8 @@ export default function BlockInspectorModal({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content diagram-modal block-inspector-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay active" onClick={onClose}>
+      <div className="modal modal-content diagram-modal block-inspector-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--github-blue-text)' }}>

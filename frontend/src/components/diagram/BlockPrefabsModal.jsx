@@ -48,8 +48,8 @@ export default function BlockPrefabsModal({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content diagram-modal block-prefabs-modal" style={{ maxWidth: '780px' }} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay active" onClick={onClose}>
+      <div className="modal modal-content diagram-modal block-prefabs-modal" style={{ maxWidth: '820px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--github-yellow)' }}>

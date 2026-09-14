@@ -221,7 +221,7 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
       />
 
       {/* Top action bar */}
-      <div className="card-top-action-bar">
+      <div className="card-top-action-bar nodrag">
         {data.tag && (
           <span
             className="card-custom-badge"

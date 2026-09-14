@@ -152,7 +152,7 @@ export default function LogicStepNode({ id, data, isConnectable }) {
       <Handle type="source" position={Position.Bottom} id="source-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
       <Handle type="target" position={Position.Bottom} id="target-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
 
-      <div className="card-top-action-bar">
+      <div className="card-top-action-bar nodrag">
         <span
           className="card-type-badge"
           onClick={handleTagClick}

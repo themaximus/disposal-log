@@ -271,7 +271,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   // Update node data from Inspector
   const handleUpdateNodeData = useCallback((nodeId, updatedData) => {
     setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
+      if (String(n.id) !== String(nodeId)) return n;
       return {
         ...n,
         data: { ...n.data, ...updatedData }
@@ -869,8 +869,8 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
 
       {/* Modal: New Diagram with Presets */}
       {isNewModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsNewModalOpen(false)}>
-          <div className="modal-content diagram-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay active" onClick={() => setIsNewModalOpen(false)}>
+          <div className="modal modal-content diagram-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--github-blue-text)' }}>
@@ -929,8 +929,8 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
 
       {/* Modal: Detailed Node Editor */}
       {isNodeEditModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsNodeEditModalOpen(false)}>
-          <div className="modal-content diagram-modal node-editor-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay active" onClick={() => setIsNodeEditModalOpen(false)}>
+          <div className="modal modal-content diagram-modal node-editor-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--github-green-text)' }}>
@@ -1183,8 +1183,8 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
 
       {/* Modal: '@' Tag / Mention Modal */}
       {isTagModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsTagModalOpen(false)}>
-          <div className="modal-content" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay active" onClick={() => setIsTagModalOpen(false)}>
+          <div className="modal modal-content" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--github-blue-text)' }}>
@@ -1233,7 +1233,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
       <BlockInspectorModal
         isOpen={isInspectorOpen}
         onClose={() => setIsInspectorOpen(false)}
-        node={inspectorNodeId ? nodes.find(n => n.id === inspectorNodeId) : null}
+        node={inspectorNodeId ? nodes.find(n => String(n.id) === String(inspectorNodeId)) : null}
         onUpdateNodeData={handleUpdateNodeData}
         onSavePrefab={handleSavePrefab}
       />
