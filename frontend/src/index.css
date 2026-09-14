@@ -3281,6 +3281,49 @@ select,
     background: rgba(248, 81, 73, 0.15);
 }
 
+.row-hover-sub-btn {
+    background: rgba(88, 166, 255, 0.12);
+    border: 1px solid rgba(88, 166, 255, 0.35);
+    color: #58a6ff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 1px 5px;
+    border-radius: 4px;
+    line-height: 1.2;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.row-hover-sub-btn:hover {
+    background: #58a6ff;
+    color: #0d1117;
+    box-shadow: 0 0 8px rgba(88, 166, 255, 0.5);
+    transform: scale(1.08);
+}
+
+.row-hover-add-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #c9d1d9;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 1px 5px;
+    border-radius: 4px;
+    line-height: 1.2;
+    transition: all 0.15s ease;
+}
+
+.row-hover-add-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.08);
+}
+
 /* Inline Edit Row inside Card */
 .tree-item-row-edit {
     display: flex;
@@ -3292,6 +3335,82 @@ select,
     padding: 3px 6px;
     margin: 2px -4px;
     box-shadow: 0 0 10px rgba(88, 166, 255, 0.2);
+}
+
+.row-indent-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 1px 3px;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+
+.row-indent-btn {
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0 3px;
+    border-radius: 3px;
+    line-height: 1;
+    transition: all 0.12s;
+}
+
+.row-indent-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    color: #58a6ff;
+}
+
+.row-indent-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.row-level-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #58a6ff;
+    padding: 0 3px;
+    font-family: monospace;
+    user-select: none;
+}
+
+.inspector-level-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 1px 3px;
+    margin-right: 4px;
+}
+
+.reorder-item-level-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #58a6ff;
+    padding: 0 4px;
+    font-family: monospace;
+    user-select: none;
+}
+
+.btn-add-sub-modal {
+    background: rgba(88, 166, 255, 0.12) !important;
+    border-color: rgba(88, 166, 255, 0.35) !important;
+    color: #58a6ff !important;
+    font-weight: 700 !important;
+}
+
+.btn-add-sub-modal:hover {
+    background: #58a6ff !important;
+    color: #0d1117 !important;
+    box-shadow: 0 0 8px rgba(88, 166, 255, 0.5) !important;
 }
 
 .row-inline-icon-input {

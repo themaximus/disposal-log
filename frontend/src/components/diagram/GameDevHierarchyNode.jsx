@@ -3,6 +3,45 @@ import { Handle, Position } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 import EmojiPickerPopover from './EmojiPickerPopover';
 
+// Calculate dynamic tree branches (├──, └──, │   ,     ) based on nesting hierarchy
+export const computeTreePrefix = (items = [], index = 0) => {
+  const currentItem = items[index];
+  if (!currentItem) return '';
+  const currentLevel = currentItem.level || 0;
+
+  if (currentLevel === 0) {
+    const hasNextSibling = items.slice(index + 1).some(it => (it.level || 0) === 0);
+    return hasNextSibling ? '├── ' : '└── ';
+  }
+
+  let prefix = '';
+  for (let depth = 1; depth < currentLevel; depth++) {
+    let hasMoreAtDepth = false;
+    for (let j = index + 1; j < items.length; j++) {
+      const nextLevel = items[j].level || 0;
+      if (nextLevel < depth) break;
+      if (nextLevel === depth) {
+        hasMoreAtDepth = true;
+        break;
+      }
+    }
+    prefix += hasMoreAtDepth ? '│   ' : '    ';
+  }
+
+  let isLastSibling = true;
+  for (let j = index + 1; j < items.length; j++) {
+    const nextLevel = items[j].level || 0;
+    if (nextLevel < currentLevel) break;
+    if (nextLevel === currentLevel) {
+      isLastSibling = false;
+      break;
+    }
+  }
+
+  prefix += isLastSibling ? '└── ' : '├── ';
+  return prefix;
+};
+
 export default function GameDevHierarchyNode({ id, data, isConnectable }) {
   const actions = useContext(DiagramActionsContext);
   const onOpenInspector = actions?.onOpenInspector || actions?.onEditNode || data?.onEdit;
@@ -11,6 +50,9 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
   const onOpenTagModal = actions?.onOpenTagModal || data?.onOpenTagModal;
   const onUpdateHierarchyItem = actions?.onUpdateHierarchyItem;
   const onDeleteHierarchyItem = actions?.onDeleteHierarchyItem;
+  const onAddHierarchySubItem = actions?.onAddHierarchySubItem;
+  const onAddHierarchySiblingItem = actions?.onAddHierarchySiblingItem;
+  const onIndentHierarchyItem = actions?.onIndentHierarchyItem;
   const onUpdateHierarchyRoot = actions?.onUpdateHierarchyRoot;
 
   const [copied, setCopied] = useState(false);
@@ -47,11 +89,10 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
   // Build tree text for clipboard
   const getFullTreeText = () => {
     let result = `📁 ${rootPath}\n`;
-    treeItems.forEach(item => {
-      const indent = '   '.repeat(item.level || 0);
-      const branch = item.isLast ? '└── ' : '├── ';
+    treeItems.forEach((item, idx) => {
+      const prefix = computeTreePrefix(treeItems, idx);
       const details = item.details ? ` (${item.details})` : '';
-      result += `${indent}${branch}${item.icon ? item.icon + ' ' : ''}${item.name}${details}\n`;
+      result += `${prefix}${item.icon ? item.icon + ' ' : ''}${item.name}${details}\n`;
     });
     return result;
   };
@@ -89,8 +130,69 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
     setEditingRowIdx(null);
   };
 
+  const handleAddSubRow = (e, idx) => {
+    e.stopPropagation();
+    const parentItem = treeItems[idx];
+    const parentLevel = parentItem ? (parentItem.level || 0) : 0;
+    const subLevel = parentLevel + 1;
+
+    let insertIdx = idx + 1;
+    while (insertIdx < treeItems.length && (treeItems[insertIdx].level || 0) > parentLevel) {
+      insertIdx++;
+    }
+
+    if (onAddHierarchySubItem) {
+      onAddHierarchySubItem(id, idx);
+    }
+    setEditingRowIdx(insertIdx);
+    setRowDraft({
+      level: subLevel,
+      icon: '⚙️',
+      name: 'NewChild',
+      details: 'Component, Script'
+    });
+  };
+
+  const handleAddSiblingRow = (e, idx) => {
+    e.stopPropagation();
+    const currentItem = treeItems[idx];
+    const currentLevel = currentItem ? (currentItem.level || 0) : 0;
+
+    let insertIdx = idx + 1;
+    while (insertIdx < treeItems.length && (treeItems[insertIdx].level || 0) > currentLevel) {
+      insertIdx++;
+    }
+
+    if (onAddHierarchySiblingItem) {
+      onAddHierarchySiblingItem(id, idx);
+    }
+    setEditingRowIdx(insertIdx);
+    setRowDraft({
+      level: currentLevel,
+      icon: '⚙️',
+      name: 'NewComponent',
+      details: 'Component, Script'
+    });
+  };
+
+  const handleIndentDraft = (e, delta) => {
+    if (e) e.stopPropagation();
+    setRowDraft(prev => ({
+      ...prev,
+      level: Math.max(0, Math.min(6, (prev.level || 0) + delta))
+    }));
+  };
+
   const handleRowKeyDown = (e, idx) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.shiftKey ? -1 : 1;
+      setRowDraft(prev => ({
+        ...prev,
+        level: Math.max(0, Math.min(6, (prev.level || 0) + delta))
+      }));
+    } else if (e.key === 'Enter') {
       e.stopPropagation();
       handleSaveRow(idx);
     } else if (e.key === 'Escape') {
@@ -319,14 +421,37 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
         {/* Tree items */}
         <div className="tree-items-list">
           {treeItems.map((item, idx) => {
-            const indentSpaces = '   '.repeat(item.level || 0);
-            const branchSymbol = item.isLast ? '└── ' : '├── ';
             const isEditing = editingRowIdx === idx;
 
             if (isEditing) {
               return (
                 <div key={idx} className="tree-item-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
-                  <span className="tree-branch-prefix">{indentSpaces}{branchSymbol}</span>
+                  {/* Indentation controls for sub-rows */}
+                  <div className="row-indent-controls">
+                    <button
+                      type="button"
+                      className="row-indent-btn"
+                      onClick={(e) => handleIndentDraft(e, -1)}
+                      disabled={(rowDraft.level || 0) <= 0}
+                      title="Уменьшить вложенность (Shift+Tab)"
+                    >
+                      ⇤
+                    </button>
+                    <span className="row-level-badge" title={`Уровень вложенности: ${rowDraft.level || 0}`}>
+                      L{rowDraft.level || 0}
+                    </span>
+                    <button
+                      type="button"
+                      className="row-indent-btn"
+                      onClick={(e) => handleIndentDraft(e, 1)}
+                      disabled={(rowDraft.level || 0) >= 6}
+                      title="Увеличить вложенность (Tab)"
+                    >
+                      ⇥
+                    </button>
+                  </div>
+
+                  <span className="tree-branch-prefix">{computeTreePrefix(treeItems, idx)}</span>
                   <div className="row-inline-icon-trigger-wrapper">
                     <button
                       type="button"
@@ -385,7 +510,7 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
                 title="Кликните, чтобы редактировать этот элемент"
               >
                 <span className="tree-branch-prefix">
-                  {indentSpaces}{branchSymbol}
+                  {computeTreePrefix(treeItems, idx)}
                 </span>
                 <div className="row-inline-icon-trigger-wrapper" style={{ display: 'inline-flex' }}>
                   <span
@@ -417,9 +542,26 @@ export default function GameDevHierarchyNode({ id, data, isConnectable }) {
                     ({item.details})
                   </span>
                 )}
-                <div className="row-hover-actions">
-                  <span className="row-hover-pencil">✎</span>
+                <div className="row-hover-actions nodrag">
                   <button
+                    type="button"
+                    className="row-hover-sub-btn"
+                    onClick={(e) => handleAddSubRow(e, idx)}
+                    title="Добавить подстроку (дочерний объект ↳)"
+                  >
+                    ↳ +
+                  </button>
+                  <button
+                    type="button"
+                    className="row-hover-add-btn"
+                    onClick={(e) => handleAddSiblingRow(e, idx)}
+                    title="Добавить объект на этом уровне (＋)"
+                  >
+                    ＋
+                  </button>
+                  <span className="row-hover-pencil" title="Редактировать">✎</span>
+                  <button
+                    type="button"
                     className="row-hover-delete-btn"
                     onClick={(e) => handleDeleteRow(e, idx)}
                     title="Удалить строку"

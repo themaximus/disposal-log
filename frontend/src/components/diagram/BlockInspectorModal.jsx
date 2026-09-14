@@ -111,6 +111,33 @@ export default function BlockInspectorModal({
     handleFieldChange('items', items);
   };
 
+  const handleIndentHierarchyItem = (index, delta) => {
+    const items = [...(formData.items || [])];
+    if (index >= 0 && index < items.length) {
+      const curLevel = items[index].level || 0;
+      items[index] = { ...items[index], level: Math.max(0, Math.min(6, curLevel + delta)) };
+      handleFieldChange('items', items);
+    }
+  };
+
+  const handleAddSubHierarchyItem = (index) => {
+    const items = [...(formData.items || [])];
+    const parentItem = items[index];
+    const parentLevel = parentItem ? (parentItem.level || 0) : 0;
+    let insertIdx = index + 1;
+    while (insertIdx < items.length && (items[insertIdx].level || 0) > parentLevel) {
+      insertIdx++;
+    }
+    items.splice(insertIdx, 0, {
+      level: parentLevel + 1,
+      isLast: true,
+      icon: '⚙️',
+      name: 'NewChildObject',
+      details: 'Component, Script'
+    });
+    handleFieldChange('items', items);
+  };
+
   const handleMoveLogicLine = (index, direction) => {
     const lines = [...(formData.lines || [])];
     const targetIdx = index + direction;
@@ -367,6 +394,37 @@ export default function BlockInspectorModal({
                         {item.details && <span className="reorder-item-details">({item.details})</span>}
                       </div>
                       <div className="reorder-item-actions">
+                        <div className="inspector-level-stepper">
+                          <button
+                            type="button"
+                            className="btn-order-action"
+                            disabled={(item.level || 0) <= 0}
+                            onClick={() => handleIndentHierarchyItem(idx, -1)}
+                            title="Уменьшить вложенность (⇤)"
+                          >
+                            ⇤
+                          </button>
+                          <span className="reorder-item-level-pill" title={`Уровень: ${item.level || 0}`}>
+                            L{item.level || 0}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-order-action"
+                            disabled={(item.level || 0) >= 6}
+                            onClick={() => handleIndentHierarchyItem(idx, 1)}
+                            title="Увеличить вложенность (⇥)"
+                          >
+                            ⇥
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-order-action btn-add-sub-modal"
+                          onClick={() => handleAddSubHierarchyItem(idx)}
+                          title="Добавить подстроку (дочерний объект ↳)"
+                        >
+                          ↳+
+                        </button>
                         <button
                           type="button"
                           className="btn-order-action"

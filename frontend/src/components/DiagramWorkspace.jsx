@@ -234,6 +234,84 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     triggerAutoSave();
   }, [setNodes, triggerAutoSave]);
 
+  // Add sub-item (child node in hierarchy tree)
+  const handleAddHierarchySubItem = useCallback((nodeId, parentIndex) => {
+    let newIndex = parentIndex + 1;
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const items = [...(n.data.items || [])];
+      const parentItem = items[parentIndex];
+      const parentLevel = parentItem ? (parentItem.level || 0) : 0;
+      const subLevel = parentLevel + 1;
+
+      // Insert after parent and all its existing descendants
+      let insertIdx = parentIndex + 1;
+      while (insertIdx < items.length && (items[insertIdx].level || 0) > parentLevel) {
+        insertIdx++;
+      }
+      newIndex = insertIdx;
+
+      const newItem = {
+        level: subLevel,
+        isLast: true,
+        icon: '⚙️',
+        name: 'NewChildObject',
+        details: 'Component, Script'
+      };
+
+      items.splice(insertIdx, 0, newItem);
+      return { ...n, data: { ...n.data, items } };
+    }));
+    triggerAutoSave();
+    return newIndex;
+  }, [setNodes, triggerAutoSave]);
+
+  // Add sibling item right after item and its subtree
+  const handleAddHierarchySiblingItem = useCallback((nodeId, itemIndex) => {
+    let newIndex = itemIndex + 1;
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const items = [...(n.data.items || [])];
+      const currentItem = items[itemIndex];
+      const currentLevel = currentItem ? (currentItem.level || 0) : 0;
+
+      // Insert after item and all its descendants
+      let insertIdx = itemIndex + 1;
+      while (insertIdx < items.length && (items[insertIdx].level || 0) > currentLevel) {
+        insertIdx++;
+      }
+      newIndex = insertIdx;
+
+      const newItem = {
+        level: currentLevel,
+        isLast: true,
+        icon: '⚙️',
+        name: 'NewComponent',
+        details: 'Component, Script'
+      };
+
+      items.splice(insertIdx, 0, newItem);
+      return { ...n, data: { ...n.data, items } };
+    }));
+    triggerAutoSave();
+    return newIndex;
+  }, [setNodes, triggerAutoSave]);
+
+  // Indent / outdent hierarchy item
+  const handleIndentHierarchyItem = useCallback((nodeId, itemIndex, delta) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const items = [...(n.data.items || [])];
+      if (itemIndex >= 0 && itemIndex < items.length) {
+        const currentLevel = items[itemIndex].level || 0;
+        const newLevel = Math.max(0, Math.min(6, currentLevel + delta));
+        items[itemIndex] = { ...items[itemIndex], level: newLevel };
+      }
+      return { ...n, data: { ...n.data, items } };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
   // Inline update for hierarchy root path
   const handleUpdateHierarchyRoot = useCallback((nodeId, newRootPath) => {
     setNodes(nds => nds.map(n => {
@@ -1090,6 +1168,9 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             onOpenTagModal: handleOpenTagModal,
             onUpdateHierarchyItem: handleUpdateHierarchyItem,
             onDeleteHierarchyItem: handleDeleteHierarchyItem,
+            onAddHierarchySubItem: handleAddHierarchySubItem,
+            onAddHierarchySiblingItem: handleAddHierarchySiblingItem,
+            onIndentHierarchyItem: handleIndentHierarchyItem,
             onUpdateHierarchyRoot: handleUpdateHierarchyRoot,
             onUpdateLogicLine: handleUpdateLogicLine,
             onDeleteLogicLine: handleDeleteLogicLine,
