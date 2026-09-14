@@ -5,7 +5,7 @@ import { computeTreePrefix } from './GameDevHierarchyNode';
 import EmojiPickerPopover from './EmojiPickerPopover';
 import useBlockCornerScale from '../../hooks/useBlockCornerScale';
 
-export default function LogicStepNode({ id, data, isConnectable, selected }) {
+function LogicStepNode({ id, data, isConnectable, selected }) {
   const actions = useContext(DiagramActionsContext);
   const onOpenInspector = actions?.onOpenInspector || actions?.onEditNode || data?.onEdit;
   const onDeleteNode = actions?.onDeleteNode || data?.onDelete;
@@ -609,3 +609,5 @@ export default function LogicStepNode({ id, data, isConnectable, selected }) {
     </div>
   );
 }
+
+export default React.memo(LogicStepNode);

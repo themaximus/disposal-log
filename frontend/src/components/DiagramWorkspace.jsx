@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -28,7 +28,7 @@ import useDiagramGrouping from '../hooks/useDiagramGrouping';
 import useDiagramNodeActions from '../hooks/useDiagramNodeActions';
 import useDiagramHistory from '../hooks/useDiagramHistory';
 
-// Static types registry for React Flow
+// Static types and props registry for React Flow performance
 const nodeTypes = {
   hierarchyNode: GameDevHierarchyNode,
   logicNode: LogicStepNode,
@@ -38,6 +38,16 @@ const nodeTypes = {
 const edgeTypes = {
   deletable: DeletableEdge
 };
+
+const defaultEdgeOptions = {
+  type: 'deletable',
+  animated: true,
+  style: { stroke: '#58a6ff', strokeWidth: 2 }
+};
+
+const deleteKeyCodes = ['Backspace', 'Delete'];
+const selectionKeyCodes = ['Shift', 'Control'];
+const multiSelectionKeyCodes = ['Shift', 'Control', 'Meta'];
 
 export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   // Canvas DOM container & Fullscreen state
@@ -178,6 +188,103 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     setNewTitle('');
   };
 
+  // Memoized handlers for toolbar, selection bar and canvas drag to prevent re-renders
+  const handleOpenNewModal = useCallback(() => {
+    setNewTitle('');
+    setIsNewModalOpen(true);
+  }, []);
+
+  const handleOpenPrefabsModal = useCallback(() => {
+    nodeActions.setIsPrefabsModalOpen(true);
+  }, [nodeActions]);
+
+  const handleScaleSelectedFromBar = useCallback((factor) => {
+    handleScaleSelectedNodes(selectedNodes.map(n => n.id), factor);
+  }, [handleScaleSelectedNodes, selectedNodes]);
+
+  const handleDeleteSelectedFromBar = useCallback(() => {
+    selectedNodes.forEach(n => nodeActions.handleDeleteNode(n.id));
+    setSelectedNodes([]);
+  }, [nodeActions, selectedNodes]);
+
+  const handleClearSelectionFromBar = useCallback(() => {
+    setNodes(nds => nds.map(n => n.selected ? { ...n, selected: false } : n));
+    setSelectedNodes([]);
+  }, [setNodes]);
+
+  const handleNodeDragStart = useCallback(() => {
+    takeSnapshot();
+  }, [takeSnapshot]);
+
+  const handleSelectionDragStart = useCallback(() => {
+    takeSnapshot();
+  }, [takeSnapshot]);
+
+  // Memoized context value: stays completely referentially stable across re-renders
+  const actionsContextValue = useMemo(() => ({
+    takeSnapshot,
+    triggerAutoSave,
+    setNodes,
+    nodesRef,
+    onOpenInspector: nodeActions.handleOpenInspector,
+    onEditNode: nodeActions.handleEditNode,
+    onDeleteNode: nodeActions.handleDeleteNode,
+    onQuickAdd: nodeActions.handleQuickAdd,
+    onOpenTagModal: nodeActions.handleOpenTagModal,
+    onScaleNode: nodeActions.handleScaleNode,
+    onUpdateHierarchyItem: nodeActions.handleUpdateHierarchyItem,
+    onDeleteHierarchyItem: nodeActions.handleDeleteHierarchyItem,
+    onAddHierarchySubItem: nodeActions.handleAddHierarchySubItem,
+    onAddHierarchySiblingItem: nodeActions.handleAddHierarchySiblingItem,
+    onIndentHierarchyItem: nodeActions.handleIndentHierarchyItem,
+    onUpdateHierarchyRoot: nodeActions.handleUpdateHierarchyRoot,
+    onUpdateLogicLine: nodeActions.handleUpdateLogicLine,
+    onDeleteLogicLine: nodeActions.handleDeleteLogicLine,
+    onAddLogicSubLine: nodeActions.handleAddLogicSubLine,
+    onAddLogicSiblingLine: nodeActions.handleAddLogicSiblingLine,
+    onIndentLogicLine: nodeActions.handleIndentLogicLine,
+    onUpdateLogicTitle: nodeActions.handleUpdateLogicTitle,
+    onDeleteEdge: nodeActions.handleDeleteEdge,
+    onUpdateEdgeLabel: nodeActions.handleUpdateEdgeLabel,
+    onUngroup: handleUngroup,
+    onUpdateSection: handleUpdateSection,
+    onDeleteSection: handleDeleteSection,
+    onScaleSection: handleScaleSection,
+    onResizeSectionEnd: handleResizeSectionEnd,
+    onScaleSelectedNodes: handleScaleSelectedNodes
+  }), [
+    takeSnapshot,
+    triggerAutoSave,
+    setNodes,
+    nodesRef,
+    nodeActions.handleOpenInspector,
+    nodeActions.handleEditNode,
+    nodeActions.handleDeleteNode,
+    nodeActions.handleQuickAdd,
+    nodeActions.handleOpenTagModal,
+    nodeActions.handleScaleNode,
+    nodeActions.handleUpdateHierarchyItem,
+    nodeActions.handleDeleteHierarchyItem,
+    nodeActions.handleAddHierarchySubItem,
+    nodeActions.handleAddHierarchySiblingItem,
+    nodeActions.handleIndentHierarchyItem,
+    nodeActions.handleUpdateHierarchyRoot,
+    nodeActions.handleUpdateLogicLine,
+    nodeActions.handleDeleteLogicLine,
+    nodeActions.handleAddLogicSubLine,
+    nodeActions.handleAddLogicSiblingLine,
+    nodeActions.handleIndentLogicLine,
+    nodeActions.handleUpdateLogicTitle,
+    nodeActions.handleDeleteEdge,
+    nodeActions.handleUpdateEdgeLabel,
+    handleUngroup,
+    handleUpdateSection,
+    handleDeleteSection,
+    handleScaleSection,
+    handleResizeSectionEnd,
+    handleScaleSelectedNodes
+  ]);
+
   const selectedGroupableCount = selectedNodes.filter(n => n.type !== 'sectionNode').length;
 
   return (
@@ -190,7 +297,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         diagrams={diagrams}
         currentDiagramId={currentDiagramId}
         onSelectDiagram={handleSelectDiagramWithHistory}
-        onOpenNewModal={() => { setNewTitle(''); setIsNewModalOpen(true); }}
+        onOpenNewModal={handleOpenNewModal}
         onDeleteDiagram={handleDeleteDiagram}
         saveStatus={saveStatus}
         canUndo={canUndo}
@@ -204,75 +311,39 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         onAddEmptySection={handleAddEmptySection}
         selectedGroupableCount={selectedGroupableCount}
         onGroupSelected={handleGroupSelectedNodes}
-        onOpenPrefabsModal={() => nodeActions.setIsPrefabsModalOpen(true)}
+        onOpenPrefabsModal={handleOpenPrefabsModal}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
       />
 
       {/* React Flow Canvas */}
       <div className="diagram-canvas-viewport">
-        <DiagramActionsContext.Provider
-          value={{
-            takeSnapshot,
-            triggerAutoSave,
-            setNodes,
-            nodesRef,
-            onOpenInspector: nodeActions.handleOpenInspector,
-            onEditNode: nodeActions.handleEditNode,
-            onDeleteNode: nodeActions.handleDeleteNode,
-            onQuickAdd: nodeActions.handleQuickAdd,
-            onOpenTagModal: nodeActions.handleOpenTagModal,
-            onScaleNode: nodeActions.handleScaleNode,
-            onUpdateHierarchyItem: nodeActions.handleUpdateHierarchyItem,
-            onDeleteHierarchyItem: nodeActions.handleDeleteHierarchyItem,
-            onAddHierarchySubItem: nodeActions.handleAddHierarchySubItem,
-            onAddHierarchySiblingItem: nodeActions.handleAddHierarchySiblingItem,
-            onIndentHierarchyItem: nodeActions.handleIndentHierarchyItem,
-            onUpdateHierarchyRoot: nodeActions.handleUpdateHierarchyRoot,
-            onUpdateLogicLine: nodeActions.handleUpdateLogicLine,
-            onDeleteLogicLine: nodeActions.handleDeleteLogicLine,
-            onAddLogicSubLine: nodeActions.handleAddLogicSubLine,
-            onAddLogicSiblingLine: nodeActions.handleAddLogicSiblingLine,
-            onIndentLogicLine: nodeActions.handleIndentLogicLine,
-            onUpdateLogicTitle: nodeActions.handleUpdateLogicTitle,
-            onDeleteEdge: nodeActions.handleDeleteEdge,
-            onUpdateEdgeLabel: nodeActions.handleUpdateEdgeLabel,
-            onUngroup: handleUngroup,
-            onUpdateSection: handleUpdateSection,
-            onDeleteSection: handleDeleteSection,
-            onScaleSection: handleScaleSection,
-            onResizeSectionEnd: handleResizeSectionEnd,
-            onScaleSelectedNodes: handleScaleSelectedNodes
-          }}
-        >
+        <DiagramActionsContext.Provider value={actionsContextValue}>
           <ReactFlow
             nodes={nodesWithAccurateChildCounts}
             edges={edges}
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
             onConnect={nodeActions.onConnect}
-            onNodeDragStart={() => takeSnapshot()}
-            onSelectionDragStart={() => takeSnapshot()}
+            onNodeDragStart={handleNodeDragStart}
+            onSelectionDragStart={handleSelectionDragStart}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
             colorMode="dark"
             connectionMode="loose"
-            deleteKeyCode={['Backspace', 'Delete']}
+            deleteKeyCode={deleteKeyCodes}
             edgesFocusable={true}
             edgesReconnectable={true}
             selectionOnDrag={interactionMode === 'select'}
             panOnDrag={interactionMode === 'select' ? [1, 2] : true}
             selectionMode="partial"
-            selectionKeyCode={['Shift', 'Control']}
-            multiSelectionKeyCode={['Shift', 'Control', 'Meta']}
+            selectionKeyCode={selectionKeyCodes}
+            multiSelectionKeyCode={multiSelectionKeyCodes}
             onSelectionChange={handleSelectionChange}
             elevateNodesOnSelect={false}
-            defaultEdgeOptions={{
-              type: 'deletable',
-              animated: true,
-              style: { stroke: '#58a6ff', strokeWidth: 2 }
-            }}
+            onlyRenderVisibleElements={true}
+            defaultEdgeOptions={defaultEdgeOptions}
           >
             <Background variant="dots" gap={18} size={1.2} color="#30363d" />
             <Controls className="react-flow-custom-controls" />
@@ -288,15 +359,9 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             selectedNodes={selectedNodes}
             onGroup={handleGroupSelectedNodes}
             onUngroup={handleUngroup}
-            onScaleSelected={(factor) => handleScaleSelectedNodes(selectedNodes.map(n => n.id), factor)}
-            onDeleteSelected={() => {
-              selectedNodes.forEach(n => nodeActions.handleDeleteNode(n.id));
-              setSelectedNodes([]);
-            }}
-            onClearSelection={() => {
-              setNodes(nds => nds.map(n => ({ ...n, selected: false })));
-              setSelectedNodes([]);
-            }}
+            onScaleSelected={handleScaleSelectedFromBar}
+            onDeleteSelected={handleDeleteSelectedFromBar}
+            onClearSelection={handleClearSelectionFromBar}
           />
         </DiagramActionsContext.Provider>
       </div>

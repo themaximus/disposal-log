@@ -35,7 +35,14 @@ export function useBlockCornerScale({ id, data, cardRef }) {
     setIsScaling(true);
     setLiveScalePercent(Math.round(startScale * 100));
 
-    const onPointerMove = (moveEvt) => {
+    let rafId = null;
+    let latestMoveEvt = null;
+
+    const processPointerMove = () => {
+      rafId = null;
+      if (!latestMoveEvt) return;
+      const moveEvt = latestMoveEvt;
+
       const rawDx = (moveEvt.clientX - startPointer.x) / zoom;
       const rawDy = (moveEvt.clientY - startPointer.y) / zoom;
 
@@ -69,7 +76,23 @@ export function useBlockCornerScale({ id, data, cardRef }) {
       }
     };
 
+    const onPointerMove = (moveEvt) => {
+      latestMoveEvt = moveEvt;
+      if (!rafId) {
+        rafId = requestAnimationFrame(processPointerMove);
+      }
+    };
+
     const onPointerUp = (upEvt) => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      if (latestMoveEvt) {
+        processPointerMove();
+        latestMoveEvt = null;
+      }
+
       try {
         handleEl.releasePointerCapture(upEvt.pointerId);
       } catch {}

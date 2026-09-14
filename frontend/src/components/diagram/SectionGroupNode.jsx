@@ -12,7 +12,7 @@ const THEMES = [
   { id: 'slate', label: 'Slate Grey', color: '#8b949e', border: '#444c56', bg: 'rgba(139, 148, 158, 0.06)' },
 ];
 
-export default function SectionGroupNode({ id, data, selected, width, height }) {
+function SectionGroupNode({ id, data, selected, width, height }) {
   const actions = useContext(DiagramActionsContext);
   const onUngroup = actions?.onUngroup;
   const onDeleteSection = actions?.onDeleteSection || actions?.onDeleteNode;
@@ -338,3 +338,5 @@ export default function SectionGroupNode({ id, data, selected, width, height }) 
     </div>
   );
 }
+
+export default React.memo(SectionGroupNode);

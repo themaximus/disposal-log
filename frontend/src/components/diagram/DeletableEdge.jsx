@@ -6,7 +6,7 @@ import {
 } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 
-export default function DeletableEdge({
+function DeletableEdge({
   id,
   sourceX,
   sourceY,
@@ -140,3 +140,5 @@ export default function DeletableEdge({
     </>
   );
 }
+
+export default React.memo(DeletableEdge);

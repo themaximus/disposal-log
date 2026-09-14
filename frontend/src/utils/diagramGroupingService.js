@@ -21,15 +21,39 @@ export class DiagramGroupingService {
   }
 
   /**
-   * Динамический подсчёт дочерних узлов для каждой секции
+   * Динамический подсчёт дочерних узлов для каждой секции с быстрой проверкой изменений
    */
   static calculateChildCounts(nodes = []) {
+    if (!nodes || nodes.length === 0) return nodes;
+
     const counts = {};
-    nodes.forEach(n => {
+    let hasSections = false;
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
       if (n.parentId) {
         counts[n.parentId] = (counts[n.parentId] || 0) + 1;
       }
-    });
+      if (n.type === 'sectionNode') {
+        hasSections = true;
+      }
+    }
+
+    if (!hasSections) return nodes;
+
+    let anyCountChanged = false;
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      if (n.type === 'sectionNode') {
+        const count = counts[n.id] || 0;
+        if ((n.data?.childCount ?? -1) !== count) {
+          anyCountChanged = true;
+          break;
+        }
+      }
+    }
+
+    if (!anyCountChanged) return nodes;
+
     return nodes.map(n => {
       if (n.type === 'sectionNode') {
         const count = counts[n.id] || 0;

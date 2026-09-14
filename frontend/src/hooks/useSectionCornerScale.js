@@ -55,7 +55,14 @@ export function useSectionCornerScale({ id, data }) {
     setActiveCorner(corner);
     setLiveScalePercent(Math.round(startSecScale * 100));
 
-    const onPointerMove = (moveEvt) => {
+    let rafId = null;
+    let latestMoveEvt = null;
+
+    const processPointerMove = () => {
+      rafId = null;
+      if (!latestMoveEvt) return;
+      const moveEvt = latestMoveEvt;
+
       const rawDx = (moveEvt.clientX - startPointer.x) / zoom;
       const rawDy = (moveEvt.clientY - startPointer.y) / zoom;
 
@@ -131,7 +138,23 @@ export function useSectionCornerScale({ id, data }) {
       }
     };
 
+    const onPointerMove = (moveEvt) => {
+      latestMoveEvt = moveEvt;
+      if (!rafId) {
+        rafId = requestAnimationFrame(processPointerMove);
+      }
+    };
+
     const onPointerUp = (upEvt) => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      if (latestMoveEvt) {
+        processPointerMove();
+        latestMoveEvt = null;
+      }
+
       try {
         handleEl.releasePointerCapture(upEvt.pointerId);
       } catch {}
@@ -178,7 +201,14 @@ export function useSectionCornerScale({ id, data }) {
     const startSecW = typeof rawW === 'string' ? (parseFloat(rawW) || 620) : rawW;
     const startSecH = typeof rawH === 'string' ? (parseFloat(rawH) || 420) : rawH;
 
-    const onPointerMove = (moveEvt) => {
+    let rafId = null;
+    let latestMoveEvt = null;
+
+    const processPointerMove = () => {
+      rafId = null;
+      if (!latestMoveEvt) return;
+      const moveEvt = latestMoveEvt;
+
       const rawDx = (moveEvt.clientX - startPointer.x) / zoom;
       const rawDy = (moveEvt.clientY - startPointer.y) / zoom;
 
@@ -217,7 +247,23 @@ export function useSectionCornerScale({ id, data }) {
       }
     };
 
+    const onPointerMove = (moveEvt) => {
+      latestMoveEvt = moveEvt;
+      if (!rafId) {
+        rafId = requestAnimationFrame(processPointerMove);
+      }
+    };
+
     const onPointerUp = (upEvt) => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      if (latestMoveEvt) {
+        processPointerMove();
+        latestMoveEvt = null;
+      }
+
       try {
         handleEl.releasePointerCapture(upEvt.pointerId);
       } catch {}

@@ -1,7 +1,7 @@
 // DiagramToolbar.jsx - Верхняя панель управления схемой (Single Responsibility: Toolbar UI)
 import React from 'react';
 
-export default function DiagramToolbar({
+function DiagramToolbar({
   diagrams,
   currentDiagramId,
   onSelectDiagram,
@@ -176,3 +176,5 @@ export default function DiagramToolbar({
     </div>
   );
 }
+
+export default React.memo(DiagramToolbar);

@@ -2579,6 +2579,9 @@ body {
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
     user-select: none;
     -webkit-user-select: none;
+    transform: translateZ(0);
+    contain: layout style;
+    will-change: transform;
 }
 
 .gamedev-hierarchy-card:hover {
@@ -4620,15 +4623,28 @@ select,
 /* ==========================================================
    SECTION / GROUP NODE CONTAINER STYLES
    ========================================================== */
+.react-flow__viewport {
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+}
+
+.react-flow__node {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    contain: layout style;
+    will-change: transform;
+}
+
 .diagram-section-node {
     border-radius: 16px;
     position: relative;
     box-sizing: border-box;
     border-width: 2px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    transform: translateZ(0);
+    contain: layout style;
+    will-change: transform, width, height;
 }
 
 .diagram-section-node.is-selected {

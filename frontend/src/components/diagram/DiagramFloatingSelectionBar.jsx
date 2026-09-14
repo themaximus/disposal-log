@@ -1,7 +1,7 @@
 // DiagramFloatingSelectionBar.jsx - Всплывающая панель быстрых действий над несколькими выбранными нодами
 import React from 'react';
 
-export default function DiagramFloatingSelectionBar({
+function DiagramFloatingSelectionBar({
   selectedNodes,
   onGroup,
   onUngroup,
@@ -120,3 +120,5 @@ export default function DiagramFloatingSelectionBar({
     </div>
   );
 }
+
+export default React.memo(DiagramFloatingSelectionBar);

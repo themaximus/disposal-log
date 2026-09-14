@@ -44,7 +44,7 @@ export const computeTreePrefix = (items = [], index = 0) => {
   return prefix;
 };
 
-export default function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
+function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
   const actions = useContext(DiagramActionsContext);
   const onOpenInspector = actions?.onOpenInspector || actions?.onEditNode || data?.onEdit;
   const onDeleteNode = actions?.onDeleteNode || data?.onDelete;
@@ -733,3 +733,5 @@ export default function GameDevHierarchyNode({ id, data, isConnectable, selected
     </div>
   );
 }
+
+export default React.memo(GameDevHierarchyNode);
