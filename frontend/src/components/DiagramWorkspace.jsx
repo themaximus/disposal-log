@@ -13,12 +13,15 @@ import '@xyflow/react/dist/style.css';
 import GameDevHierarchyNode from './diagram/GameDevHierarchyNode';
 import LogicStepNode from './diagram/LogicStepNode';
 import DeletableEdge from './diagram/DeletableEdge';
+import BlockInspectorModal from './diagram/BlockInspectorModal';
+import BlockPrefabsModal from './diagram/BlockPrefabsModal';
 import { DiagramActionsContext } from './DiagramActionsContext';
 import {
   STARTER_PRESETS,
   getOfflineDiagrams,
   saveOfflineDiagram,
-  deleteOfflineDiagram
+  deleteOfflineDiagram,
+  saveBlockPrefab
 } from '../utils/diagramStorage';
 
 const COMMON_ICONS = ['🟢', '👁️', '📷', '🎯', '📱', '📦', '⚔️', '🛡️', '⚙️', '💀', '💡', '🔊', '🎮', '✨', '🧟', '🦴', '⚡', '🔄', '📡', '🏷️'];
@@ -47,6 +50,11 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [selectedPresetId, setSelectedPresetId] = useState(STARTER_PRESETS[0].id);
+
+  // Block Inspector & Prefabs modals
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [inspectorNodeId, setInspectorNodeId] = useState(null);
+  const [isPrefabsModalOpen, setIsPrefabsModalOpen] = useState(false);
 
   // Modals & Detailed Node Editing
   const [isNodeEditModalOpen, setIsNodeEditModalOpen] = useState(false);
@@ -253,6 +261,42 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
       setIsTagModalOpen(true);
     }
   }, []);
+
+  // Open Block Inspector Modal
+  const handleOpenInspector = useCallback((nodeId) => {
+    setInspectorNodeId(nodeId);
+    setIsInspectorOpen(true);
+  }, []);
+
+  // Update node data from Inspector
+  const handleUpdateNodeData = useCallback((nodeId, updatedData) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      return {
+        ...n,
+        data: { ...n.data, ...updatedData }
+      };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
+
+  // Save prefab handler
+  const handleSavePrefab = useCallback((prefab) => {
+    saveBlockPrefab(prefab);
+  }, []);
+
+  // Spawn prefab handler
+  const handleSpawnPrefab = useCallback((prefab) => {
+    const newId = 'node_' + Date.now();
+    const newNode = {
+      id: newId,
+      type: prefab.type || 'hierarchyNode',
+      position: { x: 250 + Math.random() * 80, y: 150 + Math.random() * 80 },
+      data: JSON.parse(JSON.stringify(prefab.data || {}))
+    };
+    setNodes(nds => [...nds, newNode]);
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave]);
 
   // Node edit callback - Opens detailed modal
   const handleEditNode = useCallback((nodeId) => {
@@ -736,6 +780,15 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
           </button>
 
           <button
+            className="btn-diagram-tool btn-prefabs-library"
+            onClick={() => setIsPrefabsModalOpen(true)}
+            title="Библиотека готовых и пользовательских префабов блоков"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#bc8cff' }}>category</span>
+            <span>📦 Префабы</span>
+          </button>
+
+          <button
             className="btn-diagram-tool"
             onClick={() => { setNewTitle(''); setIsNewModalOpen(true); }}
             title="Создать новую схему"
@@ -768,6 +821,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
       <div className="diagram-canvas-viewport">
         <DiagramActionsContext.Provider
           value={{
+            onOpenInspector: handleOpenInspector,
             onEditNode: handleEditNode,
             onDeleteNode: handleDeleteNode,
             onQuickAdd: handleQuickAdd,
@@ -1174,6 +1228,22 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
           </div>
         </div>
       )}
+
+      {/* Block Inspector Modal (Properties & Style) */}
+      <BlockInspectorModal
+        isOpen={isInspectorOpen}
+        onClose={() => setIsInspectorOpen(false)}
+        node={inspectorNodeId ? nodes.find(n => n.id === inspectorNodeId) : null}
+        onUpdateNodeData={handleUpdateNodeData}
+        onSavePrefab={handleSavePrefab}
+      />
+
+      {/* Block Prefabs Catalog Modal */}
+      <BlockPrefabsModal
+        isOpen={isPrefabsModalOpen}
+        onClose={() => setIsPrefabsModalOpen(false)}
+        onSpawnPrefab={handleSpawnPrefab}
+      />
     </div>
   );
 }

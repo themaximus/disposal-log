@@ -4,7 +4,7 @@ import { DiagramActionsContext } from '../DiagramActionsContext';
 
 export default function LogicStepNode({ id, data, isConnectable }) {
   const actions = useContext(DiagramActionsContext);
-  const onEditNode = actions?.onEditNode || data?.onEdit;
+  const onOpenInspector = actions?.onOpenInspector || actions?.onEditNode || data?.onEdit;
   const onDeleteNode = actions?.onDeleteNode || data?.onDelete;
   const onQuickAdd = actions?.onQuickAdd || data?.onQuickAdd;
   const onOpenTagModal = actions?.onOpenTagModal || data?.onOpenTagModal;
@@ -126,22 +126,42 @@ export default function LogicStepNode({ id, data, isConnectable }) {
     }
   };
 
+  const cardStyle = {
+    background: data.customBg,
+    borderColor: data.customBorder,
+    borderStyle: data.borderStyle || 'solid',
+    boxShadow: data.glow ? `0 0 18px ${data.glowColor || 'rgba(88, 166, 255, 0.45)'}` : undefined
+  };
+
+  const handleStyle = data.customAccent ? {
+    background: data.customAccent,
+    borderColor: data.customBg || '#111419'
+  } : undefined;
+
   return (
-    <div className="gamedev-hierarchy-card logic-step-card">
-      <Handle type="target" position={Position.Left} id="target-left" isConnectable={isConnectable} className="diagram-handle handle-left" />
-      <Handle type="source" position={Position.Left} id="source-left" isConnectable={isConnectable} className="diagram-handle handle-left" />
-      <Handle type="source" position={Position.Right} id="source-right" isConnectable={isConnectable} className="diagram-handle handle-right" />
-      <Handle type="target" position={Position.Right} id="target-right" isConnectable={isConnectable} className="diagram-handle handle-right" />
-      <Handle type="target" position={Position.Top} id="target-top" isConnectable={isConnectable} className="diagram-handle handle-top" />
-      <Handle type="source" position={Position.Top} id="source-top" isConnectable={isConnectable} className="diagram-handle handle-top" />
-      <Handle type="source" position={Position.Bottom} id="source-bottom" isConnectable={isConnectable} className="diagram-handle handle-bottom" />
-      <Handle type="target" position={Position.Bottom} id="target-bottom" isConnectable={isConnectable} className="diagram-handle handle-bottom" />
+    <div
+      className={`gamedev-hierarchy-card logic-step-card ${data.theme ? `theme-${data.theme}` : ''} ${data.glow ? 'has-glow' : ''}`}
+      style={cardStyle}
+    >
+      <Handle type="target" position={Position.Left} id="target-left" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-left" />
+      <Handle type="source" position={Position.Left} id="source-left" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-left" />
+      <Handle type="source" position={Position.Right} id="source-right" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-right" />
+      <Handle type="target" position={Position.Right} id="target-right" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-right" />
+      <Handle type="target" position={Position.Top} id="target-top" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-top" />
+      <Handle type="source" position={Position.Top} id="source-top" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-top" />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
+      <Handle type="target" position={Position.Bottom} id="target-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
 
       <div className="card-top-action-bar">
         <span
           className="card-type-badge"
           onClick={handleTagClick}
-          style={{ cursor: 'pointer' }}
+          style={{
+            cursor: 'pointer',
+            background: data.badgeBg,
+            color: data.badgeText,
+            borderColor: data.badgeText
+          }}
           title="Кликните для изменения тега"
         >
           {nodeType}
@@ -157,13 +177,16 @@ export default function LogicStepNode({ id, data, isConnectable }) {
             )}
           </button>
           <button
-            className="card-action-icon-btn"
-            onClick={(e) => { e.stopPropagation(); if (onEditNode) onEditNode(id); }}
-            title="Редактировать структуру (✎)"
+            className="card-action-icon-btn btn-inspector"
+            onClick={(e) => { e.stopPropagation(); if (onOpenInspector) onOpenInspector(id); }}
+            title="Свойства и стиль блока (🎨)"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+              <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+              <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+              <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>
             </svg>
           </button>
           <button

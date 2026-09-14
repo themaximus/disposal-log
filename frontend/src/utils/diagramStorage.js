@@ -1,4 +1,4 @@
-﻿// diagramStorage.js - Хранение и стартовые пресеты для нативного React Flow холста
+// diagramStorage.js - Хранение и стартовые пресеты для нативного React Flow холста
 
 const OFFLINE_DIAGRAMS_KEY = 'pulse_offline_reactflow_diagrams_v2';
 
@@ -256,3 +256,239 @@ export function deleteOfflineDiagram(diagramId) {
   saveOfflineDiagrams(updatedList);
   return updatedList;
 }
+
+// Block Themes / Color Palettes
+export const BLOCK_THEMES = [
+  {
+    id: 'default',
+    name: 'GameDev Slate',
+    description: 'Графит и синий акцент',
+    bg: '#111419',
+    border: '#2d333b',
+    accent: '#58a6ff',
+    badgeBg: 'rgba(56, 139, 253, 0.15)',
+    badgeText: '#58a6ff',
+    glowColor: 'rgba(88, 166, 255, 0.3)'
+  },
+  {
+    id: 'cyberpunk',
+    name: 'Cyberpunk Neon',
+    description: 'Неоновый циан и кибер-стиль',
+    bg: '#0a101f',
+    border: '#00f0ff',
+    accent: '#00f0ff',
+    badgeBg: 'rgba(0, 240, 255, 0.18)',
+    badgeText: '#00f0ff',
+    glowColor: 'rgba(0, 240, 255, 0.45)'
+  },
+  {
+    id: 'emerald',
+    name: 'Emerald Engine',
+    description: 'Изумрудный терминал',
+    bg: '#071710',
+    border: '#238636',
+    accent: '#3fb950',
+    badgeBg: 'rgba(63, 185, 80, 0.18)',
+    badgeText: '#3fb950',
+    glowColor: 'rgba(63, 185, 80, 0.4)'
+  },
+  {
+    id: 'crimson',
+    name: 'Crimson Danger',
+    description: 'Боевой рубин и опасность',
+    bg: '#1a090d',
+    border: '#da3633',
+    accent: '#f85149',
+    badgeBg: 'rgba(248, 81, 73, 0.18)',
+    badgeText: '#f85149',
+    glowColor: 'rgba(248, 81, 73, 0.45)'
+  },
+  {
+    id: 'amethyst',
+    name: 'Amethyst Void',
+    description: 'Фиолетовая магия и шейдеры',
+    bg: '#130922',
+    border: '#8957e5',
+    accent: '#bc8cff',
+    badgeBg: 'rgba(188, 140, 255, 0.18)',
+    badgeText: '#bc8cff',
+    glowColor: 'rgba(188, 140, 255, 0.45)'
+  },
+  {
+    id: 'amber',
+    name: 'Amber Flame',
+    description: 'Золото, лут и крафтинг',
+    bg: '#1c1505',
+    border: '#9e6a03',
+    accent: '#d29922',
+    badgeBg: 'rgba(210, 153, 34, 0.18)',
+    badgeText: '#d29922',
+    glowColor: 'rgba(210, 153, 34, 0.4)'
+  }
+];
+
+// Built-in Block Prefab Templates
+export const DEFAULT_BLOCK_PREFABS = [
+  {
+    id: 'prefab-player',
+    title: 'Игрок / Персонаж (Player)',
+    description: 'Готовая иерархия с контроллером, визуалом, камерой и руками',
+    type: 'hierarchyNode',
+    theme: 'default',
+    glow: false,
+    tag: 'PLAYER',
+    data: {
+      tag: 'PLAYER',
+      rootPath: 'Assets/Prefabs/Characters/Player.prefab',
+      theme: 'default',
+      items: [
+        { level: 0, isLast: true, icon: '🟢', name: 'Player_Root', details: 'CharacterController, AudioSource' },
+        { level: 1, isLast: false, icon: '👁️', name: 'VisualModel', details: 'MeshFilter, Animator' },
+        { level: 1, isLast: false, icon: '📷', name: 'CameraHolder', details: 'Camera, AudioListener' },
+        { level: 2, isLast: true, icon: '🎯', name: 'PointDrop', details: 'RaycastOrigin, SpawnAnchor' }
+      ]
+    }
+  },
+  {
+    id: 'prefab-weapon',
+    title: 'Оружие / Инструмент (Weapon)',
+    description: 'Модуль стрельбы, дуло, анимации и партиклы выстрела',
+    type: 'hierarchyNode',
+    theme: 'amber',
+    glow: true,
+    tag: 'WEAPON',
+    data: {
+      tag: 'WEAPON',
+      rootPath: 'Assets/Prefabs/Weapons/Rifle_AK47.prefab',
+      theme: 'amber',
+      items: [
+        { level: 0, isLast: true, icon: '⚔️', name: 'Rifle_AK47', details: 'WeaponController, AudioSource' },
+        { level: 1, isLast: false, icon: '🔥', name: 'MuzzleFlash', details: 'ParticleSystem, Light' },
+        { level: 1, isLast: false, icon: '🎯', name: 'AimSocket', details: 'Transform, ScopeAnchor' },
+        { level: 1, isLast: true, icon: '📦', name: 'Magazine_Rig', details: 'ReloadAnim, Rigidbody' }
+      ]
+    }
+  },
+  {
+    id: 'prefab-loot',
+    title: 'Интерактивный предмет / Лут',
+    description: 'Подбираемый лут с физикой, подсветкой и всплывающим UI',
+    type: 'hierarchyNode',
+    theme: 'emerald',
+    glow: true,
+    tag: 'LOOT',
+    data: {
+      tag: 'LOOT',
+      rootPath: 'Assets/Prefabs/Items/HealthPotion.prefab',
+      theme: 'emerald',
+      items: [
+        { level: 0, isLast: true, icon: '📦', name: 'LootItem', details: 'Rigidbody, MeshCollider, Interactable' },
+        { level: 1, isLast: false, icon: '✨', name: 'GlowEffect', details: 'ParticleSystem, PointLight' },
+        { level: 1, isLast: true, icon: '🏷️', name: 'HoverPrompt', details: 'BillboardCanvas, TextMeshPro' }
+      ]
+    }
+  },
+  {
+    id: 'prefab-fsm-ai',
+    title: 'FSM Машина состояний врага',
+    description: 'Алгоритм переходов состояний: патруль, погоня, атака',
+    type: 'logicNode',
+    theme: 'crimson',
+    glow: true,
+    tag: 'AI FSM',
+    data: {
+      nodeType: 'AI FSM',
+      title: 'EnemyStateMachine.Tick()',
+      theme: 'crimson',
+      lines: [
+        { prefix: '├── ', icon: '👁️', code: 'if (CanSeeTarget(player))', comment: 'Проверка видимости' },
+        { prefix: '├── ', icon: '🏃', code: 'SetState(AIState.ChaseTarget);', comment: 'Преследование' },
+        { prefix: '├── ', icon: '⚔️', code: 'if (InAttackRange()) Attack();', comment: 'Удар в радиусе' },
+        { prefix: '└── ', icon: '🔄', code: 'else PatrolWaypoints();', comment: 'Патрулирование точек' }
+      ]
+    }
+  },
+  {
+    id: 'prefab-network-rpc',
+    title: 'Сетевой RPC / Синхронизация',
+    description: 'Обработка сетевых пакетов, ServerRpc и ClientRpc',
+    type: 'logicNode',
+    theme: 'cyberpunk',
+    glow: true,
+    tag: 'NETWORK',
+    data: {
+      nodeType: 'NETWORK',
+      title: 'NetworkSyncManager.Update()',
+      theme: 'cyberpunk',
+      lines: [
+        { prefix: '├── ', icon: '📡', code: '[ServerRpc] SendPlayerInput(inputState)', comment: 'Клиент -> Сервер' },
+        { prefix: '├── ', icon: '⚡', code: 'ValidateAndApplyMovement(deltaTime)', comment: 'Авторитетная физика' },
+        { prefix: '└── ', icon: '🌐', code: '[ClientRpc] BroadcastPosition(serverPos)', comment: 'Сервер -> Клиенты' }
+      ]
+    }
+  },
+  {
+    id: 'prefab-ui-canvas',
+    title: 'UI Интерфейс / HUD',
+    description: 'Экранный интерфейс: полоска здоровья, прицел, инвентарь',
+    type: 'hierarchyNode',
+    theme: 'amethyst',
+    glow: false,
+    tag: 'UI CANVAS',
+    data: {
+      tag: 'UI CANVAS',
+      rootPath: 'Assets/UI/Prefabs/HUD_Canvas.prefab',
+      theme: 'amethyst',
+      items: [
+        { level: 0, isLast: true, icon: '📱', name: 'HUD_Canvas', details: 'Canvas, CanvasScaler, GraphicRaycaster' },
+        { level: 1, isLast: false, icon: '❤️', name: 'HealthBar_Widget', details: 'Slider, ImageFill, StatusText' },
+        { level: 1, isLast: false, icon: '🎯', name: 'Crosshair_Overlay', details: 'Image, DynamicSpread' },
+        { level: 1, isLast: true, icon: '🎒', name: 'QuickSlots_Bar', details: 'HorizontalLayoutGroup, SlotPool' }
+      ]
+    }
+  }
+];
+
+// User-saved block prefabs storage
+const SAVED_PREFABS_KEY = 'pulse_user_custom_block_prefabs_v1';
+
+export function getSavedBlockPrefabs() {
+  try {
+    const raw = localStorage.getItem(SAVED_PREFABS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error('Failed to get saved block prefabs:', e);
+    return [];
+  }
+}
+
+export function saveBlockPrefab(prefab) {
+  const current = getSavedBlockPrefabs();
+  const newPrefab = {
+    ...prefab,
+    id: prefab.id || 'custom_prefab_' + Date.now(),
+    isCustom: true,
+    created_at: new Date().toISOString()
+  };
+  const updated = [newPrefab, ...current.filter(p => p.id !== newPrefab.id)];
+  try {
+    localStorage.setItem(SAVED_PREFABS_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to save block prefab:', e);
+  }
+  return updated;
+}
+
+export function deleteBlockPrefab(prefabId) {
+  const current = getSavedBlockPrefabs();
+  const updated = current.filter(p => p.id !== prefabId);
+  try {
+    localStorage.setItem(SAVED_PREFABS_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to delete block prefab:', e);
+  }
+  return updated;
+}
+

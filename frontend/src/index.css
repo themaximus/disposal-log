@@ -3306,5 +3306,455 @@ body {
     background: rgba(248, 81, 73, 0.15);
 }
 
+/* Card Themes & Neon Glow Effects */
+.gamedev-hierarchy-card.theme-cyberpunk {
+    background: #0a101f !important;
+    border-color: #00f0ff !important;
+}
+.gamedev-hierarchy-card.theme-cyberpunk .root-path-text,
+.gamedev-hierarchy-card.theme-cyberpunk .logic-method-name {
+    color: #00f0ff !important;
+}
+
+.gamedev-hierarchy-card.theme-emerald {
+    background: #071710 !important;
+    border-color: #238636 !important;
+}
+.gamedev-hierarchy-card.theme-emerald .root-path-text,
+.gamedev-hierarchy-card.theme-emerald .logic-method-name {
+    color: #3fb950 !important;
+}
+
+.gamedev-hierarchy-card.theme-crimson {
+    background: #1a090d !important;
+    border-color: #da3633 !important;
+}
+.gamedev-hierarchy-card.theme-crimson .root-path-text,
+.gamedev-hierarchy-card.theme-crimson .logic-method-name {
+    color: #f85149 !important;
+}
+
+.gamedev-hierarchy-card.theme-amethyst {
+    background: #130922 !important;
+    border-color: #8957e5 !important;
+}
+.gamedev-hierarchy-card.theme-amethyst .root-path-text,
+.gamedev-hierarchy-card.theme-amethyst .logic-method-name {
+    color: #bc8cff !important;
+}
+
+.gamedev-hierarchy-card.theme-amber {
+    background: #1c1505 !important;
+    border-color: #9e6a03 !important;
+}
+.gamedev-hierarchy-card.theme-amber .root-path-text,
+.gamedev-hierarchy-card.theme-amber .logic-method-name {
+    color: #d29922 !important;
+}
+
+.gamedev-hierarchy-card.has-glow {
+    animation: pulse-card-glow 3s infinite alternate;
+}
+
+@keyframes pulse-card-glow {
+    0% { filter: drop-shadow(0 0 4px rgba(88, 166, 255, 0.25)); }
+    100% { filter: drop-shadow(0 0 10px rgba(88, 166, 255, 0.45)); }
+}
+
+/* Toolbar button: Prefabs Library */
+.btn-prefabs-library {
+    background: rgba(188, 140, 255, 0.1) !important;
+    border-color: rgba(188, 140, 255, 0.3) !important;
+    color: #bc8cff !important;
+}
+.btn-prefabs-library:hover {
+    background: rgba(188, 140, 255, 0.2) !important;
+    border-color: #bc8cff !important;
+    box-shadow: 0 0 10px rgba(188, 140, 255, 0.3) !important;
+}
+
+/* Card Action: Inspector button */
+.card-action-icon-btn.btn-inspector:hover {
+    color: #bc8cff !important;
+    background: rgba(188, 140, 255, 0.15) !important;
+}
+
+/* Block Inspector Modal Styles */
+.block-inspector-modal {
+    max-width: 660px !important;
+}
+
+.themes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 600px) {
+    .themes-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.theme-card-option {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.theme-card-option:hover {
+    border-color: #8b949e;
+    background: #1c2128;
+}
+
+.theme-card-option.active {
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 1px #58a6ff, 0 0 12px rgba(88, 166, 255, 0.25);
+    background: rgba(56, 139, 253, 0.08);
+}
+
+.theme-card-preview {
+    height: 36px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    margin-bottom: 4px;
+}
+
+.theme-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.theme-badge-mini {
+    font-size: 0.65rem;
+    font-weight: bold;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.theme-card-title {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #f0f6fc;
+}
+
+.theme-card-sub {
+    font-size: 0.72rem;
+    color: #8b949e;
+    line-height: 1.25;
+}
+
+/* Toggle Switch */
+.toggle-switch-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.toggle-switch-label input {
+    display: none;
+}
+
+.toggle-slider {
+    width: 36px;
+    height: 20px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 20px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.toggle-slider::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #8b949e;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: all 0.2s ease;
+}
+
+.toggle-switch-label input:checked + .toggle-slider {
+    background: rgba(56, 139, 253, 0.2);
+    border-color: #58a6ff;
+}
+
+.toggle-switch-label input:checked + .toggle-slider::after {
+    left: 18px;
+    background: #58a6ff;
+    box-shadow: 0 0 6px #58a6ff;
+}
+
+/* Accent Color Chips */
+.accent-color-chip {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.accent-color-chip:hover {
+    transform: scale(1.15);
+}
+
+.accent-color-chip.selected {
+    border-color: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    transform: scale(1.15);
+}
+
+/* Badge Color Presets */
+.badge-color-preset {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    transition: transform 0.12s ease;
+}
+
+.badge-color-preset:hover {
+    transform: scale(1.08);
+}
+
+/* Inspector Reorder List */
+.inspector-reorder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.inspector-reorder-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+.reorder-item-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.reorder-item-content {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    overflow: hidden;
+}
+
+.reorder-item-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #f0f6fc;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.reorder-item-details {
+    font-size: 0.75rem;
+    color: #8b949e;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.reorder-item-code {
+    font-size: 0.8rem;
+    color: #79c0ff;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    background: transparent;
+    padding: 0;
+}
+
+.reorder-item-comment {
+    font-size: 0.74rem;
+    color: #7ee787;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+}
+
+.reorder-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.btn-order-action {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: all 0.12s ease;
+}
+
+.btn-order-action:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.btn-order-action:not(:disabled):hover {
+    background: #21262d;
+    color: #f0f6fc;
+    border-color: #58a6ff;
+}
+
+.btn-order-action.btn-del:hover {
+    color: #f85149;
+    background: rgba(248, 81, 73, 0.15);
+    border-color: #f85149;
+}
+
+/* Prefabs Catalog Modal */
+.block-prefabs-modal {
+    max-width: 780px !important;
+}
+
+.prefabs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .prefabs-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.prefab-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.prefab-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    background: #1c2128;
+}
+
+.prefab-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.prefab-badge {
+    font-size: 0.68rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+}
+
+.btn-del-custom-prefab {
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    font-size: 0.78rem;
+    cursor: pointer;
+    padding: 0 4px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: color 0.12s ease;
+}
+
+.btn-del-custom-prefab:hover {
+    color: #f85149;
+}
+
+.prefab-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.prefab-card-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: -0.1px;
+}
+
+.prefab-card-desc {
+    font-size: 0.76rem;
+    color: #8b949e;
+    line-height: 1.35;
+}
+
+.prefab-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.prefab-items-count {
+    font-size: 0.74rem;
+    color: #8b949e;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+}
+
+.btn-spawn-prefab {
+    background: #238636;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.btn-spawn-prefab:hover {
+    background: #2ea043;
+    transform: scale(1.05);
+}
+
+
 
 
