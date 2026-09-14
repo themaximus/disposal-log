@@ -1,33 +1,47 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  DIAGRAM_TEMPLATES,
+  ReactFlow,
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  addEdge
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+
+import GameDevHierarchyNode from './diagram/GameDevHierarchyNode';
+import LogicStepNode from './diagram/LogicStepNode';
+import {
+  STARTER_PRESETS,
   getOfflineDiagrams,
   saveOfflineDiagram,
-  deleteOfflineDiagram,
-  downloadDiagramFile
+  deleteOfflineDiagram
 } from '../utils/diagramStorage';
 
 export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   const [diagrams, setDiagrams] = useState([]);
   const [currentDiagramId, setCurrentDiagramId] = useState(null);
-  const [isIframeReady, setIsIframeReady] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved' | 'saving' | 'unsaved'
+  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved' | 'saving'
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Modals state
+  // Nodes & Edges state
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // Modals
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [selectedTemplateId, setSelectedTemplateId] = useState(DIAGRAM_TEMPLATES[0].id);
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
-  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const [renameValue, setRenameValue] = useState('');
+  const [selectedPresetId, setSelectedPresetId] = useState(STARTER_PRESETS[0].id);
 
-  const iframeRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const [isNodeEditModalOpen, setIsNodeEditModalOpen] = useState(false);
+  const [editingNodeId, setEditingNodeId] = useState(null);
+  const [editFormData, setEditFormData] = useState({ rootPath: '', itemsText: '', title: '', linesText: '' });
+
   const workspaceContainerRef = useRef(null);
-  const currentDiagramRef = useRef(null);
+  const saveTimeoutRef = useRef(null);
 
-  // Token helper
+  // Auth fetch helper
   const authFetch = (url, options = {}) => {
     const token = localStorage.getItem('session_token');
     const headers = {
@@ -37,331 +51,397 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     return fetch(url, { ...options, headers });
   };
 
-  // Load diagrams list (from server if user logged in, or localStorage)
-  const fetchDiagrams = useCallback(async () => {
+  // Node edit callback
+  const handleEditNode = useCallback((nodeId) => {
+    setNodes(currentNodes => {
+      const target = currentNodes.find(n => n.id === nodeId);
+      if (target) {
+        setEditingNodeId(nodeId);
+        if (target.type === 'hierarchyNode') {
+          const itemsText = (target.data.items || []).map(i => {
+            const indent = '  '.repeat(i.level);
+            const branch = i.isLast ? '└── ' : '├── ';
+            const icon = i.icon ? i.icon + ' ' : '';
+            const details = i.details ? ` (${i.details})` : '';
+            return `${indent}${branch}${icon}${i.name}${details}`;
+          }).join('\n');
+
+          setEditFormData({
+            type: 'hierarchyNode',
+            rootPath: target.data.rootPath || '',
+            tag: target.data.tag || 'PREFAB',
+            itemsText
+          });
+        } else {
+          const linesText = (target.data.lines || []).map(l => {
+            const prefix = l.prefix || '├── ';
+            const icon = l.icon ? l.icon + ' ' : '';
+            const comment = l.comment ? ` // ${l.comment}` : '';
+            return `${prefix}${icon}${l.code}${comment}`;
+          }).join('\n');
+
+          setEditFormData({
+            type: 'logicNode',
+            title: target.data.title || '',
+            nodeType: target.data.nodeType || 'SCRIPT',
+            linesText
+          });
+        }
+        setIsNodeEditModalOpen(true);
+      }
+      return currentNodes;
+    });
+  }, [setNodes]);
+
+  // Define custom node types with edit handler attached
+  const nodeTypes = useMemo(() => ({
+    hierarchyNode: (props) => <GameDevHierarchyNode {...props} data={{ ...props.data, onEdit: handleEditNode }} />,
+    logicNode: (props) => <LogicStepNode {...props} data={{ ...props.data, onEdit: handleEditNode }} />
+  }), [handleEditNode]);
+
+  // Load diagrams list
+  const loadDiagrams = useCallback(async () => {
     if (currentUser) {
       try {
         const res = await authFetch('/api/diagrams');
         if (res.ok) {
           const serverDiagrams = await res.json();
           if (Array.isArray(serverDiagrams) && serverDiagrams.length > 0) {
-            setDiagrams(serverDiagrams);
-            setCurrentDiagramId(serverDiagrams[0].id);
+            const formatted = serverDiagrams.map(d => {
+              let parsedData = { nodes: [], edges: [] };
+              try {
+                parsedData = typeof d.xml === 'string' && d.xml.startsWith('{') ? JSON.parse(d.xml) : null;
+              } catch (e) {}
+              return {
+                id: d.id,
+                title: d.title,
+                nodes: parsedData?.nodes || STARTER_PRESETS[0].data.nodes,
+                edges: parsedData?.edges || STARTER_PRESETS[0].data.edges,
+                created_at: d.created_at,
+                updated_at: d.updated_at
+              };
+            });
+            setDiagrams(formatted);
+            setCurrentDiagramId(formatted[0].id);
+            setNodes(formatted[0].nodes || []);
+            setEdges(formatted[0].edges || []);
             return;
           }
         }
       } catch (err) {
-        console.error('Failed to load server diagrams, using offline:', err);
+        console.error('Error fetching server diagrams, using offline:', err);
       }
     }
 
-    const offlineList = getOfflineDiagrams();
-    setDiagrams(offlineList);
-    if (offlineList.length > 0) {
-      setCurrentDiagramId(offlineList[0].id);
+    const offline = getOfflineDiagrams();
+    setDiagrams(offline);
+    if (offline.length > 0) {
+      setCurrentDiagramId(offline[0].id);
+      setNodes(offline[0].nodes || []);
+      setEdges(offline[0].edges || []);
     }
-  }, [currentUser]);
+  }, [currentUser, setNodes, setEdges]);
 
   useEffect(() => {
-    fetchDiagrams();
-  }, [fetchDiagrams]);
+    loadDiagrams();
+  }, [loadDiagrams]);
 
-  // Current active diagram
-  const currentDiagram = diagrams.find(d => String(d.id) === String(currentDiagramId)) || diagrams[0] || null;
+  // Connect handler between ports
+  const onConnect = useCallback((params) => {
+    setEdges((eds) => addEdge({
+      ...params,
+      animated: true,
+      style: { stroke: '#58a6ff', strokeWidth: 2 }
+    }, eds));
+    triggerAutoSave();
+  }, [setEdges]);
 
-  useEffect(() => {
-    currentDiagramRef.current = currentDiagram;
-  }, [currentDiagram]);
+  // Auto-save logic
+  const triggerAutoSave = useCallback(() => {
+    setSaveStatus('saving');
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
-  // Load diagram XML into draw.io iframe
-  const loadDiagramIntoIframe = useCallback((xml) => {
-    if (!iframeRef.current || !iframeRef.current.contentWindow) return;
-    try {
-      const msg = JSON.stringify({
-        action: 'load',
-        autosave: 1,
-        xml: xml || ''
-      });
-      iframeRef.current.contentWindow.postMessage(msg, '*');
-    } catch (e) {
-      console.error('Failed to postMessage to diagrams.net:', e);
-    }
-  }, []);
+    saveTimeoutRef.current = setTimeout(() => {
+      setNodes(currentNodes => {
+        setEdges(currentEdges => {
+          if (!currentDiagramId) return currentEdges;
 
-  // Handle postMessage from diagrams.net embed
-  useEffect(() => {
-    const handleMessage = (event) => {
-      if (!event.origin.includes('diagrams.net')) return;
+          const updatedDiag = {
+            id: currentDiagramId,
+            title: diagrams.find(d => String(d.id) === String(currentDiagramId))?.title || 'Схема',
+            nodes: currentNodes,
+            edges: currentEdges,
+            updated_at: new Date().toISOString()
+          };
 
-      let msgData;
-      try {
-        msgData = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-      } catch (e) {
-        return;
-      }
+          saveOfflineDiagram(updatedDiag);
 
-      if (!msgData || !msgData.event) return;
+          if (currentUser && typeof currentDiagramId === 'number') {
+            authFetch(`/api/diagrams/${currentDiagramId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: updatedDiag.title,
+                xml: JSON.stringify({ nodes: currentNodes, edges: currentEdges })
+              })
+            }).catch(console.error);
+          }
 
-      // 1. Initial Handshake
-      if (msgData.event === 'init') {
-        setIsIframeReady(true);
-        const xmlToLoad = currentDiagramRef.current ? currentDiagramRef.current.xml : DIAGRAM_TEMPLATES[0].xml;
-        loadDiagramIntoIframe(xmlToLoad);
-      }
-
-      // 2. Autosave or Save Event from Editor
-      if (msgData.event === 'autosave' || msgData.event === 'save') {
-        if (!msgData.xml || !currentDiagramRef.current) return;
-        setSaveStatus('saving');
-
-        const updatedDiag = {
-          ...currentDiagramRef.current,
-          xml: msgData.xml,
-          updated_at: new Date().toISOString()
-        };
-
-        // Update local React state
-        setDiagrams(prev => prev.map(d => String(d.id) === String(updatedDiag.id) ? updatedDiag : d));
-        currentDiagramRef.current = updatedDiag;
-
-        // Save to offline storage
-        saveOfflineDiagram(updatedDiag);
-
-        // If user is logged in, also sync to SQLite backend
-        if (currentUser && typeof updatedDiag.id === 'number') {
-          authFetch(`/api/diagrams/${updatedDiag.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: updatedDiag.title, xml: updatedDiag.xml })
-          }).catch(err => console.error('Failed to sync diagram with server:', err));
-        }
-
-        setTimeout(() => {
           setSaveStatus('saved');
-        }, 500);
-      }
+          return currentEdges;
+        });
+        return currentNodes;
+      });
+    }, 800);
+  }, [currentDiagramId, diagrams, currentUser, setNodes, setEdges]);
 
-      // 3. Export Event from Editor
-      if (msgData.event === 'export' && msgData.data) {
-        const title = currentDiagramRef.current ? currentDiagramRef.current.title : 'diagram';
-        const format = msgData.format || 'png';
-        const blob = msgData.data.startsWith('data:')
-          ? null
-          : new Blob([msgData.data], { type: format === 'svg' ? 'image/svg+xml' : 'application/octet-stream' });
+  // Trigger autosave when nodes or edges change
+  const handleNodesChange = (changes) => {
+    onNodesChange(changes);
+    const hasPositionOrRemove = changes.some(c => c.type === 'position' && c.dragging === false || c.type === 'remove');
+    if (hasPositionOrRemove) {
+      triggerAutoSave();
+    }
+  };
 
-        const link = document.createElement('a');
-        link.download = `${title.replace(/[^a-z0-9а-яё_-]/gi, '_')}.${format}`;
-        link.href = blob ? URL.createObjectURL(blob) : msgData.data;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        if (blob) URL.revokeObjectURL(link.href);
-      }
-    };
+  const handleEdgesChange = (changes) => {
+    onEdgesChange(changes);
+    const hasRemove = changes.some(c => c.type === 'remove');
+    if (hasRemove) triggerAutoSave();
+  };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [currentUser, loadDiagramIntoIframe]);
-
-  // Switch active diagram
+  // Switch diagram
   const handleSelectDiagram = (diagId) => {
     const target = diagrams.find(d => String(d.id) === String(diagId));
     if (!target) return;
 
     setCurrentDiagramId(target.id);
-    currentDiagramRef.current = target;
-    if (isIframeReady) {
-      loadDiagramIntoIframe(target.xml);
-    }
+    setNodes(target.nodes || []);
+    setEdges(target.edges || []);
   };
 
-  // Create new diagram
+  // Add new GameDev Prefab node
+  const handleAddHierarchyNode = () => {
+    const newId = 'node_' + Date.now();
+    const newNode = {
+      id: newId,
+      type: 'hierarchyNode',
+      position: { x: 100 + Math.random() * 80, y: 100 + Math.random() * 80 },
+      data: {
+        tag: 'PREFAB',
+        rootPath: 'Assets/Prefabs/NewEntity/NewEntity.prefab',
+        items: [
+          { level: 0, isLast: true, icon: '🟢', name: 'NewEntity', details: 'Transform, Rigidbody' },
+          { level: 1, isLast: true, icon: '👁️', name: 'MeshVisual', details: 'MeshFilter, MeshRenderer' }
+        ]
+      }
+    };
+    setNodes(nds => [...nds, newNode]);
+    triggerAutoSave();
+  };
+
+  // Add new Logic Step node
+  const handleAddLogicNode = () => {
+    const newId = 'node_' + Date.now();
+    const newNode = {
+      id: newId,
+      type: 'logicNode',
+      position: { x: 200 + Math.random() * 80, y: 150 + Math.random() * 80 },
+      data: {
+        nodeType: 'LOGIC',
+        title: 'EntityController.Tick()',
+        lines: [
+          { prefix: '├── ', icon: '⚡', code: 'if (isActive && isGrounded)', comment: 'Проверка флагов' },
+          { prefix: '└── ', icon: '🔄', code: 'PerformAction(deltaTime);', comment: 'Выполнение шага' }
+        ]
+      }
+    };
+    setNodes(nds => [...nds, newNode]);
+    triggerAutoSave();
+  };
+
+  // Create new diagram with preset
   const handleCreateDiagram = async () => {
-    const chosenTemplate = DIAGRAM_TEMPLATES.find(t => t.id === selectedTemplateId) || DIAGRAM_TEMPLATES[0];
-    const finalTitle = newTitle.trim() || chosenTemplate.title || 'Новая схема';
-    const finalXml = chosenTemplate.xml;
+    const preset = STARTER_PRESETS.find(p => p.id === selectedPresetId) || STARTER_PRESETS[0];
+    const finalTitle = newTitle.trim() || preset.title || 'Новая схема';
+    const finalNodes = JSON.parse(JSON.stringify(preset.data.nodes));
+    const finalEdges = JSON.parse(JSON.stringify(preset.data.edges));
 
     if (currentUser) {
       try {
         const res = await authFetch('/api/diagrams', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: finalTitle, xml: finalXml })
+          body: JSON.stringify({
+            title: finalTitle,
+            xml: JSON.stringify({ nodes: finalNodes, edges: finalEdges })
+          })
         });
         if (res.ok) {
           const created = await res.json();
-          setDiagrams(prev => [created, ...prev]);
-          setCurrentDiagramId(created.id);
-          currentDiagramRef.current = created;
-          loadDiagramIntoIframe(created.xml);
+          const newDiag = { id: created.id, title: finalTitle, nodes: finalNodes, edges: finalEdges };
+          setDiagrams(prev => [newDiag, ...prev]);
+          setCurrentDiagramId(newDiag.id);
+          setNodes(finalNodes);
+          setEdges(finalEdges);
           setIsNewModalOpen(false);
           setNewTitle('');
           return;
         }
-      } catch (err) {
-        console.error('Error creating diagram on server, fallback to local:', err);
+      } catch (e) {
+        console.error('Failed to create server diagram:', e);
       }
     }
 
-    const newLocalDiag = {
+    const newLocal = {
       id: 'diag_' + Date.now(),
       title: finalTitle,
-      xml: finalXml,
+      nodes: finalNodes,
+      edges: finalEdges,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    const updated = saveOfflineDiagram(newLocalDiag);
+    const updated = saveOfflineDiagram(newLocal);
     setDiagrams(updated);
-    setCurrentDiagramId(newLocalDiag.id);
-    currentDiagramRef.current = newLocalDiag;
-    loadDiagramIntoIframe(newLocalDiag.xml);
+    setCurrentDiagramId(newLocal.id);
+    setNodes(finalNodes);
+    setEdges(finalEdges);
     setIsNewModalOpen(false);
     setNewTitle('');
   };
 
-  // Rename current diagram
-  const handleSaveRename = async () => {
-    if (!currentDiagram || !renameValue.trim()) return;
-    const newName = renameValue.trim();
-
-    const updated = { ...currentDiagram, title: newName };
-    setDiagrams(prev => prev.map(d => String(d.id) === String(currentDiagram.id) ? updated : d));
-    currentDiagramRef.current = updated;
-    saveOfflineDiagram(updated);
-
-    if (currentUser && typeof currentDiagram.id === 'number') {
-      authFetch(`/api/diagrams/${currentDiagram.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newName })
-      }).catch(err => console.error('Failed to rename on server:', err));
-    }
-
-    setIsRenameModalOpen(false);
-  };
-
   // Delete current diagram
-  const handleDeleteCurrentDiagram = async () => {
-    if (!currentDiagram) return;
+  const handleDeleteDiagram = () => {
     if (diagrams.length <= 1) {
-      alert('Нельзя удалить последнюю оставшуюся диаграмму.');
+      alert('Нельзя удалить последнюю схему.');
       return;
     }
+    const current = diagrams.find(d => String(d.id) === String(currentDiagramId));
+    if (!window.confirm(`Удалить схему «${current?.title || ''}»?`)) return;
 
-    if (!window.confirm(`Удалить диаграмму «${currentDiagram.title}»?`)) return;
+    deleteOfflineDiagram(currentDiagramId);
+    if (currentUser && typeof currentDiagramId === 'number') {
+      authFetch(`/api/diagrams/${currentDiagramId}`, { method: 'DELETE' }).catch(console.error);
+    }
 
-    const toDeleteId = currentDiagram.id;
-    const remaining = diagrams.filter(d => String(d.id) !== String(toDeleteId));
+    const remaining = diagrams.filter(d => String(d.id) !== String(currentDiagramId));
     setDiagrams(remaining);
-    deleteOfflineDiagram(toDeleteId);
-
-    if (currentUser && typeof toDeleteId === 'number') {
-      authFetch(`/api/diagrams/${toDeleteId}`, { method: 'DELETE' })
-        .catch(err => console.error('Failed to delete on server:', err));
-    }
-
-    const nextDiag = remaining[0];
-    setCurrentDiagramId(nextDiag.id);
-    currentDiagramRef.current = nextDiag;
-    loadDiagramIntoIframe(nextDiag.xml);
+    setCurrentDiagramId(remaining[0].id);
+    setNodes(remaining[0].nodes || []);
+    setEdges(remaining[0].edges || []);
   };
 
-  // Manual save trigger
-  const handleManualSave = () => {
-    if (!iframeRef.current || !iframeRef.current.contentWindow) return;
-    setSaveStatus('saving');
-    try {
-      iframeRef.current.contentWindow.postMessage(JSON.stringify({ action: 'save' }), '*');
-    } catch (e) {}
-  };
+  // Save node edit modal changes
+  const handleSaveNodeEdit = () => {
+    if (!editingNodeId) return;
 
-  // Request export from draw.io iframe
-  const handleExportRequest = (format) => {
-    setIsExportMenuOpen(false);
-    if (!currentDiagram) return;
+    setNodes(currentNodes => {
+      return currentNodes.map(n => {
+        if (n.id !== editingNodeId) return n;
 
-    if (format === 'drawio' || format === 'xml') {
-      downloadDiagramFile(currentDiagram.title, currentDiagram.xml, format);
-      return;
-    }
+        if (n.type === 'hierarchyNode') {
+          // Parse lines
+          const lines = editFormData.itemsText.split('\n').filter(l => l.trim().length > 0);
+          const parsedItems = lines.map((line, idx) => {
+            const raw = line.trim();
+            const isLast = raw.startsWith('└──') || idx === lines.length - 1;
+            const cleaned = raw.replace(/^[├└]──\s*/, '');
+            const matchDetails = cleaned.match(/^(.*?)\s*\((.*?)\)$/);
 
-    if (!iframeRef.current || !iframeRef.current.contentWindow) return;
-    try {
-      iframeRef.current.contentWindow.postMessage(JSON.stringify({
-        action: 'export',
-        format: format, // 'png' | 'svg'
-        xml: currentDiagram.xml
-      }), '*');
-    } catch (e) {
-      console.error('Export request failed:', e);
-    }
-  };
+            let icon = '';
+            let name = cleaned;
+            let details = '';
 
-  // Import .drawio or .xml file
-  const handleFileImport = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
+            if (matchDetails) {
+              name = matchDetails[1];
+              details = matchDetails[2];
+            }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const xmlContent = event.target.result;
-      const importedTitle = file.name.replace(/\.(drawio|xml)$/i, '');
+            const iconMatch = name.match(/^([\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|\p{Emoji})\s*(.*)$/u);
+            if (iconMatch) {
+              icon = iconMatch[1];
+              name = iconMatch[2];
+            }
 
-      const newDiag = {
-        id: 'diag_' + Date.now(),
-        title: importedTitle || 'Импортированная схема',
-        xml: xmlContent,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+            // Estimate level from leading whitespace
+            const leadingSpaces = line.search(/\S|$/);
+            const level = Math.max(0, Math.floor(leadingSpaces / 2));
 
-      const updated = saveOfflineDiagram(newDiag);
-      setDiagrams(updated);
-      setCurrentDiagramId(newDiag.id);
-      currentDiagramRef.current = newDiag;
-      loadDiagramIntoIframe(newDiag.xml);
-    };
-    reader.readAsText(file);
-    e.target.value = null;
+            return { level, isLast, icon, name: name.trim(), details: details.trim() };
+          });
+
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              rootPath: editFormData.rootPath || n.data.rootPath,
+              tag: editFormData.tag || 'PREFAB',
+              items: parsedItems.length > 0 ? parsedItems : n.data.items
+            }
+          };
+        } else {
+          const lines = editFormData.linesText.split('\n').filter(l => l.trim().length > 0);
+          const parsedLines = lines.map(line => {
+            const raw = line.trim();
+            const prefix = raw.startsWith('└──') ? '└── ' : '├── ';
+            const cleaned = raw.replace(/^[├└]──\s*/, '');
+            const commentSplit = cleaned.split('//');
+            return {
+              prefix,
+              code: commentSplit[0]?.trim() || '',
+              comment: commentSplit[1]?.trim() || ''
+            };
+          });
+
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              title: editFormData.title || n.data.title,
+              nodeType: editFormData.nodeType || 'SCRIPT',
+              lines: parsedLines.length > 0 ? parsedLines : n.data.lines
+            }
+          };
+        }
+      });
+    });
+
+    setIsNodeEditModalOpen(false);
+    triggerAutoSave();
   };
 
   // Fullscreen toggle
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      if (workspaceContainerRef.current?.requestFullscreen) {
-        workspaceContainerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      }
+      workspaceContainerRef.current?.requestFullscreen?.();
+      setIsFullscreen(true);
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
+      document.exitFullscreen?.();
+      setIsFullscreen(false);
     }
   };
 
   useEffect(() => {
-    const handleFsChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
+    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handleFsChange);
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
+
+  const activeDiagram = diagrams.find(d => String(d.id) === String(currentDiagramId)) || diagrams[0];
 
   return (
     <div
       ref={workspaceContainerRef}
       className={`diagram-workspace-container ${isFullscreen ? 'diagram-fullscreen' : ''}`}
     >
-      {/* Top Header Bar for Diagrams */}
+      {/* Top Header Bar */}
       <div className="diagram-top-bar">
-        {/* Left: Brand / Title / Selector */}
         <div className="diagram-bar-left">
           <div className="diagram-brand-pill">
             <span className="material-symbols-outlined" style={{ color: 'var(--github-blue-text)' }}>
               account_tree
             </span>
-            <span className="diagram-brand-title">Схемы & Архитектура</span>
+            <span className="diagram-brand-title">Иерархия & Схемы</span>
           </div>
 
           <div className="diagram-selector-wrapper">
@@ -369,7 +449,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
               className="diagram-selector-dropdown"
               value={currentDiagramId || ''}
               onChange={(e) => handleSelectDiagram(e.target.value)}
-              title="Выберите схему для редактирования"
+              title="Выберите схему"
             >
               {diagrams.map(diag => (
                 <option key={diag.id} value={diag.id}>
@@ -378,30 +458,13 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
               ))}
             </select>
           </div>
-
-          <button
-            className="btn-diagram-tool"
-            onClick={() => {
-              setRenameValue(currentDiagram ? currentDiagram.title : '');
-              setIsRenameModalOpen(true);
-            }}
-            title="Переименовать схему"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>edit</span>
-          </button>
         </div>
 
-        {/* Center: Save Status Indicator */}
+        {/* Center: Save Status */}
         <div className="diagram-bar-center">
           <div className={`diagram-save-status ${saveStatus}`}>
             <span className="status-dot"></span>
-            <span>
-              {saveStatus === 'saving'
-                ? 'Синхронизация...'
-                : saveStatus === 'unsaved'
-                ? 'Несохраненные правки'
-                : 'Сохранено'}
-            </span>
+            <span>{saveStatus === 'saving' ? 'Синхронизация...' : '✓ Сохранено'}</span>
           </div>
         </div>
 
@@ -409,10 +472,25 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         <div className="diagram-bar-right">
           <button
             className="btn-diagram-tool btn-primary-diagram"
-            onClick={() => {
-              setNewTitle('');
-              setIsNewModalOpen(true);
-            }}
+            onClick={handleAddHierarchyNode}
+            title="Добавить блок префаба / иерархии объектов"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>account_tree</span>
+            <span>+ Префаб</span>
+          </button>
+
+          <button
+            className="btn-diagram-tool"
+            onClick={handleAddLogicNode}
+            title="Добавить блок алгоритма / логики"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--github-yellow)' }}>code</span>
+            <span>+ Логика</span>
+          </button>
+
+          <button
+            className="btn-diagram-tool"
+            onClick={() => { setNewTitle(''); setIsNewModalOpen(true); }}
             title="Создать новую схему"
           >
             <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>add</span>
@@ -420,63 +498,8 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
           </button>
 
           <button
-            className="btn-diagram-tool"
-            onClick={handleManualSave}
-            title="Сохранить изменения"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--github-green-text)' }}>save</span>
-            <span>Сохранить</span>
-          </button>
-
-          <button
-            className="btn-diagram-tool"
-            onClick={() => fileInputRef.current?.click()}
-            title="Импортировать схему из .drawio или .xml"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>file_upload</span>
-            <span>Импорт</span>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".drawio,.xml"
-            style={{ display: 'none' }}
-            onChange={handleFileImport}
-          />
-
-          {/* Export Dropdown */}
-          <div className="diagram-export-wrapper" style={{ position: 'relative' }}>
-            <button
-              className="btn-diagram-tool"
-              onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-              title="Экспортировать схему"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>file_download</span>
-              <span>Экспорт</span>
-              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>arrow_drop_down</span>
-            </button>
-
-            {isExportMenuOpen && (
-              <div className="diagram-dropdown-menu">
-                <button onClick={() => handleExportRequest('png')}>
-                  <span className="material-symbols-outlined">image</span>
-                  <span>Экспорт в PNG</span>
-                </button>
-                <button onClick={() => handleExportRequest('svg')}>
-                  <span className="material-symbols-outlined">code</span>
-                  <span>Экспорт в SVG</span>
-                </button>
-                <button onClick={() => handleExportRequest('drawio')}>
-                  <span className="material-symbols-outlined">description</span>
-                  <span>Файл .drawio (XML)</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          <button
             className="btn-diagram-tool btn-danger-tool"
-            onClick={handleDeleteCurrentDiagram}
+            onClick={handleDeleteDiagram}
             title="Удалить текущую схему"
           >
             <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
@@ -494,18 +517,33 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         </div>
       </div>
 
-      {/* Editor Iframe Area (Embedded diagrams.net with jgraph dark mode) */}
+      {/* React Flow Canvas */}
       <div className="diagram-canvas-viewport">
-        <iframe
-          ref={iframeRef}
-          className="diagram-iframe"
-          title="jgraph-diagrams-editor"
-          src="https://embed.diagrams.net/?embed=1&ui=dark&proto=json&spin=1&libraries=1&lang=ru&saveAndExit=0&noExitBtn=1"
-          allow="clipboard-read; clipboard-write"
-        />
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={handleNodesChange}
+          onEdgesChange={handleEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          fitView
+          colorMode="dark"
+          defaultEdgeOptions={{
+            animated: true,
+            style: { stroke: '#58a6ff', strokeWidth: 2 }
+          }}
+        >
+          <Background variant="dots" gap={18} size={1.2} color="#30363d" />
+          <Controls className="react-flow-custom-controls" />
+          <MiniMap
+            className="react-flow-custom-minimap"
+            nodeColor={() => '#1f242c'}
+            maskColor="rgba(13, 17, 23, 0.75)"
+          />
+        </ReactFlow>
       </div>
 
-      {/* Modal: New Diagram with Template Chooser */}
+      {/* Modal: New Diagram with Presets */}
       {isNewModalOpen && (
         <div className="modal-overlay" onClick={() => setIsNewModalOpen(false)}>
           <div className="modal-content diagram-modal" onClick={(e) => e.stopPropagation()}>
@@ -514,20 +552,18 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
                 <span className="material-symbols-outlined" style={{ color: 'var(--github-blue-text)' }}>
                   dashboard_customize
                 </span>
-                <h2 className="modal-title">Создать новую диаграмму</h2>
+                <h2 className="modal-title">Создать новую схему</h2>
               </div>
-              <button className="btn-close-modal" onClick={() => setIsNewModalOpen(false)}>
-                ✕
-              </button>
+              <button className="btn-close-modal" onClick={() => setIsNewModalOpen(false)}>✕</button>
             </div>
 
             <div className="modal-body">
               <div className="form-group">
-                <label className="form-label">Название диаграммы</label>
+                <label className="form-label">Название схемы</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Например: Игровой цикл, Сетевой протокол, Схема БД..."
+                  placeholder="Например: Игрок и Инвентарь, Архитектура Босса..."
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   autoFocus
@@ -535,22 +571,22 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Выберите стартовый шаблон</label>
+                <label className="form-label">Выберите стартовый пресет</label>
                 <div className="diagram-templates-grid">
-                  {DIAGRAM_TEMPLATES.map(tpl => (
+                  {STARTER_PRESETS.map(preset => (
                     <div
-                      key={tpl.id}
-                      className={`diagram-template-card ${selectedTemplateId === tpl.id ? 'selected' : ''}`}
-                      onClick={() => setSelectedTemplateId(tpl.id)}
+                      key={preset.id}
+                      className={`diagram-template-card ${selectedPresetId === preset.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedPresetId(preset.id)}
                     >
                       <div className="template-card-icon">
-                        <span className="material-symbols-outlined">{tpl.icon}</span>
+                        <span className="material-symbols-outlined">account_tree</span>
                       </div>
                       <div className="template-card-info">
-                        <div className="template-card-title">{tpl.title}</div>
-                        <div className="template-card-desc">{tpl.description}</div>
+                        <div className="template-card-title">{preset.title}</div>
+                        <div className="template-card-desc">{preset.description}</div>
                       </div>
-                      {selectedTemplateId === tpl.id && (
+                      {selectedPresetId === preset.id && (
                         <span className="material-symbols-outlined template-selected-badge">check_circle</span>
                       )}
                     </div>
@@ -560,44 +596,79 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             </div>
 
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setIsNewModalOpen(false)}>
-                Отмена
-              </button>
-              <button className="btn btn-primary" onClick={handleCreateDiagram}>
-                <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', marginRight: '4px' }}>
-                  add_circle
-                </span>
-                Создать диаграмму
-              </button>
+              <button className="btn btn-secondary" onClick={() => setIsNewModalOpen(false)}>Отмена</button>
+              <button className="btn btn-primary" onClick={handleCreateDiagram}>Создать схему</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Rename Diagram */}
-      {isRenameModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsRenameModalOpen(false)}>
-          <div className="modal-content" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
+      {/* Modal: Edit Node Content */}
+      {isNodeEditModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsNodeEditModalOpen(false)}>
+          <div className="modal-content diagram-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">Переименовать схему</h2>
-              <button className="btn-close-modal" onClick={() => setIsRenameModalOpen(false)}>✕</button>
+              <h2 className="modal-title">Редактирование содержимого блока</h2>
+              <button className="btn-close-modal" onClick={() => setIsNodeEditModalOpen(false)}>✕</button>
             </div>
+
             <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">Новое название</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveRename(); }}
-                  autoFocus
-                />
-              </div>
+              {editFormData.type === 'hierarchyNode' ? (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Путь к ассету / префабу</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={editFormData.rootPath}
+                      onChange={(e) => setEditFormData({ ...editFormData, rootPath: e.target.value })}
+                      placeholder="Assets/Prefabs/Player/Player.prefab"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Иерархия объектов и компонентов (по строкам)</label>
+                    <div className="form-hint" style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                      Формат строки: <code>└── 🟢 ИмяОбъекта (Компонент1, Компонент2)</code>
+                    </div>
+                    <textarea
+                      rows={8}
+                      className="form-control"
+                      style={{ fontFamily: 'Consolas, monospace', fontSize: '0.88rem' }}
+                      value={editFormData.itemsText}
+                      onChange={(e) => setEditFormData({ ...editFormData, itemsText: e.target.value })}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Заголовок / Имя скрипта</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={editFormData.title}
+                      onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Код и комментарии логики (по строкам)</label>
+                    <textarea
+                      rows={6}
+                      className="form-control"
+                      style={{ fontFamily: 'Consolas, monospace', fontSize: '0.88rem' }}
+                      value={editFormData.linesText}
+                      onChange={(e) => setEditFormData({ ...editFormData, linesText: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
             </div>
+
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setIsRenameModalOpen(false)}>Отмена</button>
-              <button className="btn btn-primary" onClick={handleSaveRename}>Сохранить</button>
+              <button className="btn btn-secondary" onClick={() => setIsNodeEditModalOpen(false)}>Отмена</button>
+              <button className="btn btn-primary" onClick={handleSaveNodeEdit}>Применить изменения</button>
             </div>
           </div>
         </div>

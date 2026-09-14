@@ -2497,3 +2497,250 @@ body {
     font-size: 1.1rem;
 }
 
+/* ==========================================================
+   GAMEDEV HIERARCHY & CODE NODE CARDS (EXACT SCREENSHOT DESIGN)
+   ========================================================== */
+.gamedev-hierarchy-card {
+    background: #111419 !important;
+    border: 1px solid #2d333b !important;
+    border-radius: 12px !important;
+    padding: 8px 16px 14px 16px !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
+    min-width: 480px;
+    max-width: 680px;
+    position: relative;
+    cursor: grab;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    user-select: text;
+}
+
+.gamedev-hierarchy-card:hover {
+    border-color: #444c56 !important;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(88, 166, 255, 0.15) !important;
+}
+
+.gamedev-hierarchy-card.selected {
+    border-color: #58a6ff !important;
+    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3), 0 16px 36px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Top Action Bar with @ and Copy Icon */
+.card-top-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-height: 20px;
+    margin-bottom: 6px;
+    user-select: none;
+}
+
+.card-type-badge,
+.card-custom-badge {
+    margin-right: auto;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(56, 139, 253, 0.12);
+    color: #58a6ff;
+    border: 1px solid rgba(56, 139, 253, 0.25);
+    text-transform: uppercase;
+}
+
+.card-icons-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-action-icon-btn {
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    font-size: 0.85rem;
+    font-family: inherit;
+    font-weight: 600;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.card-action-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f0f6fc;
+}
+
+.card-action-icon-btn.copied {
+    color: #3fb950;
+    font-weight: bold;
+}
+
+/* Tree Content Styling */
+.card-tree-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tree-root-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, 'SF Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #e3b341;
+}
+
+.folder-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.root-path-text {
+    color: #e3b341;
+    letter-spacing: -0.1px;
+}
+
+/* Tree Rows */
+.tree-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, 'SF Mono', monospace;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.tree-item-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    white-space: pre;
+}
+
+.tree-branch-prefix {
+    color: #57606a;
+    font-weight: normal;
+    user-select: none;
+    letter-spacing: -0.5px;
+}
+
+.item-symbol-icon {
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 0.95rem;
+    vertical-align: middle;
+}
+
+.item-name-text {
+    color: #f0f6fc;
+    font-weight: 500;
+}
+
+.item-details-text {
+    color: #8b949e;
+    margin-left: 6px;
+    font-size: 0.84rem;
+    font-weight: normal;
+}
+
+/* Logic Step Specific Styling */
+.logic-root-row {
+    color: #58a6ff;
+}
+
+.logic-method-name {
+    color: #58a6ff;
+}
+
+.logic-code-text {
+    color: #79c0ff;
+    background: transparent;
+    font-size: 0.88rem;
+    padding: 0;
+}
+
+.logic-comment {
+    color: #7ee787;
+}
+
+/* Diagram Connectors (Handles) */
+.diagram-handle {
+    width: 11px !important;
+    height: 11px !important;
+    border-radius: 50% !important;
+    background: #58a6ff !important;
+    border: 2px solid #111419 !important;
+    opacity: 0.7;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.diagram-handle:hover {
+    opacity: 1;
+    transform: scale(1.4);
+    box-shadow: 0 0 10px #58a6ff;
+}
+
+.handle-left {
+    left: -6px !important;
+}
+
+.handle-right {
+    right: -6px !important;
+}
+
+.handle-top {
+    top: -6px !important;
+}
+
+.handle-bottom {
+    bottom: -6px !important;
+}
+
+/* React Flow Canvas Overrides */
+.react-flow__pane {
+    cursor: grab;
+}
+
+.react-flow__pane.dragging {
+    cursor: grabbing;
+}
+
+.react-flow-custom-controls {
+    background: #161b22 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    overflow: hidden;
+}
+
+.react-flow-custom-controls button {
+    background: #161b22 !important;
+    border-bottom: 1px solid #30363d !important;
+    color: #c9d1d9 !important;
+    fill: #c9d1d9 !important;
+}
+
+.react-flow-custom-controls button:hover {
+    background: #21262d !important;
+    color: #58a6ff !important;
+    fill: #58a6ff !important;
+}
+
+.react-flow-custom-minimap {
+    background: #111419 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+
