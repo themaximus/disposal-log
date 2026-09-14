@@ -259,22 +259,6 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
     handleAddSiblingRow(e, targetIdx);
   };
 
-  const handleQuickAddSubClick = (e) => {
-    e.stopPropagation();
-    if (treeItems.length === 0) {
-      handleQuickAddClick(e);
-      return;
-    }
-    const targetParentIdx = editingRowIdx !== null 
-      ? editingRowIdx 
-      : (selectedRowIdx !== null && selectedRowIdx < treeItems.length ? selectedRowIdx : treeItems.length - 1);
-
-    if (editingRowIdx !== null && onUpdateHierarchyItem && rowDraft.name.trim()) {
-      onUpdateHierarchyItem(id, editingRowIdx, rowDraft);
-    }
-    handleAddSubRow(e, targetParentIdx);
-  };
-
   const currentScale = data.scale || 1;
   const cardStyle = {
     background: data.customBg,
@@ -402,25 +386,25 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
 
       {/* Top action bar */}
       <div className="card-top-action-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {data.tag && (
-            <span
-              className="card-custom-badge nodrag"
-              onClick={handleTagClick}
-              style={{
-                cursor: 'pointer',
-                background: data.badgeBg,
-                color: data.badgeText,
-                borderColor: data.badgeText
-              }}
-              title="Кликните для изменения привязки"
-            >
-              {data.tag}
-            </span>
-          )}
+        {data.tag && (
+          <span
+            className="card-custom-badge nodrag"
+            onClick={handleTagClick}
+            style={{
+              cursor: 'pointer',
+              background: data.badgeBg,
+              color: data.badgeText,
+              borderColor: data.badgeText
+            }}
+            title="Кликните для изменения привязки"
+          >
+            {data.tag}
+          </span>
+        )}
 
+        <div className="card-icons-group nodrag">
           {/* Quick scale control */}
-          <div className="node-scale-control nodrag">
+          <div className="node-scale-control">
             <button
               type="button"
               className="btn-scale-step"
@@ -454,9 +438,6 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
               +
             </button>
           </div>
-        </div>
-
-        <div className="card-icons-group nodrag">
           <button
             className="card-action-icon-btn"
             onClick={handleTagClick}
@@ -708,25 +689,16 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
           })}
         </div>
 
-        {/* Dual Quick Add Buttons: Sibling vs Nested Sub-Tree */}
+        {/* Quick Add Button */}
         <div className="card-add-buttons-bar nodrag">
           <button
             type="button"
             className="btn-card-add"
             onClick={handleQuickAddClick}
-            title="Добавить строку на текущем уровне"
+            title="Добавить строку"
           >
             <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>add</span>
             <span>+ Элемент</span>
-          </button>
-          <button
-            type="button"
-            className="btn-card-add btn-add-sub"
-            onClick={handleQuickAddSubClick}
-            title="Добавить вложенную строку (дочернее древо ↳)"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>subdirectory_arrow_right</span>
-            <span>↳ + Вложенная строка (Древо)</span>
           </button>
         </div>
       </div>

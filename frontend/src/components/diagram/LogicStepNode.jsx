@@ -215,22 +215,6 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
     handleAddSiblingRow(e, targetIdx);
   };
 
-  const handleQuickAddSubClick = (e) => {
-    e.stopPropagation();
-    if (lines.length === 0) {
-      handleQuickAddClick(e);
-      return;
-    }
-    const targetParentIdx = editingRowIdx !== null 
-      ? editingRowIdx 
-      : (selectedRowIdx !== null && selectedRowIdx < lines.length ? selectedRowIdx : lines.length - 1);
-
-    if (editingRowIdx !== null && onUpdateLogicLine && lineDraft.code.trim()) {
-      onUpdateLogicLine(id, editingRowIdx, lineDraft);
-    }
-    handleAddSubRow(e, targetParentIdx);
-  };
-
   const currentScale = data.scale || 1;
   const cardStyle = {
     background: data.customBg,
@@ -300,23 +284,23 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
       <Handle type="target" position={Position.Bottom} id="target-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
 
       <div className="card-top-action-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span
-            className="card-type-badge nodrag"
-            onClick={handleTagClick}
-            style={{
-              cursor: 'pointer',
-              background: data.badgeBg,
-              color: data.badgeText,
-              borderColor: data.badgeText
-            }}
-            title="Кликните для изменения тега"
-          >
-            {nodeType}
-          </span>
+        <span
+          className="card-type-badge nodrag"
+          onClick={handleTagClick}
+          style={{
+            cursor: 'pointer',
+            background: data.badgeBg,
+            color: data.badgeText,
+            borderColor: data.badgeText
+          }}
+          title="Кликните для изменения тега"
+        >
+          {nodeType}
+        </span>
 
+        <div className="card-icons-group nodrag">
           {/* Quick scale control */}
-          <div className="node-scale-control nodrag">
+          <div className="node-scale-control">
             <button
               type="button"
               className="btn-scale-step"
@@ -350,8 +334,6 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
               +
             </button>
           </div>
-        </div>
-        <div className="card-icons-group nodrag">
           <button className="card-action-icon-btn" onClick={handleTagClick} title="Привязать к задаче или тегу (@)">@</button>
           <button className={`card-action-icon-btn ${copied ? 'copied' : ''}`} onClick={handleCopy} title="Копировать код (❐)">
             {copied ? '✓' : (
@@ -584,25 +566,16 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
           })}
         </div>
 
-        {/* Dual Quick Add Buttons: Sibling vs Nested Tree */}
+        {/* Quick Add Button */}
         <div className="card-add-buttons-bar nodrag">
           <button
             type="button"
             className="btn-card-add"
             onClick={handleQuickAddClick}
-            title="Добавить шаг логики на текущем уровне"
+            title="Добавить действие"
           >
             <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>add</span>
             <span>+ Действие</span>
-          </button>
-          <button
-            type="button"
-            className="btn-card-add btn-add-sub"
-            onClick={handleQuickAddSubClick}
-            title="Добавить вложенный шаг (дочернее древо логики ↳)"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>subdirectory_arrow_right</span>
-            <span>↳ + Вложенная строка (Древо)</span>
           </button>
         </div>
       </div>

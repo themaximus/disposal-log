@@ -2679,6 +2679,17 @@ select,
     align-items: center;
     gap: 4px;
     cursor: default;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.gamedev-hierarchy-card:hover .card-icons-group,
+.gamedev-hierarchy-card.selected .card-icons-group,
+.logic-step-card:hover .card-icons-group,
+.logic-step-card.selected .card-icons-group {
+    opacity: 1;
+    pointer-events: all;
 }
 
 .card-action-icon-btn {
@@ -2811,12 +2822,19 @@ select,
     border-radius: 50% !important;
     background: #58a6ff !important;
     border: 2px solid #111419 !important;
-    opacity: 0.7;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.gamedev-hierarchy-card:hover .diagram-handle,
+.gamedev-hierarchy-card.selected .diagram-handle,
+.react-flow.connecting .diagram-handle,
+.react-flow--connecting .diagram-handle {
+    opacity: 0.75;
 }
 
 .diagram-handle:hover {
-    opacity: 1;
+    opacity: 1 !important;
     transform: scale(1.4);
     box-shadow: 0 0 10px #58a6ff;
 }
@@ -2951,30 +2969,40 @@ select,
     background: rgba(88, 166, 255, 0.08);
 }
 
-/* Dual Quick Add buttons at bottom of card */
+/* Quick Add button bar at bottom of card - appears on card hover / selected */
 .card-add-buttons-bar {
     display: flex;
     align-items: center;
-    gap: 6px;
     margin-top: 8px;
     width: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.gamedev-hierarchy-card:hover .card-add-buttons-bar,
+.gamedev-hierarchy-card.selected .card-add-buttons-bar,
+.logic-step-card:hover .card-add-buttons-bar,
+.logic-step-card.selected .card-add-buttons-bar {
+    opacity: 1;
+    pointer-events: all;
 }
 
 .btn-card-add {
-    flex: 1;
+    width: 100%;
     background: rgba(255, 255, 255, 0.02);
     border: 1px dashed rgba(255, 255, 255, 0.16);
-    border-radius: 5px;
+    border-radius: 6px;
     color: #8b949e;
-    padding: 5px 8px;
-    font-size: 0.74rem;
+    padding: 6px 10px;
+    font-size: 0.76rem;
     font-family: inherit;
     font-weight: 500;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 5px;
     transition: all 0.15s ease;
     white-space: nowrap;
     user-select: none;
@@ -2984,18 +3012,6 @@ select,
     border-color: #58a6ff;
     color: #58a6ff;
     background: rgba(88, 166, 255, 0.08);
-}
-
-.btn-card-add.btn-add-sub {
-    border-color: rgba(188, 140, 255, 0.28);
-    color: #bc8cff;
-    background: rgba(188, 140, 255, 0.04);
-}
-
-.btn-card-add.btn-add-sub:hover {
-    border-color: #bc8cff;
-    color: #d2a8ff;
-    background: rgba(188, 140, 255, 0.12);
 }
 
 /* Node Editor Modal Styles */
@@ -3323,7 +3339,8 @@ select,
 
 .tree-item-interactive .row-hover-actions {
     display: inline-flex;
-    opacity: 0.55;
+    opacity: 0;
+    pointer-events: none;
     align-items: center;
     gap: 4px;
     margin-left: auto;
@@ -3331,8 +3348,10 @@ select,
     transition: opacity 0.15s ease;
 }
 
-.tree-item-interactive:hover .row-hover-actions {
+.tree-item-interactive:hover .row-hover-actions,
+.tree-item-row.row-selected .row-hover-actions {
     opacity: 1;
+    pointer-events: all;
 }
 
 .row-hover-pencil {
@@ -4748,6 +4767,15 @@ select,
     align-items: center;
     gap: 4px;
     cursor: default;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.diagram-section-node:hover .section-header-actions,
+.diagram-section-node.is-selected .section-header-actions {
+    opacity: 1;
+    pointer-events: all;
 }
 
 .section-action-btn {
