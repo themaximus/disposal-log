@@ -95,6 +95,7 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
       onUpdateLogicLine(id, idx, lineDraft);
     }
     setEditingRowIdx(null);
+    setSelectedRowIdx(null);
   };
 
   const handleSaveAndAddSub = (idx) => {
@@ -170,6 +171,7 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
     } else if (e.key === 'Escape') {
       e.stopPropagation();
       setEditingRowIdx(null);
+      setSelectedRowIdx(null);
     }
   };
 
@@ -179,6 +181,7 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
       onDeleteLogicLine(id, idx);
     }
     setEditingRowIdx(null);
+    setSelectedRowIdx(null);
   };
 
   const handleSaveTitle = () => {

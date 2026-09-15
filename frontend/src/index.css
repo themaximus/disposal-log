@@ -3387,8 +3387,7 @@ select,
     white-space: nowrap;
 }
 
-.tree-item-interactive:hover .row-hover-actions,
-.tree-item-row.row-selected .row-hover-actions {
+.tree-item-interactive:hover .row-hover-actions {
     opacity: 1;
     pointer-events: all;
 }

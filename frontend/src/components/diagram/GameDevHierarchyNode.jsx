@@ -139,6 +139,7 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
       onUpdateHierarchyItem(id, idx, rowDraft);
     }
     setEditingRowIdx(null);
+    setSelectedRowIdx(null);
   };
 
   const handleAddSubRow = (e, idx) => {
@@ -207,6 +208,7 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
     } else if (e.key === 'Escape') {
       e.stopPropagation();
       setEditingRowIdx(null);
+      setSelectedRowIdx(null);
     }
   };
 
@@ -216,6 +218,7 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
       onDeleteHierarchyItem(id, idx);
     }
     setEditingRowIdx(null);
+    setSelectedRowIdx(null);
   };
 
   const handleSaveRoot = () => {
