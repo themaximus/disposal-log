@@ -23,6 +23,8 @@ function DiagramToolbar({
   onOpenPrefabsModal,
   onOpenExportModal,
   onOpenImportModal,
+  snapToGrid = true,
+  onToggleSnapToGrid,
   isFullscreen,
   onToggleFullscreen
 }) {
@@ -118,6 +120,19 @@ function DiagramToolbar({
             <span className="material-symbols-outlined" style={{ fontSize: '1.05rem' }}>select_all</span>
           </button>
         </div>
+
+        {/* Snap to Grid Toggle */}
+        <button
+          type="button"
+          className={`btn-diagram-tool btn-grid-toggle ${snapToGrid ? 'btn-tool-active' : ''}`}
+          onClick={onToggleSnapToGrid}
+          title={snapToGrid ? 'Прилипание к сетке: ВКЛ (кликните, чтобы отключить)' : 'Прилипание к сетке: ВЫКЛ (кликните, чтобы включить)'}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', color: snapToGrid ? '#58a6ff' : '#8b949e' }}>
+            {snapToGrid ? 'grid_on' : 'grid_off'}
+          </span>
+          <span>Сетка</span>
+        </button>
 
         <button
           className="btn-diagram-tool btn-primary-diagram"

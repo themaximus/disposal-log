@@ -4,6 +4,7 @@ import {
   MiniMap,
   Controls,
   Background,
+  ViewportPortal,
   useNodesState,
   useEdgesState
 } from '@xyflow/react';
@@ -21,6 +22,7 @@ import NodeEditModal from './diagram/modals/NodeEditModal';
 import TagModal from './diagram/modals/TagModal';
 import ExportDiagramModal from './diagram/modals/ExportDiagramModal';
 import ImportDiagramModal from './diagram/modals/ImportDiagramModal';
+import SmartAlignmentGuides from './diagram/SmartAlignmentGuides';
 import DiagramToolbar from './diagram/DiagramToolbar';
 import DiagramFloatingSelectionBar from './diagram/DiagramFloatingSelectionBar';
 import { DiagramActionsContext } from './DiagramActionsContext';
@@ -30,6 +32,7 @@ import useDiagramData from '../hooks/useDiagramData';
 import useDiagramGrouping from '../hooks/useDiagramGrouping';
 import useDiagramNodeActions from '../hooks/useDiagramNodeActions';
 import useDiagramHistory from '../hooks/useDiagramHistory';
+import useDiagramSmartGuides from '../hooks/useDiagramSmartGuides';
 
 // Static types and props registry for React Flow performance
 const nodeTypes = {
@@ -76,23 +79,8 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
-  // Hook 0: Diagram Undo/Redo History (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y)
-  const {
-    takeSnapshot,
-    undo,
-    redo,
-    clearHistory,
-    canUndo,
-    canRedo
-  } = useDiagramHistory({
-    nodes,
-    setNodes,
-    edges,
-    setEdges,
-    triggerAutoSave: () => {
-      if (triggerAutoSaveRef.current) triggerAutoSaveRef.current();
-    }
-  });
+  // Snap-to-Grid & Smart Alignment Guides state
+  const [snapToGrid, setSnapToGrid] = useState(true);
 
   // Hook 1: Diagram Data, Sync & Autosave
   const {
@@ -118,6 +106,37 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
 
   const triggerAutoSaveRef = useRef(triggerAutoSave);
   triggerAutoSaveRef.current = triggerAutoSave;
+
+  // Hook: Smart Alignment Guides & Grid Snapping
+  const {
+    guides,
+    handleNodesChangeWithSnapping,
+    clearGuides
+  } = useDiagramSmartGuides({
+    nodesRef,
+    snapToGrid,
+    gridSize: 18,
+    snapThreshold: 8,
+    enabled: true
+  });
+
+  // Hook 0: Diagram Undo/Redo History (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y)
+  const {
+    takeSnapshot,
+    undo,
+    redo,
+    clearHistory,
+    canUndo,
+    canRedo
+  } = useDiagramHistory({
+    nodes,
+    setNodes,
+    edges,
+    setEdges,
+    triggerAutoSave: () => {
+      if (triggerAutoSaveRef.current) triggerAutoSaveRef.current();
+    }
+  });
 
   const handleSelectDiagramWithHistory = useCallback(async (id) => {
     clearHistory();
@@ -160,16 +179,10 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     setSelectedNodes(selNodes || []);
   }, []);
 
-  // Flow change handlers with autosave triggers
+  // Flow change handlers with smart snapping and autosave triggers
   const handleNodesChange = useCallback((changes) => {
-    onNodesChange(changes);
-    const hasPositionOrRemove = changes.some(
-      c => (c.type === 'position' && c.dragging === false) || c.type === 'remove' || c.type === 'dimensions'
-    );
-    if (hasPositionOrRemove) {
-      triggerAutoSave();
-    }
-  }, [onNodesChange, triggerAutoSave]);
+    handleNodesChangeWithSnapping(changes, onNodesChange, triggerAutoSave);
+  }, [handleNodesChangeWithSnapping, onNodesChange, triggerAutoSave]);
 
   const handleEdgesChange = useCallback((changes) => {
     onEdgesChange(changes);
@@ -330,6 +343,8 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         onOpenPrefabsModal={handleOpenPrefabsModal}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenImportModal={() => setIsImportModalOpen(true)}
+        snapToGrid={snapToGrid}
+        onToggleSnapToGrid={() => setSnapToGrid(prev => !prev)}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
       />
@@ -345,7 +360,11 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             onConnect={nodeActions.onConnect}
             onInit={setReactFlowInstance}
             onNodeDragStart={handleNodeDragStart}
+            onNodeDragStop={clearGuides}
             onSelectionDragStart={handleSelectionDragStart}
+            onSelectionDragStop={clearGuides}
+            snapToGrid={snapToGrid}
+            snapGrid={[18, 18]}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
@@ -371,6 +390,10 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
               nodeColor={() => '#1f242c'}
               maskColor="rgba(13, 17, 23, 0.75)"
             />
+            {/* Smart alignment guidelines overlay positioned inside React Flow canvas viewport */}
+            <ViewportPortal>
+              <SmartAlignmentGuides guides={guides} />
+            </ViewportPortal>
           </ReactFlow>
 
           {/* Floating selection bar when multiple nodes are selected */}

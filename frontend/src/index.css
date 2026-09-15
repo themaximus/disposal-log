@@ -2412,6 +2412,25 @@ body {
     background: rgba(218, 54, 51, 0.15) !important;
 }
 
+.btn-grid-toggle.btn-tool-active {
+    background: rgba(56, 139, 253, 0.15) !important;
+    border-color: #388bfd !important;
+    color: #58a6ff !important;
+}
+
+.btn-grid-toggle:not(.btn-tool-active) {
+    opacity: 0.75;
+}
+
+.smart-alignment-guides-overlay {
+    pointer-events: none !important;
+    user-select: none !important;
+}
+
+.smart-guide-group {
+    pointer-events: none;
+}
+
 .diagram-dropdown-menu {
     position: absolute;
     top: calc(100% + 4px);
