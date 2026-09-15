@@ -16,6 +16,7 @@ function DiagramToolbar({
   setInteractionMode,
   onAddHierarchyNode,
   onAddLogicNode,
+  onAddTextNode,
   onAddEmptySection,
   selectedGroupableCount = 0,
   onGroupSelected,
@@ -134,6 +135,15 @@ function DiagramToolbar({
         >
           <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--github-yellow)' }}>code</span>
           <span>+ Логика</span>
+        </button>
+
+        <button
+          className="btn-diagram-tool btn-text-block-tool"
+          onClick={onAddTextNode}
+          title="Добавить текстовый блок / заметку с точками связей"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#58a6ff' }}>notes</span>
+          <span>+ Текст</span>
         </button>
 
         <button

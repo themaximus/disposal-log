@@ -5944,3 +5944,160 @@ select,
     color: #8b949e;
 }
 
+/* ==========================================================================
+   Text / Note Node (Simple Label / Note Block with standard card styling)
+   ========================================================================== */
+
+.text-card-node {
+    min-width: 140px;
+    min-height: 70px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 14px;
+    box-sizing: border-box;
+}
+
+.text-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    user-select: none;
+}
+
+.text-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.text-card-icon {
+    font-size: 0.95rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.text-card-tag-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    color: #58a6ff;
+    background: rgba(88, 166, 255, 0.12);
+    border: 1px solid rgba(88, 166, 255, 0.28);
+    border-radius: 4px;
+    padding: 1px 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.text-card-tag-badge:hover {
+    background: rgba(88, 166, 255, 0.22);
+    border-color: #58a6ff;
+}
+
+.text-card-hover-actions {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.text-card-node:hover .text-card-hover-actions {
+    opacity: 1;
+}
+
+.btn-font-size {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.text-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.text-card-content-display {
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.5;
+    cursor: text;
+    padding: 2px 0;
+}
+
+.text-card-content-display.font-sm {
+    font-size: 0.8rem;
+}
+
+.text-card-content-display.font-md {
+    font-size: 0.92rem;
+}
+
+.text-card-content-display.font-lg {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.text-card-content-display.font-xl {
+    font-size: 1.28rem;
+    font-weight: 700;
+}
+
+.text-card-edit-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    height: 100%;
+}
+
+.text-card-inline-textarea {
+    width: 100%;
+    min-height: 60px;
+    background: #0d1117;
+    border: 1px solid #58a6ff;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    padding: 6px 8px;
+    outline: none;
+    resize: none;
+    box-sizing: border-box;
+    box-shadow: 0 0 8px rgba(88, 166, 255, 0.25);
+}
+
+.text-card-edit-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.text-card-shortcut-hint {
+    font-size: 0.68rem;
+    color: #8b949e;
+    margin-right: auto;
+}
+
+/* Text Node Resizer Handles */
+.text-resizer-line {
+    border-color: #58a6ff !important;
+}
+
+.text-resizer-handle {
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 2px !important;
+    background: #58a6ff !important;
+    border: 1px solid #ffffff !important;
+}
+
+

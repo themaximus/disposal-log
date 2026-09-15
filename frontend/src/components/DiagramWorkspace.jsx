@@ -12,6 +12,7 @@ import '@xyflow/react/dist/style.css';
 import GameDevHierarchyNode from './diagram/GameDevHierarchyNode';
 import LogicStepNode from './diagram/LogicStepNode';
 import SectionGroupNode from './diagram/SectionGroupNode';
+import TextCardNode from './diagram/TextCardNode';
 import DeletableEdge from './diagram/DeletableEdge';
 import BlockInspectorModal from './diagram/BlockInspectorModal';
 import BlockPrefabsModal from './diagram/BlockPrefabsModal';
@@ -34,7 +35,8 @@ import useDiagramHistory from '../hooks/useDiagramHistory';
 const nodeTypes = {
   hierarchyNode: GameDevHierarchyNode,
   logicNode: LogicStepNode,
-  sectionNode: SectionGroupNode
+  sectionNode: SectionGroupNode,
+  textNode: TextCardNode
 };
 
 const edgeTypes = {
@@ -255,6 +257,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     onAddLogicSiblingLine: nodeActions.handleAddLogicSiblingLine,
     onIndentLogicLine: nodeActions.handleIndentLogicLine,
     onUpdateLogicTitle: nodeActions.handleUpdateLogicTitle,
+    onUpdateTextNode: nodeActions.handleUpdateTextNode,
     onDeleteEdge: nodeActions.handleDeleteEdge,
     onUpdateEdgeLabel: nodeActions.handleUpdateEdgeLabel,
     onUngroup: handleUngroup,
@@ -286,6 +289,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     nodeActions.handleAddLogicSiblingLine,
     nodeActions.handleIndentLogicLine,
     nodeActions.handleUpdateLogicTitle,
+    nodeActions.handleUpdateTextNode,
     nodeActions.handleDeleteEdge,
     nodeActions.handleUpdateEdgeLabel,
     handleUngroup,
@@ -319,6 +323,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         setInteractionMode={setInteractionMode}
         onAddHierarchyNode={nodeActions.handleAddHierarchyNode}
         onAddLogicNode={nodeActions.handleAddLogicNode}
+        onAddTextNode={nodeActions.handleAddTextNode}
         onAddEmptySection={handleAddEmptySection}
         selectedGroupableCount={selectedGroupableCount}
         onGroupSelected={handleGroupSelectedNodes}

@@ -72,6 +72,47 @@ export function useDiagramNodeActions({
     triggerAutoSave();
   }, [setNodes, triggerAutoSave, takeSnapshot]);
 
+  // Add new Text / Note node
+  const handleAddTextNode = useCallback(() => {
+    if (takeSnapshot) takeSnapshot();
+    const newId = 'node_text_' + Date.now();
+    const newNode = {
+      id: newId,
+      type: 'textNode',
+      position: { x: 180 + Math.random() * 80, y: 180 + Math.random() * 80 },
+      data: {
+        tag: 'NOTE',
+        icon: '📝',
+        text: 'Новая текстовая надпись / примечание',
+        textColor: '#f0f6fc',
+        fontSize: 'md',
+        align: 'left',
+        scale: 1
+      },
+      style: {
+        width: 280
+      }
+    };
+    setNodes(nds => [...nds, newNode]);
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
+
+  // Update text node properties
+  const handleUpdateTextNode = useCallback((nodeId, updates) => {
+    if (takeSnapshot) takeSnapshot();
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      return {
+        ...n,
+        data: {
+          ...n.data,
+          ...updates
+        }
+      };
+    }));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
+
   // Delete node
   const handleDeleteNode = useCallback((nodeId) => {
     if (takeSnapshot) takeSnapshot();
@@ -703,6 +744,8 @@ export function useDiagramNodeActions({
     // Actions
     handleAddHierarchyNode,
     handleAddLogicNode,
+    handleAddTextNode,
+    handleUpdateTextNode,
     handleDeleteNode,
     handleDeleteEdge,
     handleUpdateEdgeLabel,

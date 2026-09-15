@@ -32,6 +32,11 @@ export function serializeDiagramProject({
       titleColor: n.data?.titleColor,
       items: Array.isArray(n.data?.items) ? n.data.items : [],
       lines: Array.isArray(n.data?.lines) ? n.data.lines : [],
+      text: n.data?.text,
+      textColor: n.data?.textColor,
+      fontSize: n.data?.fontSize,
+      align: n.data?.align,
+      icon: n.data?.icon,
       label: n.data?.label,
       sectionColor: n.data?.sectionColor,
       theme: n.data?.theme,
@@ -107,7 +112,7 @@ export function validateAndParseDiagramProject(jsonContent) {
 
   const validNodes = rawNodes.map((n, idx) => {
     const id = n.id || `imported_node_${idx}_${Date.now()}`;
-    const type = n.type || (n.data?.lines ? 'logicNode' : 'hierarchyNode');
+    const type = n.type || (n.data?.lines ? 'logicNode' : (n.data?.text !== undefined ? 'textNode' : 'hierarchyNode'));
     const pos = n.position || { x: 100 + (idx % 4) * 220, y: 100 + Math.floor(idx / 4) * 180 };
 
     return {
