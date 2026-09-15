@@ -183,10 +183,11 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   }, [handleNodesChangeWithSnapping, onNodesChange, triggerAutoSave]);
 
   const handleEdgesChange = useCallback((changes) => {
-    onEdgesChange(changes);
     const hasRemove = changes.some(c => c.type === 'remove');
+    if (hasRemove) takeSnapshot();
+    onEdgesChange(changes);
     if (hasRemove) triggerAutoSave();
-  }, [onEdgesChange, triggerAutoSave]);
+  }, [onEdgesChange, triggerAutoSave, takeSnapshot]);
 
   // Fullscreen toggle
   const toggleFullscreen = () => {
