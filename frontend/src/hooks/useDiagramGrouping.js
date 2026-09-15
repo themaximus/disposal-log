@@ -2,7 +2,7 @@
 import { useCallback, useMemo, useEffect } from 'react';
 import DiagramGroupingService from '../utils/diagramGroupingService';
 
-export function useDiagramGrouping({ nodes, setNodes, nodesRef, triggerAutoSave, setSelectedNodes, takeSnapshot }) {
+export function useDiagramGrouping({ nodes, setNodes, setEdges, nodesRef, triggerAutoSave, setSelectedNodes, takeSnapshot }) {
   // Сгруппировать выбранные ноды в секцию
   const handleGroupSelectedNodes = useCallback(() => {
     if (takeSnapshot) takeSnapshot();
@@ -15,14 +15,17 @@ export function useDiagramGrouping({ nodes, setNodes, nodesRef, triggerAutoSave,
     triggerAutoSave();
   }, [setNodes, triggerAutoSave, setSelectedNodes, nodesRef, takeSnapshot]);
 
-  // Разгруппировать секцию
+  // Разгруппировать секцию (и удалить прикреплённые к ней связи)
   const handleUngroup = useCallback((sectionId) => {
     if (takeSnapshot) takeSnapshot();
     const currentNodes = nodesRef.current;
     const updated = DiagramGroupingService.ungroupSection(currentNodes, sectionId);
     setNodes(updated);
+    if (setEdges) {
+      setEdges(eds => eds.filter(e => e.source !== sectionId && e.target !== sectionId));
+    }
     triggerAutoSave();
-  }, [setNodes, triggerAutoSave, nodesRef, takeSnapshot]);
+  }, [setNodes, setEdges, triggerAutoSave, nodesRef, takeSnapshot]);
 
   // Обновление настроек секции (тема, заголовок, иконка, стиль границы)
   const handleUpdateSection = useCallback((sectionId, updatedData) => {

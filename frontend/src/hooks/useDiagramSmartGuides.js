@@ -1,7 +1,7 @@
-// useDiagramSmartGuides.js - Хук умных направляющих и прилипания к сетке и границам соседних блоков
-import { useState, useCallback, useRef } from 'react';
+// useDiagramSmartGuides.js - Хук мягкого магнетирования блоков и прилипания к сетке холста
+import { useCallback, useRef } from 'react';
 
-const DEFAULT_SNAP_THRESHOLD = 8; // Порог дистанции примагничивания в пикселях холста
+const DEFAULT_SNAP_THRESHOLD = 8; // Порог дистанции мягкого примагничивания в пикселях холста
 
 export function useDiagramSmartGuides({
   nodesRef,
@@ -10,7 +10,6 @@ export function useDiagramSmartGuides({
   snapThreshold = DEFAULT_SNAP_THRESHOLD,
   enabled = true
 }) {
-  const [guides, setGuides] = useState([]);
   const isDraggingRef = useRef(false);
 
   const handleNodesChangeWithSnapping = useCallback((changes, originalOnNodesChange, triggerAutoSave) => {
@@ -29,7 +28,6 @@ export function useDiagramSmartGuides({
       const finishedDrag = changes.some(c => c.type === 'position' && c.dragging === false);
       if (finishedDrag) {
         isDraggingRef.current = false;
-        setGuides([]);
       }
       originalOnNodesChange(changes);
       const hasPosOrRemove = changes.some(
@@ -63,11 +61,9 @@ export function useDiagramSmartGuides({
 
     let bestSnapX = null;
     let minDiffX = snapThreshold;
-    let guideX = null;
 
     let bestSnapY = null;
     let minDiffY = snapThreshold;
-    let guideY = null;
 
     for (const other of otherNodes) {
       const otherScale = other.data?.scale || 1;
@@ -89,13 +85,6 @@ export function useDiagramSmartGuides({
       if (diffLeftLeft < minDiffX) {
         minDiffX = diffLeftLeft;
         bestSnapX = otherLeft;
-        guideX = {
-          type: 'x',
-          pos: otherLeft,
-          start: Math.min(targetY, otherTop) - 18,
-          end: Math.max(targetY + draggedH, otherBottom) + 18,
-          label: 'Левый край'
-        };
       }
 
       // 2. По центру X
@@ -104,13 +93,6 @@ export function useDiagramSmartGuides({
       if (diffCenterCenter < minDiffX) {
         minDiffX = diffCenterCenter;
         bestSnapX = otherCenterX - draggedW / 2;
-        guideX = {
-          type: 'x',
-          pos: otherCenterX,
-          start: Math.min(targetY, otherTop) - 18,
-          end: Math.max(targetY + draggedH, otherBottom) + 18,
-          label: 'Центр'
-        };
       }
 
       // 3. По правому краю
@@ -119,13 +101,6 @@ export function useDiagramSmartGuides({
       if (diffRightRight < minDiffX) {
         minDiffX = diffRightRight;
         bestSnapX = otherRight - draggedW;
-        guideX = {
-          type: 'x',
-          pos: otherRight,
-          start: Math.min(targetY, otherTop) - 18,
-          end: Math.max(targetY + draggedH, otherBottom) + 18,
-          label: 'Правый край'
-        };
       }
 
       // 4. Стык справа (левый край блока касается правого края соседа)
@@ -133,13 +108,6 @@ export function useDiagramSmartGuides({
       if (diffLeftRight < minDiffX) {
         minDiffX = diffLeftRight;
         bestSnapX = otherRight;
-        guideX = {
-          type: 'x',
-          pos: otherRight,
-          start: Math.min(targetY, otherTop) - 18,
-          end: Math.max(targetY + draggedH, otherBottom) + 18,
-          label: 'Стык (справа)'
-        };
       }
 
       // 5. Стык слева (правый край блока касается левого края соседа)
@@ -147,13 +115,6 @@ export function useDiagramSmartGuides({
       if (diffRightLeft < minDiffX) {
         minDiffX = diffRightLeft;
         bestSnapX = otherLeft - draggedW;
-        guideX = {
-          type: 'x',
-          pos: otherLeft,
-          start: Math.min(targetY, otherTop) - 18,
-          end: Math.max(targetY + draggedH, otherBottom) + 18,
-          label: 'Стык (слева)'
-        };
       }
 
       // Y: 1. По верхнему краю
@@ -161,13 +122,6 @@ export function useDiagramSmartGuides({
       if (diffTopTop < minDiffY) {
         minDiffY = diffTopTop;
         bestSnapY = otherTop;
-        guideY = {
-          type: 'y',
-          pos: otherTop,
-          start: Math.min(targetX, otherLeft) - 18,
-          end: Math.max(targetX + draggedW, otherRight) + 18,
-          label: 'Верхний край'
-        };
       }
 
       // Y: 2. По центру Y
@@ -176,13 +130,6 @@ export function useDiagramSmartGuides({
       if (diffCenterCenterY < minDiffY) {
         minDiffY = diffCenterCenterY;
         bestSnapY = otherCenterY - draggedH / 2;
-        guideY = {
-          type: 'y',
-          pos: otherCenterY,
-          start: Math.min(targetX, otherLeft) - 18,
-          end: Math.max(targetX + draggedW, otherRight) + 18,
-          label: 'Центр'
-        };
       }
 
       // Y: 3. По нижнему краю
@@ -191,13 +138,6 @@ export function useDiagramSmartGuides({
       if (diffBottomBottom < minDiffY) {
         minDiffY = diffBottomBottom;
         bestSnapY = otherBottom - draggedH;
-        guideY = {
-          type: 'y',
-          pos: otherBottom,
-          start: Math.min(targetX, otherLeft) - 18,
-          end: Math.max(targetX + draggedW, otherRight) + 18,
-          label: 'Нижний край'
-        };
       }
 
       // Y: 4. Стык снизу (верх блока касается низа соседа)
@@ -205,13 +145,6 @@ export function useDiagramSmartGuides({
       if (diffTopBottom < minDiffY) {
         minDiffY = diffTopBottom;
         bestSnapY = otherBottom;
-        guideY = {
-          type: 'y',
-          pos: otherBottom,
-          start: Math.min(targetX, otherLeft) - 18,
-          end: Math.max(targetX + draggedW, otherRight) + 18,
-          label: 'Стык (снизу)'
-        };
       }
 
       // Y: 5. Стык сверху (низ блока касается верха соседа)
@@ -219,30 +152,19 @@ export function useDiagramSmartGuides({
       if (diffBottomTop < minDiffY) {
         minDiffY = diffBottomTop;
         bestSnapY = otherTop - draggedH;
-        guideY = {
-          type: 'y',
-          pos: otherTop,
-          start: Math.min(targetX, otherLeft) - 18,
-          end: Math.max(targetX + draggedW, otherRight) + 18,
-          label: 'Стык (сверху)'
-        };
       }
     }
 
-    const newGuides = [];
-
-    // Применяем примагничивание по X
+    // Применяем примагничивание по X (или по сетке)
     if (bestSnapX !== null) {
       targetX = bestSnapX;
-      if (guideX) newGuides.push(guideX);
     } else if (snapToGrid) {
       targetX = Math.round(targetX / gridSize) * gridSize;
     }
 
-    // Применяем примагничивание по Y
+    // Применяем примагничивание по Y (или по сетке)
     if (bestSnapY !== null) {
       targetY = bestSnapY;
-      if (guideY) newGuides.push(guideY);
     } else if (snapToGrid) {
       targetY = Math.round(targetY / gridSize) * gridSize;
     }
@@ -250,18 +172,14 @@ export function useDiagramSmartGuides({
     posChange.position.x = targetX;
     posChange.position.y = targetY;
 
-    setGuides(newGuides);
-
     originalOnNodesChange(changes);
   }, [enabled, snapToGrid, gridSize, snapThreshold, nodesRef]);
 
   const clearGuides = useCallback(() => {
     isDraggingRef.current = false;
-    setGuides([]);
   }, []);
 
   return {
-    guides,
     handleNodesChangeWithSnapping,
     clearGuides
   };

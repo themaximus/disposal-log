@@ -4,7 +4,6 @@ import {
   MiniMap,
   Controls,
   Background,
-  ViewportPortal,
   useNodesState,
   useEdgesState
 } from '@xyflow/react';
@@ -22,7 +21,6 @@ import NodeEditModal from './diagram/modals/NodeEditModal';
 import TagModal from './diagram/modals/TagModal';
 import ExportDiagramModal from './diagram/modals/ExportDiagramModal';
 import ImportDiagramModal from './diagram/modals/ImportDiagramModal';
-import SmartAlignmentGuides from './diagram/SmartAlignmentGuides';
 import DiagramToolbar from './diagram/DiagramToolbar';
 import DiagramFloatingSelectionBar from './diagram/DiagramFloatingSelectionBar';
 import { DiagramActionsContext } from './DiagramActionsContext';
@@ -109,7 +107,6 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
 
   // Hook: Smart Alignment Guides & Grid Snapping
   const {
-    guides,
     handleNodesChangeWithSnapping,
     clearGuides
   } = useDiagramSmartGuides({
@@ -157,6 +154,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   } = useDiagramGrouping({
     nodes,
     setNodes,
+    setEdges,
     nodesRef,
     triggerAutoSave,
     setSelectedNodes,
@@ -390,10 +388,6 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
               nodeColor={() => '#1f242c'}
               maskColor="rgba(13, 17, 23, 0.75)"
             />
-            {/* Smart alignment guidelines overlay positioned inside React Flow canvas viewport */}
-            <ViewportPortal>
-              <SmartAlignmentGuides guides={guides} />
-            </ViewportPortal>
           </ReactFlow>
 
           {/* Floating selection bar when multiple nodes are selected */}

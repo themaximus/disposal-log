@@ -2422,15 +2422,6 @@ body {
     opacity: 0.75;
 }
 
-.smart-alignment-guides-overlay {
-    pointer-events: none !important;
-    user-select: none !important;
-}
-
-.smart-guide-group {
-    pointer-events: none;
-}
-
 .diagram-dropdown-menu {
     position: absolute;
     top: calc(100% + 4px);
@@ -2870,15 +2861,40 @@ select,
 
 .gamedev-hierarchy-card:hover .diagram-handle,
 .gamedev-hierarchy-card.selected .diagram-handle,
+.diagram-section-node:hover .diagram-handle,
+.diagram-section-node.is-selected .diagram-handle,
 .react-flow.connecting .diagram-handle,
 .react-flow--connecting .diagram-handle {
-    opacity: 0.75;
+    opacity: 0.85;
 }
 
 .diagram-handle:hover {
     opacity: 1 !important;
     transform: scale(1.4);
     box-shadow: 0 0 10px #58a6ff;
+}
+
+/* Section Group specific handles */
+.diagram-section-node .section-handle {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 50% !important;
+    border: 2px solid #0d1117 !important;
+    z-index: 1005 !important;
+    cursor: crosshair;
+}
+
+.diagram-section-node.theme-crimson .section-handle { background: #ff4455 !important; }
+.diagram-section-node.theme-cyberpunk .section-handle { background: #58a6ff !important; }
+.diagram-section-node.theme-emerald .section-handle { background: #3fb950 !important; }
+.diagram-section-node.theme-amethyst .section-handle { background: #bc8cff !important; }
+.diagram-section-node.theme-amber .section-handle { background: #d29922 !important; }
+.diagram-section-node.theme-slate .section-handle { background: #8b949e !important; }
+
+.diagram-section-node .section-handle:hover {
+    opacity: 1 !important;
+    transform: scale(1.45);
+    box-shadow: 0 0 12px currentColor;
 }
 
 .handle-left {
