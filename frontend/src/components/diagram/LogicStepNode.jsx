@@ -3,6 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 import { computeTreePrefix } from './GameDevHierarchyNode';
 import EmojiPickerPopover from './EmojiPickerPopover';
+import ColorPickerPopover from './ColorPickerPopover';
 import useBlockCornerScale from '../../hooks/useBlockCornerScale';
 
 function LogicStepNode({ id, data, isConnectable, selected }) {
@@ -19,18 +20,27 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
   const onIndentLogicLine = actions?.onIndentLogicLine;
   const onUpdateLogicTitle = actions?.onUpdateLogicTitle;
 
+  const title = data.title || 'ExecuteLogicStep()';
+  const titleIcon = data.titleIcon || '⚙️';
+  const titleColor = data.titleColor || '#58a6ff';
+  const nodeType = data.nodeType || 'LOGIC';
+  const lines = data.lines || [];
+
   const [copied, setCopied] = useState(false);
   const [editingRowIdx, setEditingRowIdx] = useState(null);
   const [selectedRowIdx, setSelectedRowIdx] = useState(null);
   const [lineDraft, setLineDraft] = useState({ code: '', comment: '', icon: '⚡', level: 0, prefix: '├── ' });
   const [editingTitle, setEditingTitle] = useState(false);
-  const [titleDraft, setTitleDraft] = useState(data.title || 'ExecuteLogicStep()');
+  const [titleDraft, setTitleDraft] = useState(title);
+  const [titleIconDraft, setTitleIconDraft] = useState(titleIcon);
+  const [titleColorDraft, setTitleColorDraft] = useState(titleColor);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [lineEmojiPickerIdx, setLineEmojiPickerIdx] = useState(null);
+  const [showTitleEmojiPicker, setShowTitleEmojiPicker] = useState(false);
+  const [showTitleColorPicker, setShowTitleColorPicker] = useState(false);
+  const [viewTitleEmojiPicker, setViewTitleEmojiPicker] = useState(false);
+  const [viewTitleColorPicker, setViewTitleColorPicker] = useState(false);
 
-  const title = data.title || 'ExecuteLogicStep()';
-  const nodeType = data.nodeType || 'LOGIC';
-  const lines = data.lines || [];
   const codeInputRef = useRef(null);
   const titleInputRef = useRef(null);
   const cardRef = useRef(null);
@@ -43,7 +53,9 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
 
   useEffect(() => {
     setTitleDraft(title);
-  }, [title]);
+    setTitleIconDraft(titleIcon);
+    setTitleColorDraft(titleColor);
+  }, [title, titleIcon, titleColor]);
 
   useEffect(() => {
     if (editingRowIdx !== null && codeInputRef.current) {
@@ -61,7 +73,7 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
 
   const handleCopy = (e) => {
     e.stopPropagation();
-    const text = `${nodeType}: ${title}\n` + lines.map((l, idx) => {
+    const text = `${nodeType}: ${titleIcon} ${title}\n` + lines.map((l, idx) => {
       const pfx = computeTreePrefix(lines, idx);
       return `${pfx}${l.icon ? l.icon + ' ' : ''}${l.code || ''}${l.comment ? ' // ' + l.comment : ''}`;
     }).join('\n');
@@ -186,9 +198,33 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
 
   const handleSaveTitle = () => {
     if (onUpdateLogicTitle && titleDraft.trim()) {
-      onUpdateLogicTitle(id, titleDraft.trim());
+      onUpdateLogicTitle(id, {
+        title: titleDraft.trim(),
+        titleIcon: titleIconDraft,
+        titleColor: titleColorDraft
+      });
     }
     setEditingTitle(false);
+    setShowTitleEmojiPicker(false);
+    setShowTitleColorPicker(false);
+  };
+
+  const handleSelectViewEmoji = (emoji) => {
+    if (onUpdateLogicTitle) {
+      onUpdateLogicTitle(id, {
+        titleIcon: emoji
+      });
+    }
+    setViewTitleEmojiPicker(false);
+  };
+
+  const handleSelectViewColor = (color) => {
+    if (onUpdateLogicTitle) {
+      onUpdateLogicTitle(id, {
+        titleColor: color
+      });
+    }
+    setViewTitleColorPicker(false);
   };
 
   const handleTitleKeyDown = (e) => {
@@ -198,6 +234,10 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
     } else if (e.key === 'Escape') {
       e.stopPropagation();
       setTitleDraft(title);
+      setTitleIconDraft(titleIcon);
+      setTitleColorDraft(titleColor);
+      setShowTitleEmojiPicker(false);
+      setShowTitleColorPicker(false);
       setEditingTitle(false);
     }
   };
@@ -376,28 +416,140 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
       <div className="card-tree-content">
         {editingTitle ? (
           <div className="tree-root-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
-            <span className="logic-icon">⚙️</span>
+            {/* Title emoji picker */}
+            <div className="row-inline-icon-trigger-wrapper">
+              <button
+                type="button"
+                className="row-inline-icon-picker-btn root-icon-picker-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTitleEmojiPicker(prev => !prev);
+                  setShowTitleColorPicker(false);
+                }}
+                title="Выбрать эмодзи для метода"
+              >
+                <span className="current-icon">{titleIconDraft || '⚙️'}</span>
+                <span className="picker-caret">▾</span>
+              </button>
+              {showTitleEmojiPicker && (
+                <EmojiPickerPopover
+                  currentEmoji={titleIconDraft}
+                  onSelect={(emoji) => {
+                    setTitleIconDraft(emoji);
+                    setShowTitleEmojiPicker(false);
+                  }}
+                  onClose={() => setShowTitleEmojiPicker(false)}
+                />
+              )}
+            </div>
+
+            {/* Title color swatch button */}
+            <div className="row-inline-color-trigger-wrapper">
+              <button
+                type="button"
+                className="root-color-swatch-btn"
+                style={{ backgroundColor: titleColorDraft }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTitleColorPicker(prev => !prev);
+                  setShowTitleEmojiPicker(false);
+                }}
+                title="Выбрать цвет заголовка"
+              >
+                <span className="swatch-inner-dot"></span>
+              </button>
+              {showTitleColorPicker && (
+                <ColorPickerPopover
+                  currentColor={titleColorDraft}
+                  defaultColor="#58a6ff"
+                  onSelect={(color) => setTitleColorDraft(color)}
+                  onClose={() => setShowTitleColorPicker(false)}
+                  title="Цвет метода / заголовка"
+                />
+              )}
+            </div>
+
             <input
               ref={titleInputRef}
               type="text"
               className="root-inline-input"
+              style={{ color: titleColorDraft, borderColor: titleColorDraft }}
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
               onKeyDown={handleTitleKeyDown}
               placeholder="ClassName.MethodName()"
             />
             <button className="row-inline-save-btn" onClick={handleSaveTitle} title="Сохранить">✓</button>
-            <button className="row-inline-del-btn" onClick={() => setEditingTitle(false)} title="Отмена">✕</button>
+            <button className="row-inline-del-btn" onClick={() => {
+              setEditingTitle(false);
+              setTitleDraft(title);
+              setTitleIconDraft(titleIcon);
+              setTitleColorDraft(titleColor);
+              setShowTitleEmojiPicker(false);
+              setShowTitleColorPicker(false);
+            }} title="Отмена">✕</button>
           </div>
         ) : (
           <div
             className="tree-root-row logic-root-row tree-root-interactive"
             onClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
             title="Кликните для редактирования метода/заголовка"
+            style={{ color: titleColor }}
           >
-            <span className="logic-icon">⚙️</span>
-            <span className="root-path-text logic-method-name">{title}</span>
-            <span className="row-hover-pencil">✎</span>
+            {/* Interactive Emoji in view mode */}
+            <div className="row-inline-icon-trigger-wrapper" style={{ display: 'inline-flex' }}>
+              <span
+                className="logic-icon item-symbol-interactive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setViewTitleEmojiPicker(prev => !prev);
+                  setViewTitleColorPicker(false);
+                }}
+                title="Кликните, чтобы сменить эмодзи"
+              >
+                {titleIcon}
+              </span>
+              {viewTitleEmojiPicker && (
+                <EmojiPickerPopover
+                  currentEmoji={titleIcon}
+                  onSelect={handleSelectViewEmoji}
+                  onClose={() => setViewTitleEmojiPicker(false)}
+                />
+              )}
+            </div>
+
+            <span className="root-path-text logic-method-name" style={{ color: titleColor }}>
+              {title}
+            </span>
+
+            {/* Hover actions for root row */}
+            <div className="root-hover-actions">
+              <div className="row-inline-color-trigger-wrapper" style={{ display: 'inline-flex' }}>
+                <button
+                  type="button"
+                  className="root-color-action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewTitleColorPicker(prev => !prev);
+                    setViewTitleEmojiPicker(false);
+                  }}
+                  title="Сменить цвет заголовка"
+                >
+                  <span className="root-color-dot" style={{ backgroundColor: titleColor }}></span>
+                  <span className="root-color-palette-icon">🎨</span>
+                </button>
+                {viewTitleColorPicker && (
+                  <ColorPickerPopover
+                    currentColor={titleColor}
+                    defaultColor="#58a6ff"
+                    onSelect={handleSelectViewColor}
+                    onClose={() => setViewTitleColorPicker(false)}
+                    title="Цвет метода / заголовка"
+                  />
+                )}
+              </div>
+              <span className="row-hover-pencil">✎</span>
+            </div>
           </div>
         )}
 

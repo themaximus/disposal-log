@@ -7,6 +7,7 @@ function DiagramFloatingSelectionBar({
   onUngroup,
   onScaleSelected,
   onDeleteSelected,
+  onExportSelected,
   onClearSelection
 }) {
   if (!selectedNodes || selectedNodes.length < 2) return null;
@@ -98,6 +99,18 @@ function DiagramFloatingSelectionBar({
           <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>lock_open</span>
           <span>Разгруппировать</span>
           <kbd>Ctrl+Shift+G</kbd>
+        </button>
+      )}
+
+      {onExportSelected && (
+        <button
+          type="button"
+          className="floating-btn-action btn-export-sel"
+          onClick={onExportSelected}
+          title="Экспортировать только выделенную область (PNG / SVG / PDF / .diagram)"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#58a6ff' }}>download</span>
+          <span>Экспорт ({selectedNodes.length})</span>
         </button>
       )}
 

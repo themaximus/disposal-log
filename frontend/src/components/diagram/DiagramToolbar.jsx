@@ -20,6 +20,8 @@ function DiagramToolbar({
   selectedGroupableCount = 0,
   onGroupSelected,
   onOpenPrefabsModal,
+  onOpenExportModal,
+  onOpenImportModal,
   isFullscreen,
   onToggleFullscreen
 }) {
@@ -161,6 +163,29 @@ function DiagramToolbar({
         >
           <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#bc8cff' }}>category</span>
           <span>📦 Префабы</span>
+        </button>
+
+        <div className="diagram-io-divider" style={{ width: '1px', height: '22px', background: '#30363d', margin: '0 2px' }}></div>
+
+        {/* Import & Export */}
+        <button
+          type="button"
+          className="btn-diagram-tool btn-io-tool"
+          onClick={onOpenImportModal}
+          title="Импорт схемы из файла (.diagram или .json)"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', color: '#bc8cff' }}>upload</span>
+          <span>Импорт</span>
+        </button>
+
+        <button
+          type="button"
+          className="btn-diagram-tool btn-io-tool"
+          onClick={onOpenExportModal}
+          title="Экспорт схемы (PNG / SVG / PDF / .diagram)"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', color: '#58a6ff' }}>download</span>
+          <span>Экспорт</span>
         </button>
 
         <button

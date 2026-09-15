@@ -106,6 +106,75 @@ export function useDiagramData({ currentUser, nodes, setNodes, edges, setEdges }
     return true;
   }, [diagrams, currentDiagramId, currentUser, setNodes, setEdges]);
 
+  // Импорт проекта как новая отдельная вкладка
+  const handleImportProjectAsNew = useCallback(async (project) => {
+    const finalTitle = (project.title || 'Импортированная схема').trim();
+    const finalNodes = project.nodes || [];
+    const finalEdges = project.edges || [];
+
+    const newDiagram = await DiagramSyncService.createDiagram(finalTitle, finalNodes, finalEdges, currentUser);
+    setDiagrams(prev => [newDiagram, ...prev]);
+    setCurrentDiagramId(newDiagram.id);
+    setNodes(DiagramGroupingService.sortNodesParentsFirst(finalNodes));
+    setEdges(finalEdges);
+    return newDiagram;
+  }, [currentUser, setNodes, setEdges]);
+
+  // Замена содержимого текущей схемы импортированным проектом
+  const handleReplaceCurrentWithProject = useCallback(async (project) => {
+    if (!currentDiagramId) return;
+    const finalNodes = project.nodes || [];
+    const finalEdges = project.edges || [];
+    setNodes(DiagramGroupingService.sortNodesParentsFirst(finalNodes));
+    setEdges(finalEdges);
+    triggerAutoSave();
+  }, [currentDiagramId, setNodes, setEdges, triggerAutoSave]);
+
+  // Объединение (слияние) импортированного проекта с текущим холстом
+  const handleMergeProjectIntoCurrent = useCallback((project) => {
+    if (!currentDiagramId) return;
+    const existingNodeIds = new Set(nodesRef.current.map(n => n.id));
+    const idMap = {};
+    const offsetX = 140;
+    const offsetY = 140;
+
+    const newNodes = (project.nodes || []).map((n, idx) => {
+      let newId = n.id;
+      if (existingNodeIds.has(n.id)) {
+        newId = `imported_${Date.now()}_${idx}`;
+      }
+      idMap[n.id] = newId;
+
+      return {
+        ...n,
+        id: newId,
+        position: {
+          x: (n.position?.x || 0) + offsetX,
+          y: (n.position?.y || 0) + offsetY
+        },
+        selected: true
+      };
+    });
+
+    const newEdges = (project.edges || []).map((e, idx) => {
+      const mappedSource = idMap[e.source] || e.source;
+      const mappedTarget = idMap[e.target] || e.target;
+      return {
+        ...e,
+        id: `imported_edge_${Date.now()}_${idx}`,
+        source: mappedSource,
+        target: mappedTarget
+      };
+    });
+
+    setNodes(prev => DiagramGroupingService.sortNodesParentsFirst([
+      ...prev.map(n => ({ ...n, selected: false })),
+      ...newNodes
+    ]));
+    setEdges(prev => [...prev, ...newEdges]);
+    triggerAutoSave();
+  }, [currentDiagramId, setNodes, setEdges, triggerAutoSave]);
+
   const activeDiagram = useMemo(() => {
     return diagrams.find(d => String(d.id) === String(currentDiagramId)) || diagrams[0] || null;
   }, [diagrams, currentDiagramId]);
@@ -122,6 +191,9 @@ export function useDiagramData({ currentUser, nodes, setNodes, edges, setEdges }
     handleSelectDiagram,
     handleCreateDiagram,
     handleDeleteDiagram,
+    handleImportProjectAsNew,
+    handleReplaceCurrentWithProject,
+    handleMergeProjectIntoCurrent,
     nodesRef,
     edgesRef
   };

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 import EmojiPickerPopover from './EmojiPickerPopover';
+import ColorPickerPopover from './ColorPickerPopover';
 import useBlockCornerScale from '../../hooks/useBlockCornerScale';
 
 // Calculate dynamic tree branches (├──, └──, │   ,     ) based on nesting hierarchy
@@ -58,17 +59,26 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
   const onIndentHierarchyItem = actions?.onIndentHierarchyItem;
   const onUpdateHierarchyRoot = actions?.onUpdateHierarchyRoot;
 
+  const rootPath = data.rootPath || 'Assets/Prefabs/Player/Player.prefab';
+  const rootIcon = data.rootIcon || '📁';
+  const rootColor = data.rootColor || '#e3b341';
+  const treeItems = data.items || [];
+
   const [copied, setCopied] = useState(false);
   const [editingRowIdx, setEditingRowIdx] = useState(null);
   const [selectedRowIdx, setSelectedRowIdx] = useState(null);
   const [rowDraft, setRowDraft] = useState({ name: '', details: '', icon: '⚙️', level: 0 });
   const [editingRoot, setEditingRoot] = useState(false);
-  const [rootDraft, setRootDraft] = useState(data.rootPath || 'Assets/Prefabs/Player/Player.prefab');
+  const [rootDraft, setRootDraft] = useState(rootPath);
+  const [rootIconDraft, setRootIconDraft] = useState(rootIcon);
+  const [rootColorDraft, setRootColorDraft] = useState(rootColor);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [rowEmojiPickerIdx, setRowEmojiPickerIdx] = useState(null);
+  const [showRootEmojiPicker, setShowRootEmojiPicker] = useState(false);
+  const [showRootColorPicker, setShowRootColorPicker] = useState(false);
+  const [viewRootEmojiPicker, setViewRootEmojiPicker] = useState(false);
+  const [viewRootColorPicker, setViewRootColorPicker] = useState(false);
 
-  const rootPath = data.rootPath || 'Assets/Prefabs/Player/Player.prefab';
-  const treeItems = data.items || [];
   const nameInputRef = useRef(null);
   const rootInputRef = useRef(null);
   const cardRef = useRef(null);
@@ -81,7 +91,9 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
 
   useEffect(() => {
     setRootDraft(rootPath);
-  }, [rootPath]);
+    setRootIconDraft(rootIcon);
+    setRootColorDraft(rootColor);
+  }, [rootPath, rootIcon, rootColor]);
 
   useEffect(() => {
     if (editingRowIdx !== null && nameInputRef.current) {
@@ -99,7 +111,7 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
 
   // Build tree text for clipboard
   const getFullTreeText = () => {
-    let result = `📁 ${rootPath}\n`;
+    let result = `${rootIcon} ${rootPath}\n`;
     treeItems.forEach((item, idx) => {
       const prefix = computeTreePrefix(treeItems, idx);
       const details = item.details ? ` (${item.details})` : '';
@@ -223,9 +235,33 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
 
   const handleSaveRoot = () => {
     if (onUpdateHierarchyRoot && rootDraft.trim()) {
-      onUpdateHierarchyRoot(id, rootDraft.trim());
+      onUpdateHierarchyRoot(id, {
+        rootPath: rootDraft.trim(),
+        rootIcon: rootIconDraft,
+        rootColor: rootColorDraft
+      });
     }
     setEditingRoot(false);
+    setShowRootEmojiPicker(false);
+    setShowRootColorPicker(false);
+  };
+
+  const handleSelectViewEmoji = (emoji) => {
+    if (onUpdateHierarchyRoot) {
+      onUpdateHierarchyRoot(id, {
+        rootIcon: emoji
+      });
+    }
+    setViewRootEmojiPicker(false);
+  };
+
+  const handleSelectViewColor = (color) => {
+    if (onUpdateHierarchyRoot) {
+      onUpdateHierarchyRoot(id, {
+        rootColor: color
+      });
+    }
+    setViewRootColorPicker(false);
   };
 
   const handleRootKeyDown = (e) => {
@@ -235,6 +271,10 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
     } else if (e.key === 'Escape') {
       e.stopPropagation();
       setRootDraft(rootPath);
+      setRootIconDraft(rootIcon);
+      setRootColorDraft(rootColor);
+      setShowRootEmojiPicker(false);
+      setShowRootColorPicker(false);
       setEditingRoot(false);
     }
   };
@@ -492,28 +532,140 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
         {/* Root Prefab Folder Path */}
         {editingRoot ? (
           <div className="tree-root-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
-            <span className="folder-icon">📁</span>
+            {/* Root emoji picker */}
+            <div className="row-inline-icon-trigger-wrapper">
+              <button
+                type="button"
+                className="row-inline-icon-picker-btn root-icon-picker-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowRootEmojiPicker(prev => !prev);
+                  setShowRootColorPicker(false);
+                }}
+                title="Выбрать эмодзи для главной строки"
+              >
+                <span className="current-icon">{rootIconDraft || '📁'}</span>
+                <span className="picker-caret">▾</span>
+              </button>
+              {showRootEmojiPicker && (
+                <EmojiPickerPopover
+                  currentEmoji={rootIconDraft}
+                  onSelect={(emoji) => {
+                    setRootIconDraft(emoji);
+                    setShowRootEmojiPicker(false);
+                  }}
+                  onClose={() => setShowRootEmojiPicker(false)}
+                />
+              )}
+            </div>
+
+            {/* Root color swatch button */}
+            <div className="row-inline-color-trigger-wrapper">
+              <button
+                type="button"
+                className="root-color-swatch-btn"
+                style={{ backgroundColor: rootColorDraft }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowRootColorPicker(prev => !prev);
+                  setShowRootEmojiPicker(false);
+                }}
+                title="Выбрать цвет главной строки"
+              >
+                <span className="swatch-inner-dot"></span>
+              </button>
+              {showRootColorPicker && (
+                <ColorPickerPopover
+                  currentColor={rootColorDraft}
+                  defaultColor="#e3b341"
+                  onSelect={(color) => setRootColorDraft(color)}
+                  onClose={() => setShowRootColorPicker(false)}
+                  title="Цвет префаба / корня"
+                />
+              )}
+            </div>
+
             <input
               ref={rootInputRef}
               type="text"
               className="root-inline-input"
+              style={{ color: rootColorDraft, borderColor: rootColorDraft }}
               value={rootDraft}
               onChange={(e) => setRootDraft(e.target.value)}
               onKeyDown={handleRootKeyDown}
               placeholder="Assets/Prefabs/..."
             />
             <button className="row-inline-save-btn" onClick={handleSaveRoot} title="Сохранить">✓</button>
-            <button className="row-inline-del-btn" onClick={() => setEditingRoot(false)} title="Отмена">✕</button>
+            <button className="row-inline-del-btn" onClick={() => {
+              setEditingRoot(false);
+              setRootDraft(rootPath);
+              setRootIconDraft(rootIcon);
+              setRootColorDraft(rootColor);
+              setShowRootEmojiPicker(false);
+              setShowRootColorPicker(false);
+            }} title="Отмена">✕</button>
           </div>
         ) : (
           <div
             className="tree-root-row tree-root-interactive"
             onClick={(e) => { e.stopPropagation(); setEditingRoot(true); }}
-            title="Кликните для редактирования пути"
+            title="Кликните для редактирования строки"
+            style={{ color: rootColor }}
           >
-            <span className="folder-icon">📁</span>
-            <span className="root-path-text">{rootPath}</span>
-            <span className="row-hover-pencil">✎</span>
+            {/* Interactive Emoji in view mode */}
+            <div className="row-inline-icon-trigger-wrapper" style={{ display: 'inline-flex' }}>
+              <span
+                className="folder-icon item-symbol-interactive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setViewRootEmojiPicker(prev => !prev);
+                  setViewRootColorPicker(false);
+                }}
+                title="Кликните, чтобы сменить эмодзи"
+              >
+                {rootIcon}
+              </span>
+              {viewRootEmojiPicker && (
+                <EmojiPickerPopover
+                  currentEmoji={rootIcon}
+                  onSelect={handleSelectViewEmoji}
+                  onClose={() => setViewRootEmojiPicker(false)}
+                />
+              )}
+            </div>
+
+            <span className="root-path-text" style={{ color: rootColor }}>
+              {rootPath}
+            </span>
+
+            {/* Hover actions for root row */}
+            <div className="root-hover-actions">
+              <div className="row-inline-color-trigger-wrapper" style={{ display: 'inline-flex' }}>
+                <button
+                  type="button"
+                  className="root-color-action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewRootColorPicker(prev => !prev);
+                    setViewRootEmojiPicker(false);
+                  }}
+                  title="Сменить цвет главной строки"
+                >
+                  <span className="root-color-dot" style={{ backgroundColor: rootColor }}></span>
+                  <span className="root-color-palette-icon">🎨</span>
+                </button>
+                {viewRootColorPicker && (
+                  <ColorPickerPopover
+                    currentColor={rootColor}
+                    defaultColor="#e3b341"
+                    onSelect={handleSelectViewColor}
+                    onClose={() => setViewRootColorPicker(false)}
+                    title="Цвет префаба / корня"
+                  />
+                )}
+              </div>
+              <span className="row-hover-pencil">✎</span>
+            </div>
           </div>
         )}
 

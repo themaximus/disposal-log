@@ -18,6 +18,8 @@ import BlockPrefabsModal from './diagram/BlockPrefabsModal';
 import NewDiagramModal from './diagram/modals/NewDiagramModal';
 import NodeEditModal from './diagram/modals/NodeEditModal';
 import TagModal from './diagram/modals/TagModal';
+import ExportDiagramModal from './diagram/modals/ExportDiagramModal';
+import ImportDiagramModal from './diagram/modals/ImportDiagramModal';
 import DiagramToolbar from './diagram/DiagramToolbar';
 import DiagramFloatingSelectionBar from './diagram/DiagramFloatingSelectionBar';
 import { DiagramActionsContext } from './DiagramActionsContext';
@@ -67,6 +69,11 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   const [newTitle, setNewTitle] = useState('');
   const [selectedPresetId, setSelectedPresetId] = useState(STARTER_PRESETS[0].id);
 
+  // Modals: Export and Import
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
+
   // Hook 0: Diagram Undo/Redo History (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y)
   const {
     takeSnapshot,
@@ -89,11 +96,15 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
   const {
     diagrams,
     currentDiagramId,
+    activeDiagram,
     saveStatus,
     triggerAutoSave,
     handleSelectDiagram,
     handleCreateDiagram,
     handleDeleteDiagram,
+    handleImportProjectAsNew,
+    handleReplaceCurrentWithProject,
+    handleMergeProjectIntoCurrent,
     nodesRef
   } = useDiagramData({
     currentUser,
@@ -312,6 +323,8 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         selectedGroupableCount={selectedGroupableCount}
         onGroupSelected={handleGroupSelectedNodes}
         onOpenPrefabsModal={handleOpenPrefabsModal}
+        onOpenExportModal={() => setIsExportModalOpen(true)}
+        onOpenImportModal={() => setIsImportModalOpen(true)}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
       />
@@ -325,6 +338,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
             onConnect={nodeActions.onConnect}
+            onInit={setReactFlowInstance}
             onNodeDragStart={handleNodeDragStart}
             onSelectionDragStart={handleSelectionDragStart}
             nodeTypes={nodeTypes}
@@ -361,6 +375,7 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             onUngroup={handleUngroup}
             onScaleSelected={handleScaleSelectedFromBar}
             onDeleteSelected={handleDeleteSelectedFromBar}
+            onExportSelected={() => setIsExportModalOpen(true)}
             onClearSelection={handleClearSelectionFromBar}
           />
         </DiagramActionsContext.Provider>
@@ -420,6 +435,27 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         isOpen={nodeActions.isPrefabsModalOpen}
         onClose={() => nodeActions.setIsPrefabsModalOpen(false)}
         onSpawnPrefab={nodeActions.handleSpawnPrefab}
+      />
+
+      {/* Export Modal (PNG / SVG / PDF / .diagram) */}
+      <ExportDiagramModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        nodes={nodes}
+        edges={edges}
+        selectedNodes={selectedNodes}
+        currentDiagramTitle={activeDiagram?.title || 'Схема'}
+        viewport={reactFlowInstance?.getViewport() || { x: 0, y: 0, zoom: 1 }}
+      />
+
+      {/* Import Modal (.diagram / JSON) */}
+      <ImportDiagramModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportNewDiagram={handleImportProjectAsNew}
+        onReplaceCurrentDiagram={handleReplaceCurrentWithProject}
+        onMergeIntoCurrentDiagram={handleMergeProjectIntoCurrent}
+        currentDiagramTitle={activeDiagram?.title || 'Схема'}
       />
     </div>
   );

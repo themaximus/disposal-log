@@ -267,12 +267,13 @@ export function useDiagramNodeActions({
     triggerAutoSave();
   }, [setNodes, triggerAutoSave, takeSnapshot]);
 
-  // Inline update for hierarchy root path
-  const handleUpdateHierarchyRoot = useCallback((nodeId, newRootPath) => {
+  // Inline update for hierarchy root path, icon and color
+  const handleUpdateHierarchyRoot = useCallback((nodeId, updates) => {
     if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
-      return { ...n, data: { ...n.data, rootPath: newRootPath } };
+      const rootUpdates = typeof updates === 'string' ? { rootPath: updates } : updates;
+      return { ...n, data: { ...n.data, ...rootUpdates } };
     }));
     triggerAutoSave();
   }, [setNodes, triggerAutoSave, takeSnapshot]);
@@ -377,12 +378,13 @@ export function useDiagramNodeActions({
     triggerAutoSave();
   }, [setNodes, triggerAutoSave, takeSnapshot]);
 
-  // Inline update for logic method title
-  const handleUpdateLogicTitle = useCallback((nodeId, newTitle) => {
+  // Inline update for logic method title, icon and color
+  const handleUpdateLogicTitle = useCallback((nodeId, updates) => {
     if (takeSnapshot) takeSnapshot();
     setNodes(nds => nds.map(n => {
       if (n.id !== nodeId) return n;
-      return { ...n, data: { ...n.data, title: newTitle } };
+      const titleUpdates = typeof updates === 'string' ? { title: updates } : updates;
+      return { ...n, data: { ...n.data, ...titleUpdates } };
     }));
     triggerAutoSave();
   }, [setNodes, triggerAutoSave, takeSnapshot]);

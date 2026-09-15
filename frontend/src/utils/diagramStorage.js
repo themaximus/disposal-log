@@ -450,6 +450,22 @@ export const DEFAULT_BLOCK_PREFABS = [
   }
 ];
 
+// Standard Color Palette for Node Headers, Roots, and Categories
+export const ROOT_COLOR_PALETTE = [
+  { label: 'Золотой (Prefab / Master)', color: '#e3b341' },
+  { label: 'Лазурный (Method / Script)', color: '#58a6ff' },
+  { label: 'Изумрудный (Entity / Active)', color: '#3fb950' },
+  { label: 'Аметистовый (ScriptableObject)', color: '#bc8cff' },
+  { label: 'Рубиновый (Danger / Boss)', color: '#ff7b72' },
+  { label: 'Кибер-Бирюзовый (Tech / Network)', color: '#39c5cf' },
+  { label: 'Янтарный / Оранжевый (Weapon / Item)', color: '#f0883e' },
+  { label: 'Неоновый Розовый (Event / UI)', color: '#f778ba' },
+  { label: 'Светло-Серый (Clean / Default)', color: '#f0f6fc' },
+  { label: 'Мятный (Visual / Shader / FX)', color: '#7ee787' },
+  { label: 'Желто-Оранжевый (Warning / State)', color: '#d29922' },
+  { label: 'Грифельный (Logic / Core)', color: '#8b949e' }
+];
+
 // User-saved block prefabs storage
 const SAVED_PREFABS_KEY = 'pulse_user_custom_block_prefabs_v1';
 
