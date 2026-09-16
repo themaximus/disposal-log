@@ -31,13 +31,20 @@ export function useDiagramNodeActions({
   const [tagInputValue, setTagInputValue] = useState('');
 
   // Add new GameDev Prefab node
-  const handleAddHierarchyNode = useCallback(() => {
+  const handleAddHierarchyNode = useCallback((customPos) => {
     if (takeSnapshot) takeSnapshot();
     const newId = 'node_' + Date.now();
+    const spawnPosition = customPos ? {
+      x: customPos.x - 160 + (Math.random() - 0.5) * 40,
+      y: customPos.y - 100 + (Math.random() - 0.5) * 40
+    } : {
+      x: 100 + Math.random() * 80,
+      y: 100 + Math.random() * 80
+    };
     const newNode = {
       id: newId,
       type: 'hierarchyNode',
-      position: { x: 100 + Math.random() * 80, y: 100 + Math.random() * 80 },
+      position: spawnPosition,
       data: {
         tag: 'PREFAB',
         rootPath: 'Assets/Prefabs/NewEntity/NewEntity.prefab',
@@ -52,13 +59,20 @@ export function useDiagramNodeActions({
   }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Add new Logic Step node
-  const handleAddLogicNode = useCallback(() => {
+  const handleAddLogicNode = useCallback((customPos) => {
     if (takeSnapshot) takeSnapshot();
     const newId = 'node_' + Date.now();
+    const spawnPosition = customPos ? {
+      x: customPos.x - 160 + (Math.random() - 0.5) * 40,
+      y: customPos.y - 80 + (Math.random() - 0.5) * 40
+    } : {
+      x: 200 + Math.random() * 80,
+      y: 150 + Math.random() * 80
+    };
     const newNode = {
       id: newId,
       type: 'logicNode',
-      position: { x: 200 + Math.random() * 80, y: 150 + Math.random() * 80 },
+      position: spawnPosition,
       data: {
         nodeType: 'LOGIC',
         title: 'EntityController.Tick()',
@@ -73,13 +87,20 @@ export function useDiagramNodeActions({
   }, [setNodes, triggerAutoSave, takeSnapshot]);
 
   // Add new Text / Note node
-  const handleAddTextNode = useCallback(() => {
+  const handleAddTextNode = useCallback((customPos) => {
     if (takeSnapshot) takeSnapshot();
     const newId = 'node_text_' + Date.now();
+    const spawnPosition = customPos ? {
+      x: customPos.x - 140 + (Math.random() - 0.5) * 40,
+      y: customPos.y - 60 + (Math.random() - 0.5) * 40
+    } : {
+      x: 180 + Math.random() * 80,
+      y: 180 + Math.random() * 80
+    };
     const newNode = {
       id: newId,
       type: 'textNode',
-      position: { x: 180 + Math.random() * 80, y: 180 + Math.random() * 80 },
+      position: spawnPosition,
       data: {
         tag: 'NOTE',
         icon: '📝',
@@ -96,6 +117,96 @@ export function useDiagramNodeActions({
     setNodes(nds => [...nds, newNode]);
     triggerAutoSave();
   }, [setNodes, triggerAutoSave, takeSnapshot]);
+
+  // Spawn node connected to dragged wire
+  const handleSpawnNodeConnected = useCallback(({ type, flowPosition, sourceNodeId, sourceHandleId, handleType }) => {
+    if (takeSnapshot) takeSnapshot();
+    const newId = 'node_' + (type === 'textNode' ? 'text_' : '') + Date.now();
+    let newNode = null;
+
+    if (type === 'hierarchyNode') {
+      newNode = {
+        id: newId,
+        type: 'hierarchyNode',
+        position: { x: flowPosition.x - 40, y: flowPosition.y - 40 },
+        data: {
+          tag: 'PREFAB',
+          rootPath: 'Assets/Prefabs/NewEntity/NewEntity.prefab',
+          items: [
+            { level: 0, isLast: true, icon: '🟢', name: 'NewEntity', details: 'Transform, Rigidbody' },
+            { level: 1, isLast: true, icon: '👁️', name: 'MeshVisual', details: 'MeshFilter, MeshRenderer' }
+          ]
+        }
+      };
+    } else if (type === 'logicNode') {
+      newNode = {
+        id: newId,
+        type: 'logicNode',
+        position: { x: flowPosition.x - 40, y: flowPosition.y - 40 },
+        data: {
+          nodeType: 'LOGIC',
+          title: 'EntityController.Tick()',
+          lines: [
+            { level: 0, prefix: '├── ', icon: '⚡', code: 'if (isActive && isGrounded)', comment: 'Проверка флагов' },
+            { level: 1, prefix: '└── ', icon: '🔄', code: 'PerformAction(deltaTime);', comment: 'Выполнение шага' }
+          ]
+        }
+      };
+    } else {
+      newNode = {
+        id: newId,
+        type: 'textNode',
+        position: { x: flowPosition.x - 40, y: flowPosition.y - 40 },
+        data: {
+          tag: 'NOTE',
+          icon: '📝',
+          text: 'Новая текстовая надпись / примечание',
+          textColor: '#f0f6fc',
+          fontSize: 'md',
+          align: 'left',
+          scale: 1
+        },
+        style: {
+          width: 280
+        }
+      };
+    }
+
+    const isSource = handleType !== 'target';
+    const sId = (sourceHandleId || '').toLowerCase();
+
+    let targetHandleId = type === 'textNode' ? 'left-target' : 'target-left';
+    let newSourceHandleId = type === 'textNode' ? 'right-source' : 'source-right';
+
+    if (sId.includes('left')) {
+      targetHandleId = type === 'textNode' ? 'right-target' : 'target-right';
+      newSourceHandleId = type === 'textNode' ? 'right-source' : 'source-right';
+    } else if (sId.includes('right')) {
+      targetHandleId = type === 'textNode' ? 'left-target' : 'target-left';
+      newSourceHandleId = type === 'textNode' ? 'left-source' : 'source-left';
+    } else if (sId.includes('top')) {
+      targetHandleId = type === 'textNode' ? 'bottom-target' : 'target-bottom';
+      newSourceHandleId = type === 'textNode' ? 'bottom-source' : 'source-bottom';
+    } else if (sId.includes('bottom')) {
+      targetHandleId = type === 'textNode' ? 'top-target' : 'target-top';
+      newSourceHandleId = type === 'textNode' ? 'top-source' : 'source-top';
+    }
+
+    const newEdge = {
+      id: `edge_${sourceNodeId}_${newId}_${Date.now()}`,
+      source: isSource ? sourceNodeId : newId,
+      target: isSource ? newId : sourceNodeId,
+      sourceHandle: isSource ? sourceHandleId : newSourceHandleId,
+      targetHandle: isSource ? targetHandleId : sourceHandleId,
+      type: 'deletable',
+      animated: true,
+      style: { stroke: '#58a6ff', strokeWidth: 2 }
+    };
+
+    setNodes(nds => [...nds, newNode]);
+    setEdges(eds => addEdge(newEdge, eds));
+    triggerAutoSave();
+  }, [setNodes, setEdges, triggerAutoSave, takeSnapshot]);
 
   // Update text node properties
   const handleUpdateTextNode = useCallback((nodeId, updates) => {
@@ -745,6 +856,7 @@ export function useDiagramNodeActions({
     handleAddHierarchyNode,
     handleAddLogicNode,
     handleAddTextNode,
+    handleSpawnNodeConnected,
     handleUpdateTextNode,
     handleDeleteNode,
     handleDeleteEdge,

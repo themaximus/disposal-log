@@ -3236,6 +3236,150 @@ select,
     color: #ffffff;
 }
 
+/* Quick Connect Menu (Spawn block on wire drop in empty canvas) */
+.quick-connect-menu {
+    width: 220px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    animation: quickConnectFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    user-select: none;
+}
+
+@keyframes quickConnectFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.quick-connect-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(13, 17, 23, 0.85);
+    border-bottom: 1px solid #21262d;
+}
+
+.quick-connect-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.quick-connect-icon {
+    font-size: 1rem;
+    color: #e3b341;
+}
+
+.quick-connect-close-btn {
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    font-size: 0.8rem;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.12s ease;
+}
+
+.quick-connect-close-btn:hover {
+    color: #f0f6fc;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.quick-connect-options {
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.quick-connect-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #f0f6fc;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.quick-connect-item-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.quick-connect-item-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.quick-connect-item-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #f0f6fc;
+}
+
+.quick-connect-item-desc {
+    font-size: 0.72rem;
+    color: #8b949e;
+}
+
+.quick-connect-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
+}
+
+.quick-connect-item.opt-prefab:hover {
+    background: rgba(88, 166, 255, 0.12);
+    border-color: rgba(88, 166, 255, 0.35);
+}
+.quick-connect-item.opt-prefab:hover .quick-connect-item-name {
+    color: #58a6ff;
+}
+
+.quick-connect-item.opt-logic:hover {
+    background: rgba(188, 140, 255, 0.12);
+    border-color: rgba(188, 140, 255, 0.35);
+}
+.quick-connect-item.opt-logic:hover .quick-connect-item-name {
+    color: #bc8cff;
+}
+
+.quick-connect-item.opt-text:hover {
+    background: rgba(63, 185, 80, 0.12);
+    border-color: rgba(63, 185, 80, 0.35);
+}
+.quick-connect-item.opt-text:hover .quick-connect-item-name {
+    color: #3fb950;
+}
+
 /* Edge Pill & Inline Text Editing */
 .diagram-edge-pill-wrapper {
     display: flex;
@@ -6135,5 +6279,3 @@ select,
     background: #58a6ff !important;
     border: 1px solid #ffffff !important;
 }
-
-

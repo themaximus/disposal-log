@@ -46,9 +46,13 @@ export function useDiagramGrouping({ nodes, setNodes, setEdges, nodesRef, trigge
   }, [handleUngroup]);
 
   // Добавить пустую секцию
-  const handleAddEmptySection = useCallback(() => {
+  const handleAddEmptySection = useCallback((customPos) => {
     if (takeSnapshot) takeSnapshot();
-    const newSection = DiagramGroupingService.createEmptySection();
+    const spawnPosition = customPos ? {
+      x: customPos.x - 310 + (Math.random() - 0.5) * 40,
+      y: customPos.y - 210 + (Math.random() - 0.5) * 40
+    } : { x: 250, y: 120 };
+    const newSection = DiagramGroupingService.createEmptySection({ position: spawnPosition });
     setNodes(nds => DiagramGroupingService.sortNodesParentsFirst([newSection, ...nds]));
     triggerAutoSave();
   }, [setNodes, triggerAutoSave, takeSnapshot]);

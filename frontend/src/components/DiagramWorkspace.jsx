@@ -21,6 +21,7 @@ import NodeEditModal from './diagram/modals/NodeEditModal';
 import TagModal from './diagram/modals/TagModal';
 import ExportDiagramModal from './diagram/modals/ExportDiagramModal';
 import ImportDiagramModal from './diagram/modals/ImportDiagramModal';
+import QuickConnectMenu from './diagram/QuickConnectMenu';
 import DiagramToolbar from './diagram/DiagramToolbar';
 import DiagramFloatingSelectionBar from './diagram/DiagramFloatingSelectionBar';
 import { DiagramActionsContext } from './DiagramActionsContext';
@@ -213,6 +214,114 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     setNewTitle('');
   };
 
+  // Quick Connect Menu state (Drop edge in empty canvas to spawn node)
+  const connectingSourceRef = useRef(null);
+  const hasConnectedRef = useRef(false);
+  const [quickConnectMenu, setQuickConnectMenu] = useState(null);
+
+  // Helper: Get center flow position of the current visible screen area (viewport)
+  const getViewportCenterFlowPosition = useCallback(() => {
+    if (!reactFlowInstance) {
+      return { x: 250, y: 150 };
+    }
+    const container = workspaceContainerRef.current;
+    if (container && reactFlowInstance.screenToFlowPosition) {
+      const rect = container.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      return reactFlowInstance.screenToFlowPosition({ x: centerX, y: centerY });
+    }
+    const { x, y, zoom } = reactFlowInstance.getViewport();
+    return {
+      x: (-x + window.innerWidth / 2) / zoom,
+      y: (-y + window.innerHeight / 2) / zoom
+    };
+  }, [reactFlowInstance]);
+
+  // Toolbar node spawn handlers centered in current viewport
+  const handleAddHierarchyNodeCenter = useCallback(() => {
+    nodeActions.handleAddHierarchyNode(getViewportCenterFlowPosition());
+  }, [nodeActions, getViewportCenterFlowPosition]);
+
+  const handleAddLogicNodeCenter = useCallback(() => {
+    nodeActions.handleAddLogicNode(getViewportCenterFlowPosition());
+  }, [nodeActions, getViewportCenterFlowPosition]);
+
+  const handleAddTextNodeCenter = useCallback(() => {
+    nodeActions.handleAddTextNode(getViewportCenterFlowPosition());
+  }, [nodeActions, getViewportCenterFlowPosition]);
+
+  const handleAddEmptySectionCenter = useCallback(() => {
+    handleAddEmptySection(getViewportCenterFlowPosition());
+  }, [handleAddEmptySection, getViewportCenterFlowPosition]);
+
+  // Connect handlers with QuickConnect popup on drop in empty canvas
+  const handleConnectStart = useCallback((event, params) => {
+    connectingSourceRef.current = params;
+    hasConnectedRef.current = false;
+  }, []);
+
+  const handleConnect = useCallback((params) => {
+    hasConnectedRef.current = true;
+    connectingSourceRef.current = null;
+    nodeActions.onConnect(params);
+  }, [nodeActions]);
+
+  const handleConnectEnd = useCallback((event) => {
+    if (hasConnectedRef.current) {
+      connectingSourceRef.current = null;
+      return;
+    }
+
+    if (!connectingSourceRef.current || !reactFlowInstance) {
+      connectingSourceRef.current = null;
+      return;
+    }
+
+    // Determine client position of mouseup / touchend
+    const clientX = 'clientX' in event ? event.clientX : event.changedTouches?.[0]?.clientX;
+    const clientY = 'clientY' in event ? event.clientY : event.changedTouches?.[0]?.clientY;
+
+    if (clientX === undefined || clientY === undefined) {
+      connectingSourceRef.current = null;
+      return;
+    }
+
+    // Ignore if drop happened directly on controls, minimap, top bar or modal
+    const targetElement = event.target;
+    if (targetElement && targetElement.closest && targetElement.closest('.react-flow__controls, .react-flow__minimap, .diagram-top-bar, .modal')) {
+      connectingSourceRef.current = null;
+      return;
+    }
+
+    const flowPos = reactFlowInstance.screenToFlowPosition({ x: clientX, y: clientY });
+
+    setQuickConnectMenu({
+      screenX: clientX,
+      screenY: clientY,
+      flowX: flowPos.x,
+      flowY: flowPos.y,
+      sourceNodeId: connectingSourceRef.current.nodeId,
+      sourceHandleId: connectingSourceRef.current.handleId,
+      handleType: connectingSourceRef.current.handleType
+    });
+
+    connectingSourceRef.current = null;
+  }, [reactFlowInstance]);
+
+  const handleQuickConnectSelect = useCallback((type) => {
+    if (quickConnectMenu) {
+      nodeActions.handleSpawnNodeConnected({
+        type,
+        flowPosition: { x: quickConnectMenu.flowX, y: quickConnectMenu.flowY },
+        sourceNodeId: quickConnectMenu.sourceNodeId,
+        sourceHandleId: quickConnectMenu.sourceHandleId,
+        handleType: quickConnectMenu.handleType
+      });
+      setQuickConnectMenu(null);
+    }
+  }, [quickConnectMenu, nodeActions]);
+
   // Memoized handlers for toolbar, selection bar and canvas drag to prevent re-renders
   const handleOpenNewModal = useCallback(() => {
     setNewTitle('');
@@ -333,10 +442,10 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         onRedo={redo}
         interactionMode={interactionMode}
         setInteractionMode={setInteractionMode}
-        onAddHierarchyNode={nodeActions.handleAddHierarchyNode}
-        onAddLogicNode={nodeActions.handleAddLogicNode}
-        onAddTextNode={nodeActions.handleAddTextNode}
-        onAddEmptySection={handleAddEmptySection}
+        onAddHierarchyNode={handleAddHierarchyNodeCenter}
+        onAddLogicNode={handleAddLogicNodeCenter}
+        onAddTextNode={handleAddTextNodeCenter}
+        onAddEmptySection={handleAddEmptySectionCenter}
         selectedGroupableCount={selectedGroupableCount}
         onGroupSelected={handleGroupSelectedNodes}
         onOpenPrefabsModal={handleOpenPrefabsModal}
@@ -356,7 +465,9 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
             edges={edges}
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
-            onConnect={nodeActions.onConnect}
+            onConnect={handleConnect}
+            onConnectStart={handleConnectStart}
+            onConnectEnd={handleConnectEnd}
             onInit={setReactFlowInstance}
             onNodeDragStart={handleNodeDragStart}
             onNodeDragStop={clearGuides}
@@ -479,6 +590,13 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
         onReplaceCurrentDiagram={handleReplaceCurrentWithProject}
         onMergeIntoCurrentDiagram={handleMergeProjectIntoCurrent}
         currentDiagramTitle={activeDiagram?.title || 'Схема'}
+      />
+
+      {/* Quick Connect Popover Menu */}
+      <QuickConnectMenu
+        menuData={quickConnectMenu}
+        onSelect={handleQuickConnectSelect}
+        onClose={() => setQuickConnectMenu(null)}
       />
     </div>
   );
