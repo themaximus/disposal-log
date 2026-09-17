@@ -18,6 +18,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run("PRAGMA journal_mode = WAL;");
         db.run("PRAGMA cache_size = -2000;"); // Limits SQLite page cache to ~2MB RAM
         db.run("PRAGMA foreign_keys = ON;");
+        db.run("PRAGMA busy_timeout = 10000;"); // Wait up to 10s if database is busy/locked during container startup or redeployment
 
         // Users table for Google & GitHub OAuth
         db.run(`CREATE TABLE IF NOT EXISTS users (

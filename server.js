@@ -1438,6 +1438,68 @@ app.get('*splat', (req, res, next) => {
     }
 });
 
-app.listen(port, '0.0.0.0', () => {
+const server = app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${port}`);
 });
+
+// Process level safety handlers
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Graceful shutdown handling for Railway container lifecycle
+let isShuttingDown = false;
+
+function gracefulShutdown(signal) {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`Received ${signal}. Starting graceful shutdown...`);
+
+    // Safety timeout: force clean exit if hanging beyond 8s
+    const forceTimer = setTimeout(() => {
+        console.warn('Graceful shutdown timeout exceeded. Forcing clean exit.');
+        process.exit(0);
+    }, 8000);
+    if (forceTimer.unref) forceTimer.unref();
+
+    // 1. Stop Telegram bot if active
+    if (bot && typeof bot.stop === 'function') {
+        try {
+            bot.stop(signal);
+            console.log('Telegram bot stopped.');
+        } catch (e) {
+            console.error('Error stopping Telegram bot:', e.message);
+        }
+    }
+
+    // 2. Stop accepting new HTTP requests
+    server.close((err) => {
+        if (err) {
+            console.error('Error closing HTTP server:', err.message);
+        } else {
+            console.log('HTTP server closed cleanly.');
+        }
+
+        // 3. Close SQLite DB (flushes WAL checkpoint & frees volume file locks)
+        if (db && typeof db.close === 'function') {
+            db.close((dbErr) => {
+                if (dbErr) {
+                    console.error('Error closing SQLite DB:', dbErr.message);
+                } else {
+                    console.log('SQLite database closed cleanly.');
+                }
+                process.exit(0);
+            });
+        } else {
+            process.exit(0);
+        }
+    });
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
