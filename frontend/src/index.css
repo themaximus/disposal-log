@@ -2913,6 +2913,67 @@ select,
     bottom: -6px !important;
 }
 
+/* Component Row Level Connectors (Handles for Component-to-Component Connections) */
+.row-handle {
+    width: 8px !important;
+    height: 8px !important;
+    min-width: 8px !important;
+    min-height: 8px !important;
+    border-radius: 50% !important;
+    background: #58a6ff !important;
+    border: 1.5px solid #111419 !important;
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+    z-index: 10 !important;
+    cursor: crosshair;
+}
+
+.row-handle-left {
+    left: -14px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+}
+
+.row-handle-right {
+    right: -14px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+}
+
+.gamedev-hierarchy-card:hover .row-handle,
+.logic-step-card:hover .row-handle,
+.react-flow.connecting .row-handle,
+.react-flow--connecting .row-handle {
+    opacity: 0.4;
+}
+
+.tree-item-row:hover .row-handle,
+.logic-item-row:hover .row-handle {
+    opacity: 0.95 !important;
+}
+
+.row-handle:hover {
+    opacity: 1 !important;
+    transform: translateY(-50%) scale(1.5) !important;
+    box-shadow: 0 0 8px #58a6ff !important;
+    background: #79c0ff !important;
+}
+
+/* Explicit animated edge dashflow traveling strictly from source to target */
+.react-flow__edge.animated path.react-flow__edge-path {
+    stroke-dasharray: 6 4 !important;
+    animation: diagramDashFlow 0.55s linear infinite !important;
+}
+
+@keyframes diagramDashFlow {
+    from {
+        stroke-dashoffset: 20;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
 /* React Flow Canvas Overrides */
 .react-flow__pane {
     cursor: grab;
@@ -3596,10 +3657,8 @@ select,
 
 /* Color Picker Popover */
 .root-color-palette-popover {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    z-index: 9999;
+    position: fixed;
+    z-index: 15000;
     width: 210px;
     background: #161b22;
     border: 1px solid #30363d;
@@ -4545,16 +4604,14 @@ select,
    EMOJI PICKER POPOVER & INTERACTIVE ROW ICON BUTTONS
    ========================================================== */
 .emoji-picker-popover {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
+    position: fixed;
+    z-index: 15000;
     width: 320px;
     max-width: 90vw;
     background: #161b22;
     border: 1px solid #30363d;
     border-radius: 10px;
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(88, 166, 255, 0.25);
-    z-index: 100000;
     padding: 10px 12px;
     display: flex;
     flex-direction: column;

@@ -108,8 +108,8 @@ export const STARTER_PRESETS = [
           id: 'edge-1',
           source: 'node-player-prefab',
           target: 'node-player-logic',
-          sourceHandle: 'source-right',
-          targetHandle: 'target-left',
+          sourceHandle: 'handle-right',
+          targetHandle: 'handle-left',
           label: 'Управляет скриптом',
           animated: true,
           style: { stroke: '#58a6ff', strokeWidth: 2 }
@@ -118,8 +118,8 @@ export const STARTER_PRESETS = [
           id: 'edge-2',
           source: 'node-player-prefab',
           target: 'node-item-prefab',
-          sourceHandle: 'source-right',
-          targetHandle: 'target-left',
+          sourceHandle: 'item-3-right',
+          targetHandle: 'handle-left',
           label: 'Спавн из PointDrop',
           animated: true,
           style: { stroke: '#3fb950', strokeWidth: 2 }
@@ -168,8 +168,8 @@ export const STARTER_PRESETS = [
           id: 'edge-fsm',
           source: 'node-enemy-prefab',
           target: 'node-fsm-states',
-          sourceHandle: 'source-right',
-          targetHandle: 'target-left',
+          sourceHandle: 'handle-right',
+          targetHandle: 'handle-left',
           label: 'AI Controller',
           animated: true,
           style: { stroke: '#f0883e', strokeWidth: 2 }

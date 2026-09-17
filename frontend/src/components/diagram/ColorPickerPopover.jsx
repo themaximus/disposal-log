@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ROOT_COLOR_PALETTE } from '../../utils/diagramStorage';
 
 export default function ColorPickerPopover({
@@ -10,6 +11,40 @@ export default function ColorPickerPopover({
 }) {
   const [customHex, setCustomHex] = useState(currentColor || defaultColor);
   const popoverRef = useRef(null);
+  const anchorRef = useRef(null);
+  const [coords, setCoords] = useState(null);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (!anchorRef.current) return;
+      const parentEl = anchorRef.current.parentElement || anchorRef.current;
+      const rect = parentEl.getBoundingClientRect();
+      const popoverWidth = 240;
+      const popoverHeight = 220;
+
+      let left = rect.left;
+      let top = rect.bottom + 6;
+
+      if (left + popoverWidth > window.innerWidth - 16) {
+        left = Math.max(16, window.innerWidth - popoverWidth - 16);
+      }
+      if (left < 16) left = 16;
+
+      if (top + popoverHeight > window.innerHeight - 16) {
+        if (rect.top - popoverHeight - 6 > 16) {
+          top = rect.top - popoverHeight - 6;
+        } else {
+          top = Math.max(16, window.innerHeight - popoverHeight - 16);
+        }
+      }
+
+      setCoords({ left: Math.round(left), top: Math.round(top) });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    return () => window.removeEventListener('resize', updatePosition);
+  }, []);
 
   useEffect(() => {
     setCustomHex(currentColor || defaultColor);
@@ -60,12 +95,21 @@ export default function ColorPickerPopover({
   };
 
   return (
-    <div
-      ref={popoverRef}
-      className="root-color-palette-popover nodrag nowheel"
-      onClick={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
+    <>
+      <span ref={anchorRef} style={{ display: 'none' }} />
+      {coords && createPortal(
+        <div
+          ref={popoverRef}
+          className="root-color-palette-popover nodrag nowheel"
+          style={{
+            position: 'fixed',
+            left: `${coords.left}px`,
+            top: `${coords.top}px`,
+            zIndex: 15000
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
       <div className="color-popover-header">
         <span className="color-popover-title">🎨 {title}</span>
         {defaultColor && currentColor !== defaultColor && (
@@ -127,6 +171,9 @@ export default function ColorPickerPopover({
           ОК
         </button>
       </form>
-    </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

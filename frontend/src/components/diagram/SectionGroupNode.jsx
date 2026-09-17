@@ -106,38 +106,43 @@ function SectionGroupNode({ id, data, selected, width, height, isConnectable = t
         backgroundColor: currentTheme.bg
       }}
     >
-      {/* Connection Handles (Точки привязки к зоне группы): Top, Bottom, Left, Right */}
-      {/* Top handles */}
-      <Handle type="target" position={Position.Top} id="top-left-target" isConnectable={connectable} style={{ left: '25%', ...sectionHandleStyle }} className="diagram-handle handle-top section-handle" />
-      <Handle type="source" position={Position.Top} id="top-left-source" isConnectable={connectable} style={{ left: '25%', ...sectionHandleStyle }} className="diagram-handle handle-top section-handle" />
-      <Handle type="target" position={Position.Top} id="top-center-target" isConnectable={connectable} style={{ left: '50%', ...sectionHandleStyle }} className="diagram-handle handle-top section-handle" />
-      <Handle type="source" position={Position.Top} id="top-center-source" isConnectable={connectable} style={{ left: '50%', ...sectionHandleStyle }} className="diagram-handle handle-top section-handle" />
-      <Handle type="target" position={Position.Top} id="top-right-target" isConnectable={connectable} style={{ left: '75%', ...sectionHandleStyle }} className="diagram-handle handle-top section-handle" />
-      <Handle type="source" position={Position.Top} id="top-right-source" isConnectable={connectable} style={{ left: '75%', ...sectionHandleStyle }} className="diagram-handle handle-top section-handle" />
-
-      {/* Bottom handles */}
-      <Handle type="target" position={Position.Bottom} id="bottom-left-target" isConnectable={connectable} style={{ left: '25%', ...sectionHandleStyle }} className="diagram-handle handle-bottom section-handle" />
-      <Handle type="source" position={Position.Bottom} id="bottom-left-source" isConnectable={connectable} style={{ left: '25%', ...sectionHandleStyle }} className="diagram-handle handle-bottom section-handle" />
-      <Handle type="target" position={Position.Bottom} id="bottom-center-target" isConnectable={connectable} style={{ left: '50%', ...sectionHandleStyle }} className="diagram-handle handle-bottom section-handle" />
-      <Handle type="source" position={Position.Bottom} id="bottom-center-source" isConnectable={connectable} style={{ left: '50%', ...sectionHandleStyle }} className="diagram-handle handle-bottom section-handle" />
-      <Handle type="target" position={Position.Bottom} id="bottom-right-target" isConnectable={connectable} style={{ left: '75%', ...sectionHandleStyle }} className="diagram-handle handle-bottom section-handle" />
-      <Handle type="source" position={Position.Bottom} id="bottom-right-source" isConnectable={connectable} style={{ left: '75%', ...sectionHandleStyle }} className="diagram-handle handle-bottom section-handle" />
-
-      {/* Left handles */}
-      <Handle type="target" position={Position.Left} id="left-top-target" isConnectable={connectable} style={{ top: '25%', ...sectionHandleStyle }} className="diagram-handle handle-left section-handle" />
-      <Handle type="source" position={Position.Left} id="left-top-source" isConnectable={connectable} style={{ top: '25%', ...sectionHandleStyle }} className="diagram-handle handle-left section-handle" />
-      <Handle type="target" position={Position.Left} id="left-center-target" isConnectable={connectable} style={{ top: '50%', ...sectionHandleStyle }} className="diagram-handle handle-left section-handle" />
-      <Handle type="source" position={Position.Left} id="left-center-source" isConnectable={connectable} style={{ top: '50%', ...sectionHandleStyle }} className="diagram-handle handle-left section-handle" />
-      <Handle type="target" position={Position.Left} id="left-bottom-target" isConnectable={connectable} style={{ top: '75%', ...sectionHandleStyle }} className="diagram-handle handle-left section-handle" />
-      <Handle type="source" position={Position.Left} id="left-bottom-source" isConnectable={connectable} style={{ top: '75%', ...sectionHandleStyle }} className="diagram-handle handle-left section-handle" />
-
-      {/* Right handles */}
-      <Handle type="target" position={Position.Right} id="right-top-target" isConnectable={connectable} style={{ top: '25%', ...sectionHandleStyle }} className="diagram-handle handle-right section-handle" />
-      <Handle type="source" position={Position.Right} id="right-top-source" isConnectable={connectable} style={{ top: '25%', ...sectionHandleStyle }} className="diagram-handle handle-right section-handle" />
-      <Handle type="target" position={Position.Right} id="right-center-target" isConnectable={connectable} style={{ top: '50%', ...sectionHandleStyle }} className="diagram-handle handle-right section-handle" />
-      <Handle type="source" position={Position.Right} id="right-center-source" isConnectable={connectable} style={{ top: '50%', ...sectionHandleStyle }} className="diagram-handle handle-right section-handle" />
-      <Handle type="target" position={Position.Right} id="right-bottom-target" isConnectable={connectable} style={{ top: '75%', ...sectionHandleStyle }} className="diagram-handle handle-right section-handle" />
-      <Handle type="source" position={Position.Right} id="right-bottom-source" isConnectable={connectable} style={{ top: '75%', ...sectionHandleStyle }} className="diagram-handle handle-right section-handle" />
+      {/* Connection Handles (Точки привязки к зоне группы): 1 per side (Top, Bottom, Left, Right) */}
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="handle-top"
+        isConnectable={connectable}
+        style={{ left: '50%', ...sectionHandleStyle }}
+        className="diagram-handle handle-top section-handle"
+        title="Привязать к секции (сверху)"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="handle-bottom"
+        isConnectable={connectable}
+        style={{ left: '50%', ...sectionHandleStyle }}
+        className="diagram-handle handle-bottom section-handle"
+        title="Привязать к секции (снизу)"
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="handle-left"
+        isConnectable={connectable}
+        style={{ top: '50%', ...sectionHandleStyle }}
+        className="diagram-handle handle-left section-handle"
+        title="Привязать к секции (слева)"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="handle-right"
+        isConnectable={connectable}
+        style={{ top: '50%', ...sectionHandleStyle }}
+        className="diagram-handle handle-right section-handle"
+        title="Привязать к секции (справа)"
+      />
 
       {/* Interactive resize and corner scale handles when section is selected */}
       {selected && (

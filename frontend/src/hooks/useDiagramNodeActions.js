@@ -172,32 +172,25 @@ export function useDiagramNodeActions({
       };
     }
 
-    const isSource = handleType !== 'target';
     const sId = (sourceHandleId || '').toLowerCase();
 
-    let targetHandleId = type === 'textNode' ? 'left-target' : 'target-left';
-    let newSourceHandleId = type === 'textNode' ? 'right-source' : 'source-right';
-
+    let targetHandleId = 'handle-left';
     if (sId.includes('left')) {
-      targetHandleId = type === 'textNode' ? 'right-target' : 'target-right';
-      newSourceHandleId = type === 'textNode' ? 'right-source' : 'source-right';
+      targetHandleId = 'handle-right';
     } else if (sId.includes('right')) {
-      targetHandleId = type === 'textNode' ? 'left-target' : 'target-left';
-      newSourceHandleId = type === 'textNode' ? 'left-source' : 'source-left';
+      targetHandleId = 'handle-left';
     } else if (sId.includes('top')) {
-      targetHandleId = type === 'textNode' ? 'bottom-target' : 'target-bottom';
-      newSourceHandleId = type === 'textNode' ? 'bottom-source' : 'source-bottom';
+      targetHandleId = 'handle-bottom';
     } else if (sId.includes('bottom')) {
-      targetHandleId = type === 'textNode' ? 'top-target' : 'target-top';
-      newSourceHandleId = type === 'textNode' ? 'top-source' : 'source-top';
+      targetHandleId = 'handle-top';
     }
 
     const newEdge = {
       id: `edge_${sourceNodeId}_${newId}_${Date.now()}`,
-      source: isSource ? sourceNodeId : newId,
-      target: isSource ? newId : sourceNodeId,
-      sourceHandle: isSource ? sourceHandleId : newSourceHandleId,
-      targetHandle: isSource ? targetHandleId : sourceHandleId,
+      source: sourceNodeId,
+      target: newId,
+      sourceHandle: sourceHandleId,
+      targetHandle: targetHandleId,
       type: 'deletable',
       animated: true,
       style: { stroke: '#58a6ff', strokeWidth: 2 }

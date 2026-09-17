@@ -3,6 +3,13 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import DiagramSyncService from '../services/DiagramSyncService';
 import DiagramGroupingService from '../utils/diagramGroupingService';
 import { STARTER_PRESETS } from '../utils/diagramStorage';
+import { normalizeHandleId } from '../utils/diagramFormatService';
+
+const normalizeEdges = (eds = []) => (eds || []).map(e => ({
+  ...e,
+  sourceHandle: normalizeHandleId(e.sourceHandle) || null,
+  targetHandle: normalizeHandleId(e.targetHandle) || null
+}));
 
 export function useDiagramData({ currentUser, nodes, setNodes, edges, setEdges }) {
   const [diagrams, setDiagrams] = useState([]);
@@ -22,7 +29,7 @@ export function useDiagramData({ currentUser, nodes, setNodes, edges, setEdges }
     if (list.length > 0) {
       setCurrentDiagramId(list[0].id);
       setNodes(DiagramGroupingService.sortNodesParentsFirst(list[0].nodes || []));
-      setEdges(list[0].edges || []);
+      setEdges(normalizeEdges(list[0].edges || []));
     }
   }, [currentUser, setNodes, setEdges]);
 
@@ -69,7 +76,7 @@ export function useDiagramData({ currentUser, nodes, setNodes, edges, setEdges }
 
     setCurrentDiagramId(target.id);
     setNodes(DiagramGroupingService.sortNodesParentsFirst(target.nodes || []));
-    setEdges(target.edges || []);
+    setEdges(normalizeEdges(target.edges || []));
   }, [diagrams, setNodes, setEdges]);
 
   // Создание новой схемы
@@ -77,7 +84,7 @@ export function useDiagramData({ currentUser, nodes, setNodes, edges, setEdges }
     const preset = STARTER_PRESETS.find(p => p.id === presetId) || STARTER_PRESETS[0];
     const finalTitle = (title || '').trim() || preset.title || 'Новая схема';
     const finalNodes = JSON.parse(JSON.stringify(preset.data.nodes));
-    const finalEdges = JSON.parse(JSON.stringify(preset.data.edges));
+    const finalEdges = normalizeEdges(JSON.parse(JSON.stringify(preset.data.edges)));
 
     const newDiagram = await DiagramSyncService.createDiagram(finalTitle, finalNodes, finalEdges, currentUser);
     setDiagrams(prev => [newDiagram, ...prev]);
@@ -102,7 +109,7 @@ export function useDiagramData({ currentUser, nodes, setNodes, edges, setEdges }
     setDiagrams(remaining);
     setCurrentDiagramId(remaining[0].id);
     setNodes(DiagramGroupingService.sortNodesParentsFirst(remaining[0].nodes || []));
-    setEdges(remaining[0].edges || []);
+    setEdges(normalizeEdges(remaining[0].edges || []));
     return true;
   }, [diagrams, currentDiagramId, currentUser, setNodes, setEdges]);
 
@@ -110,7 +117,7 @@ export function useDiagramData({ currentUser, nodes, setNodes, edges, setEdges }
   const handleImportProjectAsNew = useCallback(async (project) => {
     const finalTitle = (project.title || 'Импортированная схема').trim();
     const finalNodes = project.nodes || [];
-    const finalEdges = project.edges || [];
+    const finalEdges = normalizeEdges(project.edges || []);
 
     const newDiagram = await DiagramSyncService.createDiagram(finalTitle, finalNodes, finalEdges, currentUser);
     setDiagrams(prev => [newDiagram, ...prev]);
@@ -124,7 +131,7 @@ export function useDiagramData({ currentUser, nodes, setNodes, edges, setEdges }
   const handleReplaceCurrentWithProject = useCallback(async (project) => {
     if (!currentDiagramId) return;
     const finalNodes = project.nodes || [];
-    const finalEdges = project.edges || [];
+    const finalEdges = normalizeEdges(project.edges || []);
     setNodes(DiagramGroupingService.sortNodesParentsFirst(finalNodes));
     setEdges(finalEdges);
     triggerAutoSave();

@@ -4,6 +4,27 @@
 export const DIAGRAM_SCHEMA_VERSION = 'disposal-diagram-v1.0';
 
 /**
+ * Нормализует ID точек привязки для обратной совместимости (старые 8-точечные и секционные -> единые 4-точечные)
+ */
+export function normalizeHandleId(handleId) {
+  if (!handleId || typeof handleId !== 'string') return handleId;
+  const lower = handleId.toLowerCase();
+  if (['source-left', 'target-left', 'left-source', 'left-target', 'left-top-source', 'left-center-source', 'left-bottom-source', 'left-top-target', 'left-center-target', 'left-bottom-target'].includes(lower)) {
+    return 'handle-left';
+  }
+  if (['source-right', 'target-right', 'right-source', 'right-target', 'right-top-source', 'right-center-source', 'right-bottom-source', 'right-top-target', 'right-center-target', 'right-bottom-target'].includes(lower)) {
+    return 'handle-right';
+  }
+  if (['source-top', 'target-top', 'top-source', 'top-target', 'top-left-source', 'top-center-source', 'top-right-source', 'top-left-target', 'top-center-target', 'top-right-target'].includes(lower)) {
+    return 'handle-top';
+  }
+  if (['source-bottom', 'target-bottom', 'bottom-source', 'bottom-target', 'bottom-left-source', 'bottom-center-source', 'bottom-right-source', 'bottom-left-target', 'bottom-center-target', 'bottom-right-target'].includes(lower)) {
+    return 'handle-bottom';
+  }
+  return handleId;
+}
+
+/**
  * Создает валидный объект проекта схемы для экспорта в файл .diagram
  */
 export function serializeDiagramProject({
@@ -21,32 +42,9 @@ export function serializeDiagramProject({
       x: Math.round(n.position?.x || 0),
       y: Math.round(n.position?.y || 0)
     },
-    data: {
-      tag: n.data?.tag,
-      nodeType: n.data?.nodeType,
-      rootPath: n.data?.rootPath,
-      rootIcon: n.data?.rootIcon,
-      rootColor: n.data?.rootColor,
-      title: n.data?.title,
-      titleIcon: n.data?.titleIcon,
-      titleColor: n.data?.titleColor,
-      items: Array.isArray(n.data?.items) ? n.data.items : [],
-      lines: Array.isArray(n.data?.lines) ? n.data.lines : [],
-      text: n.data?.text,
-      textColor: n.data?.textColor,
-      fontSize: n.data?.fontSize,
-      align: n.data?.align,
-      icon: n.data?.icon,
-      label: n.data?.label,
-      sectionColor: n.data?.sectionColor,
-      theme: n.data?.theme,
-      customBg: n.data?.customBg,
-      customBorder: n.data?.customBorder,
-      customAccent: n.data?.customAccent,
-      glow: !!n.data?.glow,
-      glowColor: n.data?.glowColor,
-      scale: n.data?.scale || 1
-    },
+    data: n.data || {},
+    ...(n.parentId ? { parentId: n.parentId } : {}),
+    ...(n.extent ? { extent: n.extent } : {}),
     ...(n.style ? { style: n.style } : {}),
     ...(n.width ? { width: n.width } : {}),
     ...(n.height ? { height: n.height } : {})
@@ -56,8 +54,8 @@ export function serializeDiagramProject({
     id: e.id,
     source: e.source,
     target: e.target,
-    sourceHandle: e.sourceHandle || null,
-    targetHandle: e.targetHandle || null,
+    sourceHandle: normalizeHandleId(e.sourceHandle) || null,
+    targetHandle: normalizeHandleId(e.targetHandle) || null,
     type: e.type || 'deletable',
     animated: e.animated !== false,
     label: e.label || '',
@@ -133,6 +131,8 @@ export function validateAndParseDiagramProject(jsonContent) {
     id: e.id || `imported_edge_${idx}_${Date.now()}`,
     source: String(e.source),
     target: String(e.target),
+    sourceHandle: normalizeHandleId(e.sourceHandle) || null,
+    targetHandle: normalizeHandleId(e.targetHandle) || null,
     type: e.type || 'deletable',
     animated: e.animated !== false
   })) : [];

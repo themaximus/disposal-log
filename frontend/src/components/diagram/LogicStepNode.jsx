@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 import { computeTreePrefix } from './GameDevHierarchyNode';
 import EmojiPickerPopover from './EmojiPickerPopover';
@@ -7,6 +7,7 @@ import ColorPickerPopover from './ColorPickerPopover';
 import useBlockCornerScale from '../../hooks/useBlockCornerScale';
 
 function LogicStepNode({ id, data, isConnectable, selected }) {
+  const updateNodeInternals = useUpdateNodeInternals();
   const actions = useContext(DiagramActionsContext);
   const onOpenInspector = actions?.onOpenInspector || actions?.onEditNode || data?.onEdit;
   const onDeleteNode = actions?.onDeleteNode || data?.onDelete;
@@ -50,6 +51,10 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
     isScaling,
     liveScalePercent
   } = useBlockCornerScale({ id, data, cardRef });
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, lines.length, data.scale, updateNodeInternals]);
 
   useEffect(() => {
     setTitleDraft(title);
@@ -317,14 +322,43 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
         </>
       )}
 
-      <Handle type="target" position={Position.Left} id="target-left" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-left" />
-      <Handle type="source" position={Position.Left} id="source-left" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-left" />
-      <Handle type="source" position={Position.Right} id="source-right" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-right" />
-      <Handle type="target" position={Position.Right} id="target-right" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-right" />
-      <Handle type="target" position={Position.Top} id="target-top" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-top" />
-      <Handle type="source" position={Position.Top} id="source-top" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-top" />
-      <Handle type="source" position={Position.Bottom} id="source-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
-      <Handle type="target" position={Position.Bottom} id="target-bottom" isConnectable={isConnectable} style={handleStyle} className="diagram-handle handle-bottom" />
+      {/* 4 Outer Card Handles (1 per side, connectionMode="loose" enables dual in/out) */}
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="handle-left"
+        isConnectable={isConnectable}
+        style={handleStyle}
+        className="diagram-handle handle-left"
+        title="Привязать к блоку (слева)"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="handle-right"
+        isConnectable={isConnectable}
+        style={handleStyle}
+        className="diagram-handle handle-right"
+        title="Привязать к блоку (справа)"
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="handle-top"
+        isConnectable={isConnectable}
+        style={handleStyle}
+        className="diagram-handle handle-top"
+        title="Привязать к блоку (сверху)"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="handle-bottom"
+        isConnectable={isConnectable}
+        style={handleStyle}
+        className="diagram-handle handle-bottom"
+        title="Привязать к блоку (снизу)"
+      />
 
       <div className="card-top-action-bar">
         <span
@@ -561,6 +595,24 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
             if (isEditing) {
               return (
                 <div key={idx} className="tree-item-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
+                  {/* Row-level component handles */}
+                  <Handle
+                    type="source"
+                    position={Position.Left}
+                    id={`line-${idx}-left`}
+                    isConnectable={isConnectable}
+                    className="diagram-handle row-handle row-handle-left"
+                    title={`Связать шаг логики: ${lineDraft.code || lineDraft.comment || 'Шаг'}`}
+                  />
+                  <Handle
+                    type="source"
+                    position={Position.Right}
+                    id={`line-${idx}-right`}
+                    isConnectable={isConnectable}
+                    className="diagram-handle row-handle row-handle-right"
+                    title={`Связать шаг логики: ${lineDraft.code || lineDraft.comment || 'Шаг'}`}
+                  />
+
                   <span className="tree-branch-prefix">{branchPrefix}</span>
                   
                   {/* Indentation level stepper */}
@@ -645,6 +697,24 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
                 }}
                 title="Кликните, чтобы редактировать этот шаг"
               >
+                {/* Row-level component handles */}
+                <Handle
+                  type="source"
+                  position={Position.Left}
+                  id={`line-${idx}-left`}
+                  isConnectable={isConnectable}
+                  className="diagram-handle row-handle row-handle-left"
+                  title={`Связать шаг логики: ${line.code || line.comment || 'Шаг'}`}
+                />
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`line-${idx}-right`}
+                  isConnectable={isConnectable}
+                  className="diagram-handle row-handle row-handle-right"
+                  title={`Связать шаг логики: ${line.code || line.comment || 'Шаг'}`}
+                />
+
                 <span className="tree-branch-prefix">{branchPrefix}</span>
                 <div className="row-inline-icon-trigger-wrapper" style={{ display: 'inline-flex' }}>
                   <span

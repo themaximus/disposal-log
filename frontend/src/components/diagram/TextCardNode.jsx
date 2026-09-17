@@ -132,18 +132,11 @@ export default function TextCardNode({ id, data, isConnectable, selected }) {
         handleClassName="text-resizer-handle"
       />
 
-      {/* Connection Handles: Top, Right, Bottom, Left (Both source and target) */}
-      <Handle type="target" position={Position.Top} id="top-target" className="diagram-handle" isConnectable={isConnectable} style={handleStyle} />
-      <Handle type="source" position={Position.Top} id="top-source" className="diagram-handle" isConnectable={isConnectable} style={handleStyle} />
-
-      <Handle type="target" position={Position.Bottom} id="bottom-target" className="diagram-handle" isConnectable={isConnectable} style={handleStyle} />
-      <Handle type="source" position={Position.Bottom} id="bottom-source" className="diagram-handle" isConnectable={isConnectable} style={handleStyle} />
-
-      <Handle type="target" position={Position.Left} id="left-target" className="diagram-handle" isConnectable={isConnectable} style={handleStyle} />
-      <Handle type="source" position={Position.Left} id="left-source" className="diagram-handle" isConnectable={isConnectable} style={handleStyle} />
-
-      <Handle type="target" position={Position.Right} id="right-target" className="diagram-handle" isConnectable={isConnectable} style={handleStyle} />
-      <Handle type="source" position={Position.Right} id="right-source" className="diagram-handle" isConnectable={isConnectable} style={handleStyle} />
+      {/* 4 Outer Card Handles (1 per side, connectionMode="loose" enables dual in/out) */}
+      <Handle type="source" position={Position.Top} id="handle-top" className="diagram-handle handle-top" isConnectable={isConnectable} style={handleStyle} title="Привязать к заметке (сверху)" />
+      <Handle type="source" position={Position.Right} id="handle-right" className="diagram-handle handle-right" isConnectable={isConnectable} style={handleStyle} title="Привязать к заметке (справа)" />
+      <Handle type="source" position={Position.Bottom} id="handle-bottom" className="diagram-handle handle-bottom" isConnectable={isConnectable} style={handleStyle} title="Привязать к заметке (снизу)" />
+      <Handle type="source" position={Position.Left} id="handle-left" className="diagram-handle handle-left" isConnectable={isConnectable} style={handleStyle} title="Привязать к заметке (слева)" />
 
       {/* Header bar: Tag, Emoji and Action buttons */}
       <div className="text-card-header">

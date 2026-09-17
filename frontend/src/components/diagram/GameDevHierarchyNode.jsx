@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 import EmojiPickerPopover from './EmojiPickerPopover';
 import ColorPickerPopover from './ColorPickerPopover';
@@ -46,6 +46,7 @@ export const computeTreePrefix = (items = [], index = 0) => {
 };
 
 function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
+  const updateNodeInternals = useUpdateNodeInternals();
   const actions = useContext(DiagramActionsContext);
   const onOpenInspector = actions?.onOpenInspector || actions?.onEditNode || data?.onEdit;
   const onDeleteNode = actions?.onDeleteNode || data?.onDelete;
@@ -88,6 +89,10 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
     isScaling,
     liveScalePercent
   } = useBlockCornerScale({ id, data, cardRef });
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, treeItems.length, data.scale, updateNodeInternals]);
 
   useEffect(() => {
     setRootDraft(rootPath);
@@ -361,70 +366,42 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
         </>
       )}
 
-      {/* Handles for connections (Multiple connections allowed) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="target-left"
-        isConnectable={isConnectable}
-        style={handleStyle}
-        className="diagram-handle handle-left"
-      />
+      {/* 4 Outer Card Handles (1 per side, connectionMode="loose" enables dual in/out) */}
       <Handle
         type="source"
         position={Position.Left}
-        id="source-left"
+        id="handle-left"
         isConnectable={isConnectable}
         style={handleStyle}
         className="diagram-handle handle-left"
+        title="Привязать к блоку (слева)"
       />
       <Handle
         type="source"
         position={Position.Right}
-        id="source-right"
+        id="handle-right"
         isConnectable={isConnectable}
         style={handleStyle}
         className="diagram-handle handle-right"
-      />
-      <Handle
-        type="target"
-        position={Position.Right}
-        id="target-right"
-        isConnectable={isConnectable}
-        style={handleStyle}
-        className="diagram-handle handle-right"
-      />
-      <Handle
-        type="target"
-        position={Position.Top}
-        id="target-top"
-        isConnectable={isConnectable}
-        style={handleStyle}
-        className="diagram-handle handle-top"
+        title="Привязать к блоку (справа)"
       />
       <Handle
         type="source"
         position={Position.Top}
-        id="source-top"
+        id="handle-top"
         isConnectable={isConnectable}
         style={handleStyle}
         className="diagram-handle handle-top"
+        title="Привязать к блоку (сверху)"
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        id="source-bottom"
+        id="handle-bottom"
         isConnectable={isConnectable}
         style={handleStyle}
         className="diagram-handle handle-bottom"
-      />
-      <Handle
-        type="target"
-        position={Position.Bottom}
-        id="target-bottom"
-        isConnectable={isConnectable}
-        style={handleStyle}
-        className="diagram-handle handle-bottom"
+        title="Привязать к блоку (снизу)"
       />
 
       {/* Top action bar (only rendered if tag exists) */}
@@ -677,6 +654,24 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
             if (isEditing) {
               return (
                 <div key={idx} className="tree-item-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
+                  {/* Row-level component handles */}
+                  <Handle
+                    type="source"
+                    position={Position.Left}
+                    id={`item-${idx}-left`}
+                    isConnectable={isConnectable}
+                    className="diagram-handle row-handle row-handle-left"
+                    title={`Связать компонент: ${rowDraft.name || 'Элемент'}`}
+                  />
+                  <Handle
+                    type="source"
+                    position={Position.Right}
+                    id={`item-${idx}-right`}
+                    isConnectable={isConnectable}
+                    className="diagram-handle row-handle row-handle-right"
+                    title={`Связать компонент: ${rowDraft.name || 'Элемент'}`}
+                  />
+
                   {/* Indentation controls for sub-rows */}
                   <div className="row-indent-controls">
                     <button
@@ -762,6 +757,24 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
                 }}
                 title="Кликните, чтобы редактировать этот элемент"
               >
+                {/* Row-level component handles */}
+                <Handle
+                  type="source"
+                  position={Position.Left}
+                  id={`item-${idx}-left`}
+                  isConnectable={isConnectable}
+                  className="diagram-handle row-handle row-handle-left"
+                  title={`Связать компонент: ${item.name || 'Элемент'}`}
+                />
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`item-${idx}-right`}
+                  isConnectable={isConnectable}
+                  className="diagram-handle row-handle row-handle-right"
+                  title={`Связать компонент: ${item.name || 'Элемент'}`}
+                />
+
                 <span className="tree-branch-prefix">
                   {computeTreePrefix(treeItems, idx)}
                 </span>

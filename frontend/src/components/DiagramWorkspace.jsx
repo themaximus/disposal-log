@@ -261,10 +261,37 @@ export default function DiagramWorkspace({ currentUser, onOpenAuth }) {
     hasConnectedRef.current = false;
   }, []);
 
-  const handleConnect = useCallback((params) => {
+  const handleConnect = useCallback((connection) => {
     hasConnectedRef.current = true;
+
+    let source = connection.source;
+    let sourceHandle = connection.sourceHandle;
+    let target = connection.target;
+    let targetHandle = connection.targetHandle;
+
+    // Strict drag direction:
+    // Ensure source is ALWAYS where the drag originated, so SVG path & animated dashflow
+    // strictly flow away from the start handle towards the target handle!
+    if (connectingSourceRef.current) {
+      const startNodeId = connectingSourceRef.current.nodeId;
+      const startHandleId = connectingSourceRef.current.handleId;
+
+      if (startNodeId === connection.target && (!startHandleId || startHandleId === connection.targetHandle)) {
+        source = connection.target;
+        sourceHandle = connection.targetHandle;
+        target = connection.source;
+        targetHandle = connection.sourceHandle;
+      }
+    }
+
     connectingSourceRef.current = null;
-    nodeActions.onConnect(params);
+    nodeActions.onConnect({
+      ...connection,
+      source,
+      sourceHandle,
+      target,
+      targetHandle
+    });
   }, [nodeActions]);
 
   const handleConnectEnd = useCallback((event) => {
