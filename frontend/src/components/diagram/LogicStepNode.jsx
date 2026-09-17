@@ -450,6 +450,26 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
       <div className="card-tree-content">
         {editingTitle ? (
           <div className="tree-root-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
+            {/* Header row handles for connecting to main script/method title */}
+            <Handle
+              type="source"
+              position={Position.Left}
+              id="header-left"
+              isConnectable={isConnectable}
+              className="diagram-handle row-handle row-handle-left"
+              title={`Связать главный метод/заголовок: ${titleDraft || title}`}
+              style={{ background: titleColorDraft || titleColor }}
+            />
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="header-right"
+              isConnectable={isConnectable}
+              className="diagram-handle row-handle row-handle-right"
+              title={`Связать главный метод/заголовок: ${titleDraft || title}`}
+              style={{ background: titleColorDraft || titleColor }}
+            />
+
             {/* Title emoji picker */}
             <div className="row-inline-icon-trigger-wrapper">
               <button
@@ -530,6 +550,26 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
             title="Кликните для редактирования метода/заголовка"
             style={{ color: titleColor }}
           >
+            {/* Header row handles for connecting to main script/method title */}
+            <Handle
+              type="source"
+              position={Position.Left}
+              id="header-left"
+              isConnectable={isConnectable}
+              className="diagram-handle row-handle row-handle-left"
+              title={`Связать главный метод/заголовок: ${title}`}
+              style={{ background: titleColor }}
+            />
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="header-right"
+              isConnectable={isConnectable}
+              className="diagram-handle row-handle row-handle-right"
+              title={`Связать главный метод/заголовок: ${title}`}
+              style={{ background: titleColor }}
+            />
+
             {/* Interactive Emoji in view mode */}
             <div className="row-inline-icon-trigger-wrapper" style={{ display: 'inline-flex' }}>
               <span

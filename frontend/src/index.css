@@ -2760,6 +2760,7 @@ select,
     margin-bottom: 4px;
     color: #e3b341;
     padding-right: 28px;
+    position: relative;
 }
 
 .folder-icon {
@@ -2850,38 +2851,125 @@ select,
 
 /* Diagram Connectors (Handles) */
 .diagram-handle {
-    width: 11px !important;
-    height: 11px !important;
+    width: 12px !important;
+    height: 12px !important;
+    min-width: 12px !important;
+    min-height: 12px !important;
     border-radius: 50% !important;
     background: #58a6ff !important;
     border: 2px solid #111419 !important;
     opacity: 0;
-    transition: opacity 0.15s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    cursor: crosshair;
+    z-index: 100 !important;
+    box-sizing: border-box !important;
+    transform-origin: center center !important;
+    transition: opacity 0.15s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+}
+
+/* Generous invisible hit target so mouse cursor never slips off during hover or animation */
+.diagram-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 28px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent;
+    pointer-events: auto;
 }
 
 .gamedev-hierarchy-card:hover .diagram-handle,
 .gamedev-hierarchy-card.selected .diagram-handle,
+.logic-step-card:hover .diagram-handle,
+.logic-step-card.selected .diagram-handle,
 .diagram-section-node:hover .diagram-handle,
 .diagram-section-node.is-selected .diagram-handle,
+.text-card-node:hover .diagram-handle,
+.text-card-node.selected .diagram-handle,
 .react-flow.connecting .diagram-handle,
 .react-flow--connecting .diagram-handle {
     opacity: 0.85;
 }
 
-.diagram-handle:hover {
+/* Strict handle positions & hover transforms to preserve exact centering on all 4 sides */
+.diagram-handle.handle-left,
+.react-flow__handle-left.diagram-handle {
+    left: 0px !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+}
+.diagram-handle.handle-left:hover,
+.react-flow__handle-left.diagram-handle:hover {
     opacity: 1 !important;
-    transform: scale(1.4);
+    transform: translate(-50%, -50%) scale(1.35) !important;
+    box-shadow: 0 0 10px #58a6ff;
+}
+
+.diagram-handle.handle-right,
+.react-flow__handle-right.diagram-handle {
+    right: 0px !important;
+    top: 50% !important;
+    transform: translate(50%, -50%) !important;
+}
+.diagram-handle.handle-right:hover,
+.react-flow__handle-right.diagram-handle:hover {
+    opacity: 1 !important;
+    transform: translate(50%, -50%) scale(1.35) !important;
+    box-shadow: 0 0 10px #58a6ff;
+}
+
+.diagram-handle.handle-top,
+.react-flow__handle-top.diagram-handle {
+    top: 0px !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+}
+.diagram-handle.handle-top:hover,
+.react-flow__handle-top.diagram-handle:hover {
+    opacity: 1 !important;
+    transform: translate(-50%, -50%) scale(1.35) !important;
+    box-shadow: 0 0 10px #58a6ff;
+}
+
+.diagram-handle.handle-bottom,
+.react-flow__handle-bottom.diagram-handle {
+    bottom: 0px !important;
+    left: 50% !important;
+    transform: translate(-50%, 50%) !important;
+}
+.diagram-handle.handle-bottom:hover,
+.react-flow__handle-bottom.diagram-handle:hover {
+    opacity: 1 !important;
+    transform: translate(-50%, 50%) scale(1.35) !important;
     box-shadow: 0 0 10px #58a6ff;
 }
 
 /* Section Group specific handles */
 .diagram-section-node .section-handle {
-    width: 12px !important;
-    height: 12px !important;
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
     border-radius: 50% !important;
     border: 2px solid #0d1117 !important;
     z-index: 1005 !important;
     cursor: crosshair;
+    transform-origin: center center !important;
+}
+
+.diagram-section-node .section-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent;
+    pointer-events: auto;
 }
 
 .diagram-section-node.theme-crimson .section-handle { background: #ff4455 !important; }
@@ -2891,41 +2979,55 @@ select,
 .diagram-section-node.theme-amber .section-handle { background: #d29922 !important; }
 .diagram-section-node.theme-slate .section-handle { background: #8b949e !important; }
 
-.diagram-section-node .section-handle:hover {
+.diagram-section-node .section-handle.handle-left:hover {
     opacity: 1 !important;
-    transform: scale(1.45);
+    transform: translate(-50%, -50%) scale(1.35) !important;
     box-shadow: 0 0 12px currentColor;
 }
-
-.handle-left {
-    left: -6px !important;
+.diagram-section-node .section-handle.handle-right:hover {
+    opacity: 1 !important;
+    transform: translate(50%, -50%) scale(1.35) !important;
+    box-shadow: 0 0 12px currentColor;
 }
-
-.handle-right {
-    right: -6px !important;
+.diagram-section-node .section-handle.handle-top:hover {
+    opacity: 1 !important;
+    transform: translate(-50%, -50%) scale(1.35) !important;
+    box-shadow: 0 0 12px currentColor;
 }
-
-.handle-top {
-    top: -6px !important;
-}
-
-.handle-bottom {
-    bottom: -6px !important;
+.diagram-section-node .section-handle.handle-bottom:hover {
+    opacity: 1 !important;
+    transform: translate(-50%, 50%) scale(1.35) !important;
+    box-shadow: 0 0 12px currentColor;
 }
 
 /* Component Row Level Connectors (Handles for Component-to-Component Connections) */
 .row-handle {
-    width: 8px !important;
-    height: 8px !important;
-    min-width: 8px !important;
-    min-height: 8px !important;
+    width: 9px !important;
+    height: 9px !important;
+    min-width: 9px !important;
+    min-height: 9px !important;
     border-radius: 50% !important;
     background: #58a6ff !important;
     border: 1.5px solid #111419 !important;
     opacity: 0;
     transition: opacity 0.15s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
-    z-index: 10 !important;
+    z-index: 15 !important;
     cursor: crosshair;
+    transform-origin: center center !important;
+    box-sizing: border-box !important;
+}
+
+.row-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent;
+    pointer-events: auto;
 }
 
 .row-handle-left {
@@ -2944,9 +3046,11 @@ select,
 .logic-step-card:hover .row-handle,
 .react-flow.connecting .row-handle,
 .react-flow--connecting .row-handle {
-    opacity: 0.4;
+    opacity: 0.45;
 }
 
+.tree-root-row:hover .row-handle,
+.tree-root-row-edit:hover .row-handle,
 .tree-item-row:hover .row-handle,
 .logic-item-row:hover .row-handle {
     opacity: 0.95 !important;
@@ -2954,7 +3058,7 @@ select,
 
 .row-handle:hover {
     opacity: 1 !important;
-    transform: translateY(-50%) scale(1.5) !important;
+    transform: translateY(-50%) scale(1.4) !important;
     box-shadow: 0 0 8px #58a6ff !important;
     background: #79c0ff !important;
 }
@@ -3947,7 +4051,8 @@ select,
 }
 
 /* Inline Edit Row inside Card */
-.tree-item-row-edit {
+.tree-item-row-edit,
+.tree-root-row-edit {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -3957,6 +4062,7 @@ select,
     padding: 3px 6px;
     margin: 2px -4px;
     box-shadow: 0 0 10px rgba(88, 166, 255, 0.2);
+    position: relative;
 }
 
 .row-indent-controls {

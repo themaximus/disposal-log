@@ -509,6 +509,26 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
         {/* Root Prefab Folder Path */}
         {editingRoot ? (
           <div className="tree-root-row-edit nodrag" onClick={(e) => e.stopPropagation()}>
+            {/* Header row handles for connecting to main prefab header */}
+            <Handle
+              type="source"
+              position={Position.Left}
+              id="header-left"
+              isConnectable={isConnectable}
+              className="diagram-handle row-handle row-handle-left"
+              title={`Связать главный заголовок: ${rootDraft || rootPath}`}
+              style={{ background: rootColorDraft || rootColor }}
+            />
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="header-right"
+              isConnectable={isConnectable}
+              className="diagram-handle row-handle row-handle-right"
+              title={`Связать главный заголовок: ${rootDraft || rootPath}`}
+              style={{ background: rootColorDraft || rootColor }}
+            />
+
             {/* Root emoji picker */}
             <div className="row-inline-icon-trigger-wrapper">
               <button
@@ -589,6 +609,26 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
             title="Кликните для редактирования строки"
             style={{ color: rootColor }}
           >
+            {/* Header row handles for connecting to main prefab header */}
+            <Handle
+              type="source"
+              position={Position.Left}
+              id="header-left"
+              isConnectable={isConnectable}
+              className="diagram-handle row-handle row-handle-left"
+              title={`Связать главный заголовок: ${rootPath}`}
+              style={{ background: rootColor }}
+            />
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="header-right"
+              isConnectable={isConnectable}
+              className="diagram-handle row-handle row-handle-right"
+              title={`Связать главный заголовок: ${rootPath}`}
+              style={{ background: rootColor }}
+            />
+
             {/* Interactive Emoji in view mode */}
             <div className="row-inline-icon-trigger-wrapper" style={{ display: 'inline-flex' }}>
               <span
