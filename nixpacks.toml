@@ -5,4 +5,4 @@ nixPkgs = ["nodejs_20", "python3", "gcc", "gnumake"]
 cmds = ["npm install"]
 
 [start]
-cmd = "node server.js"
+cmd = "node --max-old-space-size=384 server.js"

@@ -1,7 +1,7 @@
 # PULSE DEV — Game Dev Mechanics & Task Control
 
 <p align="center">
-  <img src="public/images/disposal_log_logo.png" alt="PULSE Logo" width="160" style="border-radius: 50%;">
+  <img src="docs/images/disposal_log_logo.png" alt="PULSE Logo" width="160" style="border-radius: 50%;">
 </p>
 
 <p align="center">
@@ -24,8 +24,8 @@
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Node.js 20 LTS, Express 5, SQLite3, OAuth 2.0 (Google & GitHub), Multer (Media Storage), Telegraf (Telegram Bot API)
-- **Frontend**: Native Vanilla JS, HTML5, CSS3, GitHub Dark Design System
+- **Backend**: Node.js 20 LTS, Express 5, SQLite3, OAuth 2.0 (Google & GitHub), Multer (uploads), Telegraf (Telegram Bot API)
+- **Frontend**: React 18 + Vite, React Flow (diagrams), GitHub Dark Design System
 
 ---
 
@@ -50,9 +50,33 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 ### 3. Run Application
 ```bash
-node server.js
+npm run build   # builds the React app into dist/ (also runs on npm install)
+npm start       # serves API + dist/ on http://localhost:3000
 ```
-Open `http://localhost:3000` in your web browser.
+
+For frontend development run `npm start` and `npm run dev` side by side: Vite serves the UI on
+`http://localhost:5173` and proxies `/api` to the backend.
+
+---
+
+## 🗂️ Project Structure
+
+```
+server.js                 entrypoint: DB schema init, HTTP server, graceful shutdown
+src/
+  app.js                  express app (middleware, /api, static frontend, SPA fallback)
+  config.js               env + paths (DATA_DIR / RAILWAY_VOLUME_MOUNT_PATH)
+  db/                     sqlite connection (promise API, transactions) and schema migrations
+  middleware/             session auth, uploads, error handler
+  repositories/           SQL per table
+  services/               business logic (auth/OAuth, boards & sharing, tasks, settings, maintenance)
+  routes/                 HTTP routes, mounted under /api
+frontend/src/
+  api/                    fetch client + endpoint modules
+  hooks/                  app state (auth, navigation, modals, board workspace, drag & drop, diagrams)
+  components/, modals/    UI
+  services/, utils/       Google Drive, diagram sync, offline storage, helpers
+```
 
 ---
 

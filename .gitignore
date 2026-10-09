@@ -26,3 +26,6 @@ launcher_log.txt
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Frontend build output (produced by `npm run build` / postinstall)
+dist/
