@@ -3,6 +3,15 @@ import { useState, useCallback } from 'react';
 import { addEdge } from '@xyflow/react';
 import { saveBlockPrefab } from '../utils/diagramStorage';
 import DiagramGroupingService from '../utils/diagramGroupingService';
+import {
+  updateRow,
+  removeRow,
+  indentRow,
+  insertRow,
+  rowLevel,
+  childInsertIndex,
+  siblingInsertIndex
+} from '../utils/diagramNodeUtils';
 
 export function useDiagramNodeActions({
   nodes,
@@ -30,21 +39,25 @@ export function useDiagramNodeActions({
   const [tagModalNodeId, setTagModalNodeId] = useState(null);
   const [tagInputValue, setTagInputValue] = useState('');
 
+  // Inserts a new node near `customPos` (centered by `offset`) or near `fallback`.
+  const spawnNode = useCallback((node, customPos, offset, fallback) => {
+    if (takeSnapshot) takeSnapshot();
+    const position = customPos ? {
+      x: customPos.x - offset.x + (Math.random() - 0.5) * 40,
+      y: customPos.y - offset.y + (Math.random() - 0.5) * 40
+    } : {
+      x: fallback.x + Math.random() * 80,
+      y: fallback.y + Math.random() * 80
+    };
+    setNodes(nds => [...nds, { ...node, position }]);
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
+
   // Add new GameDev Prefab node
   const handleAddHierarchyNode = useCallback((customPos) => {
-    if (takeSnapshot) takeSnapshot();
-    const newId = 'node_' + Date.now();
-    const spawnPosition = customPos ? {
-      x: customPos.x - 160 + (Math.random() - 0.5) * 40,
-      y: customPos.y - 100 + (Math.random() - 0.5) * 40
-    } : {
-      x: 100 + Math.random() * 80,
-      y: 100 + Math.random() * 80
-    };
-    const newNode = {
-      id: newId,
+    spawnNode({
+      id: 'node_' + Date.now(),
       type: 'hierarchyNode',
-      position: spawnPosition,
       data: {
         tag: 'PREFAB',
         rootPath: 'Assets/Prefabs/NewEntity/NewEntity.prefab',
@@ -53,26 +66,14 @@ export function useDiagramNodeActions({
           { level: 1, isLast: true, icon: '👁️', name: 'MeshVisual', details: 'MeshFilter, MeshRenderer' }
         ]
       }
-    };
-    setNodes(nds => [...nds, newNode]);
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    }, customPos, { x: 160, y: 100 }, { x: 100, y: 100 });
+  }, [spawnNode]);
 
   // Add new Logic Step node
   const handleAddLogicNode = useCallback((customPos) => {
-    if (takeSnapshot) takeSnapshot();
-    const newId = 'node_' + Date.now();
-    const spawnPosition = customPos ? {
-      x: customPos.x - 160 + (Math.random() - 0.5) * 40,
-      y: customPos.y - 80 + (Math.random() - 0.5) * 40
-    } : {
-      x: 200 + Math.random() * 80,
-      y: 150 + Math.random() * 80
-    };
-    const newNode = {
-      id: newId,
+    spawnNode({
+      id: 'node_' + Date.now(),
       type: 'logicNode',
-      position: spawnPosition,
       data: {
         nodeType: 'LOGIC',
         title: 'EntityController.Tick()',
@@ -81,26 +82,14 @@ export function useDiagramNodeActions({
           { level: 1, prefix: '└── ', icon: '🔄', code: 'PerformAction(deltaTime);', comment: 'Выполнение шага' }
         ]
       }
-    };
-    setNodes(nds => [...nds, newNode]);
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    }, customPos, { x: 160, y: 80 }, { x: 200, y: 150 });
+  }, [spawnNode]);
 
   // Add new Text / Note node
   const handleAddTextNode = useCallback((customPos) => {
-    if (takeSnapshot) takeSnapshot();
-    const newId = 'node_text_' + Date.now();
-    const spawnPosition = customPos ? {
-      x: customPos.x - 140 + (Math.random() - 0.5) * 40,
-      y: customPos.y - 60 + (Math.random() - 0.5) * 40
-    } : {
-      x: 180 + Math.random() * 80,
-      y: 180 + Math.random() * 80
-    };
-    const newNode = {
-      id: newId,
+    spawnNode({
+      id: 'node_text_' + Date.now(),
       type: 'textNode',
-      position: spawnPosition,
       data: {
         tag: 'NOTE',
         icon: '📝',
@@ -110,13 +99,9 @@ export function useDiagramNodeActions({
         align: 'left',
         scale: 1
       },
-      style: {
-        width: 280
-      }
-    };
-    setNodes(nds => [...nds, newNode]);
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+      style: { width: 280 }
+    }, customPos, { x: 140, y: 60 }, { x: 180, y: 180 });
+  }, [spawnNode]);
 
   // Spawn node connected to dragged wire
   const handleSpawnNodeConnected = useCallback(({ type, flowPosition, sourceNodeId, sourceHandleId, handleType }) => {
@@ -305,234 +290,113 @@ export function useDiagramNodeActions({
     triggerAutoSave();
   }, [setNodes, triggerAutoSave, takeSnapshot]);
 
-  // Inline update for hierarchy item
+  // Applies `transform(data)` to one node's data with undo snapshot + autosave.
+  const mutateNodeData = useCallback((nodeId, transform) => {
+    if (takeSnapshot) takeSnapshot();
+    setNodes(nds => nds.map(n => (n.id === nodeId ? { ...n, data: transform(n.data) } : n)));
+    triggerAutoSave();
+  }, [setNodes, triggerAutoSave, takeSnapshot]);
+
+  const mutateRows = useCallback((nodeId, field, transform) => {
+    mutateNodeData(nodeId, data => ({ ...data, [field]: transform(data[field] || []) }));
+  }, [mutateNodeData]);
+
+  const currentRows = (nodeId, field) => {
+    const node = nodesRef.current.find(n => n.id === nodeId);
+    return (node && node.data[field]) || [];
+  };
+
+  // Hierarchy rows keep an `isLast` flag on the final item.
+  const markLastItem = (items) => (items.length > 0
+    ? items.map((it, idx) => (idx === items.length - 1 ? { ...it, isLast: true } : it))
+    : items);
+
+  // --- Hierarchy items ---
+
   const handleUpdateHierarchyItem = useCallback((nodeId, itemIndex, updatedItem) => {
-    if (takeSnapshot) takeSnapshot();
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const items = [...(n.data.items || [])];
-      if (itemIndex < items.length) {
-        items[itemIndex] = { ...items[itemIndex], ...updatedItem };
-      }
-      return { ...n, data: { ...n.data, items } };
-    }));
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    mutateRows(nodeId, 'items', items => (itemIndex < items.length ? updateRow(items, itemIndex, updatedItem) : items));
+  }, [mutateRows]);
 
-  // Inline delete for hierarchy item
   const handleDeleteHierarchyItem = useCallback((nodeId, itemIndex) => {
-    if (takeSnapshot) takeSnapshot();
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const items = (n.data.items || []).filter((_, idx) => idx !== itemIndex);
-      if (items.length > 0) {
-        items[items.length - 1] = { ...items[items.length - 1], isLast: true };
-      }
-      return { ...n, data: { ...n.data, items } };
-    }));
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    mutateRows(nodeId, 'items', items => markLastItem(removeRow(items, itemIndex)));
+  }, [mutateRows]);
 
-  // Add sub-item (child node in hierarchy tree)
   const handleAddHierarchySubItem = useCallback((nodeId, parentIndex) => {
-    if (takeSnapshot) takeSnapshot();
-    let newIndex = parentIndex + 1;
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const items = [...(n.data.items || [])];
-      const parentItem = items[parentIndex];
-      const parentLevel = parentItem ? (parentItem.level || 0) : 0;
-      const subLevel = parentLevel + 1;
-
-      const insertIdx = (parentIndex >= 0 && parentIndex < items.length) ? parentIndex + 1 : items.length;
-      newIndex = insertIdx;
-
-      const newItem = {
-        level: subLevel,
-        isLast: false,
-        icon: '⚙️',
-        name: 'NewChildObject',
-        details: 'Component, Script'
-      };
-
-      items.splice(insertIdx, 0, newItem);
-      if (items.length > 0) {
-        items[items.length - 1].isLast = true;
-      }
-      return { ...n, data: { ...n.data, items } };
-    }));
-    triggerAutoSave();
+    const newIndex = childInsertIndex(currentRows(nodeId, 'items'), parentIndex);
+    mutateRows(nodeId, 'items', items => markLastItem(insertRow(items, childInsertIndex(items, parentIndex), {
+      level: rowLevel(items[parentIndex]) + 1,
+      isLast: false,
+      icon: '⚙️',
+      name: 'NewChildObject',
+      details: 'Component, Script'
+    })));
     return newIndex;
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+  }, [mutateRows]);
 
-  // Add sibling item right after item and its subtree
   const handleAddHierarchySiblingItem = useCallback((nodeId, itemIndex) => {
-    if (takeSnapshot) takeSnapshot();
-    let newIndex = itemIndex + 1;
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const items = [...(n.data.items || [])];
-      const currentItem = items[itemIndex];
-      const currentLevel = currentItem ? (currentItem.level || 0) : 0;
-
-      let insertIdx = itemIndex + 1;
-      while (insertIdx < items.length && (items[insertIdx].level || 0) > currentLevel) {
-        insertIdx++;
-      }
-      newIndex = insertIdx;
-
-      const newItem = {
-        level: currentLevel,
-        isLast: true,
-        icon: '⚙️',
-        name: 'NewComponent',
-        details: 'Component, Script'
-      };
-
-      items.splice(insertIdx, 0, newItem);
-      return { ...n, data: { ...n.data, items } };
+    const newIndex = siblingInsertIndex(currentRows(nodeId, 'items'), itemIndex);
+    mutateRows(nodeId, 'items', items => insertRow(items, siblingInsertIndex(items, itemIndex), {
+      level: rowLevel(items[itemIndex]),
+      isLast: true,
+      icon: '⚙️',
+      name: 'NewComponent',
+      details: 'Component, Script'
     }));
-    triggerAutoSave();
     return newIndex;
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+  }, [mutateRows]);
 
-  // Indent / outdent hierarchy item
   const handleIndentHierarchyItem = useCallback((nodeId, itemIndex, delta) => {
-    if (takeSnapshot) takeSnapshot();
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const items = [...(n.data.items || [])];
-      if (itemIndex >= 0 && itemIndex < items.length) {
-        const currentLevel = items[itemIndex].level || 0;
-        const newLevel = Math.max(0, Math.min(6, currentLevel + delta));
-        items[itemIndex] = { ...items[itemIndex], level: newLevel };
-      }
-      return { ...n, data: { ...n.data, items } };
-    }));
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    mutateRows(nodeId, 'items', items => indentRow(items, itemIndex, delta));
+  }, [mutateRows]);
 
   // Inline update for hierarchy root path, icon and color
   const handleUpdateHierarchyRoot = useCallback((nodeId, updates) => {
-    if (takeSnapshot) takeSnapshot();
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const rootUpdates = typeof updates === 'string' ? { rootPath: updates } : updates;
-      return { ...n, data: { ...n.data, ...rootUpdates } };
-    }));
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    const rootUpdates = typeof updates === 'string' ? { rootPath: updates } : updates;
+    mutateNodeData(nodeId, data => ({ ...data, ...rootUpdates }));
+  }, [mutateNodeData]);
 
-  // Inline update for logic line
+  // --- Logic lines ---
+
   const handleUpdateLogicLine = useCallback((nodeId, lineIndex, updatedLine) => {
-    if (takeSnapshot) takeSnapshot();
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const lines = [...(n.data.lines || [])];
-      if (lineIndex < lines.length) {
-        lines[lineIndex] = { ...lines[lineIndex], ...updatedLine };
-      }
-      return { ...n, data: { ...n.data, lines } };
-    }));
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    mutateRows(nodeId, 'lines', lines => (lineIndex < lines.length ? updateRow(lines, lineIndex, updatedLine) : lines));
+  }, [mutateRows]);
 
-  // Inline delete for logic line
   const handleDeleteLogicLine = useCallback((nodeId, lineIndex) => {
-    if (takeSnapshot) takeSnapshot();
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const lines = (n.data.lines || []).filter((_, idx) => idx !== lineIndex);
-      return { ...n, data: { ...n.data, lines } };
-    }));
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    mutateRows(nodeId, 'lines', lines => removeRow(lines, lineIndex));
+  }, [mutateRows]);
 
-  // Add sub-line (nested child line in logic step tree)
   const handleAddLogicSubLine = useCallback((nodeId, parentIndex) => {
-    if (takeSnapshot) takeSnapshot();
-    let newIndex = parentIndex + 1;
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const lines = [...(n.data.lines || [])];
-      const parentLine = lines[parentIndex];
-      const parentLevel = parentLine ? (parentLine.level || 0) : 0;
-      const subLevel = parentLevel + 1;
-
-      const insertIdx = (parentIndex >= 0 && parentIndex < lines.length) ? parentIndex + 1 : lines.length;
-      newIndex = insertIdx;
-
-      const newLine = {
-        level: subLevel,
-        prefix: '├── ',
-        icon: '⚡',
-        code: 'ExecuteSubAction()',
-        comment: 'Вложенное действие'
-      };
-
-      lines.splice(insertIdx, 0, newLine);
-      return { ...n, data: { ...n.data, lines } };
+    const newIndex = childInsertIndex(currentRows(nodeId, 'lines'), parentIndex);
+    mutateRows(nodeId, 'lines', lines => insertRow(lines, childInsertIndex(lines, parentIndex), {
+      level: rowLevel(lines[parentIndex]) + 1,
+      prefix: '├── ',
+      icon: '⚡',
+      code: 'ExecuteSubAction()',
+      comment: 'Вложенное действие'
     }));
-    triggerAutoSave();
     return newIndex;
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+  }, [mutateRows]);
 
-  // Add sibling line right after current line and its subtree
   const handleAddLogicSiblingLine = useCallback((nodeId, lineIndex) => {
-    if (takeSnapshot) takeSnapshot();
-    let newIndex = lineIndex + 1;
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const lines = [...(n.data.lines || [])];
-      const curLine = lines[lineIndex];
-      const curLevel = curLine ? (curLine.level || 0) : 0;
-
-      let insertIdx = lineIndex + 1;
-      while (insertIdx < lines.length && (lines[insertIdx].level || 0) > curLevel) {
-        insertIdx++;
-      }
-      newIndex = insertIdx;
-
-      const newLine = {
-        level: curLevel,
-        icon: '⚡',
-        code: 'PerformAction()',
-        comment: 'Новый шаг'
-      };
-
-      lines.splice(insertIdx, 0, newLine);
-      return { ...n, data: { ...n.data, lines } };
+    const newIndex = siblingInsertIndex(currentRows(nodeId, 'lines'), lineIndex);
+    mutateRows(nodeId, 'lines', lines => insertRow(lines, siblingInsertIndex(lines, lineIndex), {
+      level: rowLevel(lines[lineIndex]),
+      icon: '⚡',
+      code: 'PerformAction()',
+      comment: 'Новый шаг'
     }));
-    triggerAutoSave();
     return newIndex;
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+  }, [mutateRows]);
 
-  // Indent / outdent logic line
   const handleIndentLogicLine = useCallback((nodeId, lineIndex, delta) => {
-    if (takeSnapshot) takeSnapshot();
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const lines = [...(n.data.lines || [])];
-      if (lineIndex >= 0 && lineIndex < lines.length) {
-        const curLevel = lines[lineIndex].level || 0;
-        const newLevel = Math.max(0, Math.min(6, curLevel + delta));
-        lines[lineIndex] = { ...lines[lineIndex], level: newLevel };
-      }
-      return { ...n, data: { ...n.data, lines } };
-    }));
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    mutateRows(nodeId, 'lines', lines => indentRow(lines, lineIndex, delta));
+  }, [mutateRows]);
 
   // Inline update for logic method title, icon and color
   const handleUpdateLogicTitle = useCallback((nodeId, updates) => {
-    if (takeSnapshot) takeSnapshot();
-    setNodes(nds => nds.map(n => {
-      if (n.id !== nodeId) return n;
-      const titleUpdates = typeof updates === 'string' ? { title: updates } : updates;
-      return { ...n, data: { ...n.data, ...titleUpdates } };
-    }));
-    triggerAutoSave();
-  }, [setNodes, triggerAutoSave, takeSnapshot]);
+    const titleUpdates = typeof updates === 'string' ? { title: updates } : updates;
+    mutateNodeData(nodeId, data => ({ ...data, ...titleUpdates }));
+  }, [mutateNodeData]);
 
   // Open Tag / Mention Modal
   const handleOpenTagModal = useCallback((nodeId) => {

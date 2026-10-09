@@ -1,4 +1,5 @@
 const taskRepository = require('../repositories/taskRepository');
+const boardRepository = require('../repositories/boardRepository');
 const { notFound } = require('../utils/errors');
 const { serializeTask, toJsonArray } = require('../utils/serializers');
 
@@ -14,6 +15,9 @@ async function listTrash(userId, boardId) {
 }
 
 async function createTask(userId, body, uploadedFiles = []) {
+    if (body.board_id && !(await boardRepository.findOwned(body.board_id, userId))) {
+        throw notFound('Доска не найдена');
+    }
     const images = Array.isArray(body.images) && body.images.length > 0
         ? body.images
         : uploadedFiles.map(f => `/uploads/${f.filename}`);

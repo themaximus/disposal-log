@@ -58,3 +58,31 @@ export const getBlockHandleStyle = (data) => (data.customAccent ? {
   background: data.customAccent,
   borderColor: data.customBg || '#111419'
 } : undefined);
+
+// --- Pure operations on a node's nested rows (hierarchy items / logic lines) ---
+
+const levelOf = (row) => (row ? row.level || 0 : 0);
+
+export const updateRow = (rows, index, patch) =>
+  rows.map((row, idx) => (idx === index ? { ...row, ...patch } : row));
+
+export const removeRow = (rows, index) => rows.filter((_, idx) => idx !== index);
+
+export const indentRow = (rows, index, delta) =>
+  rows.map((row, idx) => (idx === index ? { ...row, level: clampTreeLevel(levelOf(row) + delta) } : row));
+
+/** Index where a new child of `parentIndex` is inserted. */
+export const childInsertIndex = (rows, parentIndex) =>
+  parentIndex >= 0 && parentIndex < rows.length ? parentIndex + 1 : rows.length;
+
+/** Index right after the row at `index` and its whole subtree. */
+export const siblingInsertIndex = (rows, index) => {
+  const level = levelOf(rows[index]);
+  let insertIdx = index + 1;
+  while (insertIdx < rows.length && levelOf(rows[insertIdx]) > level) insertIdx++;
+  return insertIdx;
+};
+
+export const insertRow = (rows, index, row) => [...rows.slice(0, index), row, ...rows.slice(index)];
+
+export const rowLevel = levelOf;
