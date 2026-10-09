@@ -4,45 +4,14 @@ import { DiagramActionsContext } from '../DiagramActionsContext';
 import EmojiPickerPopover from './EmojiPickerPopover';
 import ColorPickerPopover from './ColorPickerPopover';
 import useBlockCornerScale from '../../hooks/useBlockCornerScale';
+import { useTreeRowEditor } from '../../hooks/useTreeRowEditor';
+import { useNodeHeaderEditor } from '../../hooks/useNodeHeaderEditor';
+import { useCopyFeedback } from '../../hooks/useCopyFeedback';
+import { computeTreePrefix, getBlockCardStyle, getBlockHandleStyle } from '../../utils/diagramNodeUtils';
 
-// Calculate dynamic tree branches (├──, └──, │   ,     ) based on nesting hierarchy
-export const computeTreePrefix = (items = [], index = 0) => {
-  const currentItem = items[index];
-  if (!currentItem) return '';
-  const currentLevel = currentItem.level || 0;
-
-  if (currentLevel === 0) {
-    const hasNextSibling = items.slice(index + 1).some(it => (it.level || 0) === 0);
-    return hasNextSibling ? '├── ' : '└── ';
-  }
-
-  let prefix = '';
-  // Each ancestor depth from 0 to currentLevel - 1 provides 4 characters
-  for (let depth = 0; depth < currentLevel; depth++) {
-    let hasMoreAtDepth = false;
-    for (let j = index + 1; j < items.length; j++) {
-      const nextLevel = items[j].level || 0;
-      if (nextLevel < depth) break;
-      if (nextLevel === depth) {
-        hasMoreAtDepth = true;
-        break;
-      }
-    }
-    prefix += hasMoreAtDepth ? '│   ' : '    ';
-  }
-
-  let isLastSibling = true;
-  for (let j = index + 1; j < items.length; j++) {
-    const nextLevel = items[j].level || 0;
-    if (nextLevel < currentLevel) break;
-    if (nextLevel === currentLevel) {
-      isLastSibling = false;
-      break;
-    }
-  }
-
-  prefix += isLastSibling ? '└── ' : '├── ';
-  return prefix;
+const NEW_ROW_DRAFTS = {
+  sub: { name: 'NewChild', details: 'Component, Script' },
+  sibling: { name: 'NewComponent', details: 'Component, Script' }
 };
 
 function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
@@ -65,23 +34,8 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
   const rootColor = data.rootColor || '#e3b341';
   const treeItems = data.items || [];
 
-  const [copied, setCopied] = useState(false);
-  const [editingRowIdx, setEditingRowIdx] = useState(null);
-  const [selectedRowIdx, setSelectedRowIdx] = useState(null);
-  const [rowDraft, setRowDraft] = useState({ name: '', details: '', icon: '⚙️', level: 0 });
-  const [editingRoot, setEditingRoot] = useState(false);
-  const [rootDraft, setRootDraft] = useState(rootPath);
-  const [rootIconDraft, setRootIconDraft] = useState(rootIcon);
-  const [rootColorDraft, setRootColorDraft] = useState(rootColor);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [rowEmojiPickerIdx, setRowEmojiPickerIdx] = useState(null);
-  const [showRootEmojiPicker, setShowRootEmojiPicker] = useState(false);
-  const [showRootColorPicker, setShowRootColorPicker] = useState(false);
-  const [viewRootEmojiPicker, setViewRootEmojiPicker] = useState(false);
-  const [viewRootColorPicker, setViewRootColorPicker] = useState(false);
-
-  const nameInputRef = useRef(null);
-  const rootInputRef = useRef(null);
   const cardRef = useRef(null);
 
   const {
@@ -94,25 +48,53 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
     updateNodeInternals(id);
   }, [id, treeItems.length, data.scale, updateNodeInternals]);
 
-  useEffect(() => {
-    setRootDraft(rootPath);
-    setRootIconDraft(rootIcon);
-    setRootColorDraft(rootColor);
-  }, [rootPath, rootIcon, rootColor]);
-
-  useEffect(() => {
-    if (editingRowIdx !== null && nameInputRef.current) {
-      nameInputRef.current.focus();
-      nameInputRef.current.select();
+  const {
+    editingRowIdx, setEditingRowIdx, selectedRowIdx, setSelectedRowIdx,
+    draft: rowDraft, setDraft: setRowDraft, inputRef: nameInputRef,
+    startEdit: handleStartRowEdit, saveRow: handleSaveRow, saveAndAddSub: handleSaveAndAddSub,
+    addSubRow: handleAddSubRow, addSiblingRow: handleAddSiblingRow, indentDraft: handleIndentDraft,
+    rowKeyDown: handleRowKeyDown, deleteRow: handleDeleteRow, quickAdd: handleQuickAddClick
+  } = useTreeRowEditor({
+    nodeId: id,
+    rows: treeItems,
+    primaryField: 'name',
+    initialDraft: { name: '', details: '', icon: '⚙️', level: 0 },
+    toDraft: (item) => ({
+      name: item.name || '',
+      details: item.details || '',
+      icon: item.icon || '⚙️',
+      level: item.level || 0,
+      isLast: item.isLast
+    }),
+    newDraft: (kind, level) => ({ level, icon: '⚙️', ...NEW_ROW_DRAFTS[kind] }),
+    actions: {
+      update: onUpdateHierarchyItem,
+      remove: onDeleteHierarchyItem,
+      addSub: onAddHierarchySubItem,
+      addSibling: onAddHierarchySiblingItem,
+      quickAdd: onQuickAdd
     }
-  }, [editingRowIdx]);
+  });
 
-  useEffect(() => {
-    if (editingRoot && rootInputRef.current) {
-      rootInputRef.current.focus();
-      rootInputRef.current.select();
-    }
-  }, [editingRoot]);
+  const {
+    editing: editingRoot, setEditing: setEditingRoot,
+    textDraft: rootDraft, setTextDraft: setRootDraft,
+    iconDraft: rootIconDraft, setIconDraft: setRootIconDraft,
+    colorDraft: rootColorDraft, setColorDraft: setRootColorDraft,
+    showEditEmojiPicker: showRootEmojiPicker, setShowEditEmojiPicker: setShowRootEmojiPicker,
+    showEditColorPicker: showRootColorPicker, setShowEditColorPicker: setShowRootColorPicker,
+    showViewEmojiPicker: viewRootEmojiPicker, setShowViewEmojiPicker: setViewRootEmojiPicker,
+    showViewColorPicker: viewRootColorPicker, setShowViewColorPicker: setViewRootColorPicker,
+    inputRef: rootInputRef, save: handleSaveRoot, keyDown: handleRootKeyDown,
+    selectViewEmoji: handleSelectViewEmoji, selectViewColor: handleSelectViewColor
+  } = useNodeHeaderEditor({
+    nodeId: id,
+    values: { text: rootPath, icon: rootIcon, color: rootColor },
+    fields: { text: 'rootPath', icon: 'rootIcon', color: 'rootColor' },
+    onUpdate: onUpdateHierarchyRoot
+  });
+
+  const { copied, copy } = useCopyFeedback();
 
   // Build tree text for clipboard
   const getFullTreeText = () => {
@@ -127,199 +109,16 @@ function GameDevHierarchyNode({ id, data, isConnectable, selected }) {
 
   const handleCopy = (e) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(getFullTreeText()).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
+    copy(getFullTreeText());
   };
 
   const handleTagClick = (e) => {
     e.stopPropagation();
-    if (onOpenTagModal) {
-      onOpenTagModal(id);
-    }
+    if (onOpenTagModal) onOpenTagModal(id);
   };
 
-  const handleStartRowEdit = (idx, item) => {
-    setEditingRowIdx(idx);
-    setRowDraft({
-      name: item.name || '',
-      details: item.details || '',
-      icon: item.icon || '⚙️',
-      level: item.level || 0,
-      isLast: item.isLast
-    });
-  };
-
-  const handleSaveRow = (idx) => {
-    if (onUpdateHierarchyItem && rowDraft.name.trim()) {
-      onUpdateHierarchyItem(id, idx, rowDraft);
-    }
-    setEditingRowIdx(null);
-    setSelectedRowIdx(null);
-  };
-
-  const handleAddSubRow = (e, idx) => {
-    if (e) e.stopPropagation();
-    const parentItem = treeItems[idx];
-    const parentLevel = parentItem ? (parentItem.level || 0) : 0;
-    const subLevel = parentLevel + 1;
-    const insertIdx = idx + 1;
-
-    if (onAddHierarchySubItem) {
-      onAddHierarchySubItem(id, idx);
-    }
-    setEditingRowIdx(insertIdx);
-    setSelectedRowIdx(insertIdx);
-    setRowDraft({
-      level: subLevel,
-      icon: '⚙️',
-      name: 'NewChild',
-      details: 'Component, Script'
-    });
-  };
-
-  const handleAddSiblingRow = (e, idx) => {
-    if (e) e.stopPropagation();
-    const currentItem = treeItems[idx];
-    const currentLevel = currentItem ? (currentItem.level || 0) : 0;
-
-    let insertIdx = idx + 1;
-    while (insertIdx < treeItems.length && (treeItems[insertIdx].level || 0) > currentLevel) {
-      insertIdx++;
-    }
-
-    if (onAddHierarchySiblingItem) {
-      onAddHierarchySiblingItem(id, idx);
-    }
-    setEditingRowIdx(insertIdx);
-    setSelectedRowIdx(insertIdx);
-    setRowDraft({
-      level: currentLevel,
-      icon: '⚙️',
-      name: 'NewComponent',
-      details: 'Component, Script'
-    });
-  };
-
-  const handleIndentDraft = (e, delta) => {
-    if (e) e.stopPropagation();
-    setRowDraft(prev => ({
-      ...prev,
-      level: Math.max(0, Math.min(6, (prev.level || 0) + delta))
-    }));
-  };
-
-  const handleRowKeyDown = (e, idx) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      e.stopPropagation();
-      const delta = e.shiftKey ? -1 : 1;
-      setRowDraft(prev => ({
-        ...prev,
-        level: Math.max(0, Math.min(6, (prev.level || 0) + delta))
-      }));
-    } else if (e.key === 'Enter') {
-      e.stopPropagation();
-      handleSaveRow(idx);
-    } else if (e.key === 'Escape') {
-      e.stopPropagation();
-      setEditingRowIdx(null);
-      setSelectedRowIdx(null);
-    }
-  };
-
-  const handleDeleteRow = (e, idx) => {
-    e.stopPropagation();
-    if (onDeleteHierarchyItem) {
-      onDeleteHierarchyItem(id, idx);
-    }
-    setEditingRowIdx(null);
-    setSelectedRowIdx(null);
-  };
-
-  const handleSaveRoot = () => {
-    if (onUpdateHierarchyRoot && rootDraft.trim()) {
-      onUpdateHierarchyRoot(id, {
-        rootPath: rootDraft.trim(),
-        rootIcon: rootIconDraft,
-        rootColor: rootColorDraft
-      });
-    }
-    setEditingRoot(false);
-    setShowRootEmojiPicker(false);
-    setShowRootColorPicker(false);
-  };
-
-  const handleSelectViewEmoji = (emoji) => {
-    if (onUpdateHierarchyRoot) {
-      onUpdateHierarchyRoot(id, {
-        rootIcon: emoji
-      });
-    }
-    setViewRootEmojiPicker(false);
-  };
-
-  const handleSelectViewColor = (color) => {
-    if (onUpdateHierarchyRoot) {
-      onUpdateHierarchyRoot(id, {
-        rootColor: color
-      });
-    }
-    setViewRootColorPicker(false);
-  };
-
-  const handleRootKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.stopPropagation();
-      handleSaveRoot();
-    } else if (e.key === 'Escape') {
-      e.stopPropagation();
-      setRootDraft(rootPath);
-      setRootIconDraft(rootIcon);
-      setRootColorDraft(rootColor);
-      setShowRootEmojiPicker(false);
-      setShowRootColorPicker(false);
-      setEditingRoot(false);
-    }
-  };
-
-  const handleSaveAndAddSub = (idx) => {
-    if (onUpdateHierarchyItem && rowDraft.name.trim()) {
-      onUpdateHierarchyItem(id, idx, rowDraft);
-    }
-    handleAddSubRow(null, idx);
-  };
-
-  const handleQuickAddClick = (e) => {
-    e.stopPropagation();
-    if (treeItems.length === 0) {
-      if (onQuickAdd) onQuickAdd(id);
-      return;
-    }
-    const targetIdx = editingRowIdx !== null 
-      ? editingRowIdx 
-      : (selectedRowIdx !== null && selectedRowIdx < treeItems.length ? selectedRowIdx : treeItems.length - 1);
-
-    if (editingRowIdx !== null && onUpdateHierarchyItem && rowDraft.name.trim()) {
-      onUpdateHierarchyItem(id, editingRowIdx, rowDraft);
-    }
-    handleAddSiblingRow(e, targetIdx);
-  };
-
-  const currentScale = data.scale || 1;
-  const cardStyle = {
-    background: data.customBg,
-    borderColor: data.customBorder,
-    borderStyle: data.borderStyle || 'solid',
-    boxShadow: data.glow ? `0 0 18px ${data.glowColor || 'rgba(88, 166, 255, 0.45)'}` : undefined,
-    zoom: currentScale
-  };
-
-  const handleStyle = data.customAccent ? {
-    background: data.customAccent,
-    borderColor: data.customBg || '#111419'
-  } : undefined;
+  const cardStyle = getBlockCardStyle(data);
+  const handleStyle = getBlockHandleStyle(data);
 
   return (
     <div

@@ -4,6 +4,7 @@ import { Handle, Position, NodeResizer } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
 import EmojiPickerPopover from './EmojiPickerPopover';
 import ColorPickerPopover from './ColorPickerPopover';
+import { getBlockCardStyle, getBlockHandleStyle } from '../../utils/diagramNodeUtils';
 import useBlockCornerScale from '../../hooks/useBlockCornerScale';
 
 const FONT_SIZES = ['sm', 'md', 'lg', 'xl'];
@@ -99,21 +100,8 @@ export default function TextCardNode({ id, data, isConnectable, selected }) {
     }
   };
 
-  const currentScale = data.scale || 1;
-  const cardStyle = {
-    background: data.customBg,
-    borderColor: data.customBorder,
-    borderStyle: data.borderStyle || 'solid',
-    boxShadow: data.glow ? `0 0 18px ${data.glowColor || 'rgba(88, 166, 255, 0.45)'}` : undefined,
-    zoom: currentScale,
-    width: '100%',
-    height: '100%'
-  };
-
-  const handleStyle = data.customAccent ? {
-    background: data.customAccent,
-    borderColor: data.customBg || '#111419'
-  } : undefined;
+  const cardStyle = getBlockCardStyle(data, { width: '100%', height: '100%' });
+  const handleStyle = getBlockHandleStyle(data);
 
   return (
     <div

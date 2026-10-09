@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { DiagramActionsContext } from '../DiagramActionsContext';
-import { computeTreePrefix } from './GameDevHierarchyNode';
 import EmojiPickerPopover from './EmojiPickerPopover';
 import ColorPickerPopover from './ColorPickerPopover';
 import useBlockCornerScale from '../../hooks/useBlockCornerScale';
+import { useTreeRowEditor } from '../../hooks/useTreeRowEditor';
+import { useNodeHeaderEditor } from '../../hooks/useNodeHeaderEditor';
+import { useCopyFeedback } from '../../hooks/useCopyFeedback';
+import { computeTreePrefix, getBlockCardStyle, getBlockHandleStyle } from '../../utils/diagramNodeUtils';
+
+const NEW_LINE_DRAFTS = {
+  sub: { code: 'ExecuteSubAction()', comment: 'Вложенное действие' },
+  sibling: { code: 'PerformAction()', comment: 'Новый шаг' }
+};
 
 function LogicStepNode({ id, data, isConnectable, selected }) {
   const updateNodeInternals = useUpdateNodeInternals();
@@ -27,23 +35,8 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
   const nodeType = data.nodeType || 'LOGIC';
   const lines = data.lines || [];
 
-  const [copied, setCopied] = useState(false);
-  const [editingRowIdx, setEditingRowIdx] = useState(null);
-  const [selectedRowIdx, setSelectedRowIdx] = useState(null);
-  const [lineDraft, setLineDraft] = useState({ code: '', comment: '', icon: '⚡', level: 0, prefix: '├── ' });
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleDraft, setTitleDraft] = useState(title);
-  const [titleIconDraft, setTitleIconDraft] = useState(titleIcon);
-  const [titleColorDraft, setTitleColorDraft] = useState(titleColor);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [lineEmojiPickerIdx, setLineEmojiPickerIdx] = useState(null);
-  const [showTitleEmojiPicker, setShowTitleEmojiPicker] = useState(false);
-  const [showTitleColorPicker, setShowTitleColorPicker] = useState(false);
-  const [viewTitleEmojiPicker, setViewTitleEmojiPicker] = useState(false);
-  const [viewTitleColorPicker, setViewTitleColorPicker] = useState(false);
-
-  const codeInputRef = useRef(null);
-  const titleInputRef = useRef(null);
   const cardRef = useRef(null);
 
   const {
@@ -56,226 +49,70 @@ function LogicStepNode({ id, data, isConnectable, selected }) {
     updateNodeInternals(id);
   }, [id, lines.length, data.scale, updateNodeInternals]);
 
-  useEffect(() => {
-    setTitleDraft(title);
-    setTitleIconDraft(titleIcon);
-    setTitleColorDraft(titleColor);
-  }, [title, titleIcon, titleColor]);
-
-  useEffect(() => {
-    if (editingRowIdx !== null && codeInputRef.current) {
-      codeInputRef.current.focus();
-      codeInputRef.current.select();
-    }
-  }, [editingRowIdx]);
-
-  useEffect(() => {
-    if (editingTitle && titleInputRef.current) {
-      titleInputRef.current.focus();
-      titleInputRef.current.select();
-    }
-  }, [editingTitle]);
-
-  const handleCopy = (e) => {
-    e.stopPropagation();
-    const text = `${nodeType}: ${titleIcon} ${title}\n` + lines.map((l, idx) => {
-      const pfx = computeTreePrefix(lines, idx);
-      return `${pfx}${l.icon ? l.icon + ' ' : ''}${l.code || ''}${l.comment ? ' // ' + l.comment : ''}`;
-    }).join('\n');
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
-  };
-
-  const handleTagClick = (e) => {
-    e.stopPropagation();
-    if (onOpenTagModal) {
-      onOpenTagModal(id);
-    }
-  };
-
-  const handleStartRowEdit = (idx, line) => {
-    setSelectedRowIdx(idx);
-    setEditingRowIdx(idx);
-    setLineDraft({
+  const {
+    editingRowIdx, setEditingRowIdx, selectedRowIdx, setSelectedRowIdx,
+    draft: lineDraft, setDraft: setLineDraft, inputRef: codeInputRef,
+    startEdit: handleStartRowEdit, saveRow: handleSaveLine, saveAndAddSub: handleSaveAndAddSub,
+    addSubRow: handleAddSubRow, addSiblingRow: handleAddSiblingRow, indentDraft: handleIndentDraft,
+    rowKeyDown: handleLineKeyDown, deleteRow: handleDeleteLine, quickAdd: handleQuickAddClick
+  } = useTreeRowEditor({
+    nodeId: id,
+    rows: lines,
+    primaryField: 'code',
+    selectOnEdit: true,
+    initialDraft: { code: '', comment: '', icon: '⚡', level: 0, prefix: '├── ' },
+    toDraft: (line) => ({
       code: line.code || '',
       comment: line.comment || '',
       icon: line.icon || '⚡',
       level: line.level || 0,
       prefix: line.prefix || '├── '
-    });
-  };
-
-  const handleSaveLine = (idx) => {
-    if (onUpdateLogicLine && lineDraft.code.trim()) {
-      onUpdateLogicLine(id, idx, lineDraft);
+    }),
+    newDraft: (kind, level) => ({ level, icon: '⚡', ...NEW_LINE_DRAFTS[kind] }),
+    actions: {
+      update: onUpdateLogicLine,
+      remove: onDeleteLogicLine,
+      addSub: onAddLogicSubLine,
+      addSibling: onAddLogicSiblingLine,
+      quickAdd: onQuickAdd
     }
-    setEditingRowIdx(null);
-    setSelectedRowIdx(null);
-  };
+  });
 
-  const handleSaveAndAddSub = (idx) => {
-    if (onUpdateLogicLine && lineDraft.code.trim()) {
-      onUpdateLogicLine(id, idx, lineDraft);
-    }
-    handleAddSubRow(null, idx);
-  };
+  const {
+    editing: editingTitle, setEditing: setEditingTitle,
+    textDraft: titleDraft, setTextDraft: setTitleDraft,
+    iconDraft: titleIconDraft, setIconDraft: setTitleIconDraft,
+    colorDraft: titleColorDraft, setColorDraft: setTitleColorDraft,
+    showEditEmojiPicker: showTitleEmojiPicker, setShowEditEmojiPicker: setShowTitleEmojiPicker,
+    showEditColorPicker: showTitleColorPicker, setShowEditColorPicker: setShowTitleColorPicker,
+    showViewEmojiPicker: viewTitleEmojiPicker, setShowViewEmojiPicker: setViewTitleEmojiPicker,
+    showViewColorPicker: viewTitleColorPicker, setShowViewColorPicker: setViewTitleColorPicker,
+    inputRef: titleInputRef, save: handleSaveTitle, keyDown: handleTitleKeyDown,
+    selectViewEmoji: handleSelectViewEmoji, selectViewColor: handleSelectViewColor
+  } = useNodeHeaderEditor({
+    nodeId: id,
+    values: { text: title, icon: titleIcon, color: titleColor },
+    fields: { text: 'title', icon: 'titleIcon', color: 'titleColor' },
+    onUpdate: onUpdateLogicTitle
+  });
 
-  const handleAddSubRow = (e, idx) => {
-    if (e) e.stopPropagation();
-    const parentLine = lines[idx];
-    const parentLevel = parentLine ? (parentLine.level || 0) : 0;
-    const subLevel = parentLevel + 1;
-    const insertIdx = idx + 1;
+  const { copied, copy } = useCopyFeedback();
 
-    if (onAddLogicSubLine) {
-      onAddLogicSubLine(id, idx);
-    }
-    setEditingRowIdx(insertIdx);
-    setSelectedRowIdx(insertIdx);
-    setLineDraft({
-      level: subLevel,
-      icon: '⚡',
-      code: 'ExecuteSubAction()',
-      comment: 'Вложенное действие'
-    });
-  };
-
-  const handleAddSiblingRow = (e, idx) => {
-    if (e) e.stopPropagation();
-    const curLine = lines[idx];
-    const curLevel = curLine ? (curLine.level || 0) : 0;
-
-    let insertIdx = idx + 1;
-    while (insertIdx < lines.length && (lines[insertIdx].level || 0) > curLevel) {
-      insertIdx++;
-    }
-
-    if (onAddLogicSiblingLine) {
-      onAddLogicSiblingLine(id, idx);
-    }
-    setEditingRowIdx(insertIdx);
-    setSelectedRowIdx(insertIdx);
-    setLineDraft({
-      level: curLevel,
-      icon: '⚡',
-      code: 'PerformAction()',
-      comment: 'Новый шаг'
-    });
-  };
-
-  const handleIndentDraft = (e, delta) => {
-    if (e) e.stopPropagation();
-    setLineDraft(prev => ({
-      ...prev,
-      level: Math.max(0, Math.min(6, (prev.level || 0) + delta))
-    }));
-  };
-
-  const handleLineKeyDown = (e, idx) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      e.stopPropagation();
-      const delta = e.shiftKey ? -1 : 1;
-      setLineDraft(prev => ({
-        ...prev,
-        level: Math.max(0, Math.min(6, (prev.level || 0) + delta))
-      }));
-    } else if (e.key === 'Enter') {
-      e.stopPropagation();
-      handleSaveLine(idx);
-    } else if (e.key === 'Escape') {
-      e.stopPropagation();
-      setEditingRowIdx(null);
-      setSelectedRowIdx(null);
-    }
-  };
-
-  const handleDeleteLine = (e, idx) => {
+  const handleCopy = (e) => {
     e.stopPropagation();
-    if (onDeleteLogicLine) {
-      onDeleteLogicLine(id, idx);
-    }
-    setEditingRowIdx(null);
-    setSelectedRowIdx(null);
+    copy(`${nodeType}: ${titleIcon} ${title}\n` + lines.map((l, idx) => {
+      const pfx = computeTreePrefix(lines, idx);
+      return `${pfx}${l.icon ? l.icon + ' ' : ''}${l.code || ''}${l.comment ? ' // ' + l.comment : ''}`;
+    }).join('\n'));
   };
 
-  const handleSaveTitle = () => {
-    if (onUpdateLogicTitle && titleDraft.trim()) {
-      onUpdateLogicTitle(id, {
-        title: titleDraft.trim(),
-        titleIcon: titleIconDraft,
-        titleColor: titleColorDraft
-      });
-    }
-    setEditingTitle(false);
-    setShowTitleEmojiPicker(false);
-    setShowTitleColorPicker(false);
-  };
-
-  const handleSelectViewEmoji = (emoji) => {
-    if (onUpdateLogicTitle) {
-      onUpdateLogicTitle(id, {
-        titleIcon: emoji
-      });
-    }
-    setViewTitleEmojiPicker(false);
-  };
-
-  const handleSelectViewColor = (color) => {
-    if (onUpdateLogicTitle) {
-      onUpdateLogicTitle(id, {
-        titleColor: color
-      });
-    }
-    setViewTitleColorPicker(false);
-  };
-
-  const handleTitleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.stopPropagation();
-      handleSaveTitle();
-    } else if (e.key === 'Escape') {
-      e.stopPropagation();
-      setTitleDraft(title);
-      setTitleIconDraft(titleIcon);
-      setTitleColorDraft(titleColor);
-      setShowTitleEmojiPicker(false);
-      setShowTitleColorPicker(false);
-      setEditingTitle(false);
-    }
-  };
-
-  const handleQuickAddClick = (e) => {
+  const handleTagClick = (e) => {
     e.stopPropagation();
-    if (lines.length === 0) {
-      if (onQuickAdd) onQuickAdd(id);
-      return;
-    }
-    const targetIdx = editingRowIdx !== null 
-      ? editingRowIdx 
-      : (selectedRowIdx !== null && selectedRowIdx < lines.length ? selectedRowIdx : lines.length - 1);
-
-    if (editingRowIdx !== null && onUpdateLogicLine && lineDraft.code.trim()) {
-      onUpdateLogicLine(id, editingRowIdx, lineDraft);
-    }
-    handleAddSiblingRow(e, targetIdx);
+    if (onOpenTagModal) onOpenTagModal(id);
   };
 
-  const currentScale = data.scale || 1;
-  const cardStyle = {
-    background: data.customBg,
-    borderColor: data.customBorder,
-    borderStyle: data.borderStyle || 'solid',
-    boxShadow: data.glow ? `0 0 18px ${data.glowColor || 'rgba(88, 166, 255, 0.45)'}` : undefined,
-    zoom: currentScale
-  };
-
-  const handleStyle = data.customAccent ? {
-    background: data.customAccent,
-    borderColor: data.customBg || '#111419'
-  } : undefined;
+  const cardStyle = getBlockCardStyle(data);
+  const handleStyle = getBlockHandleStyle(data);
 
   return (
     <div
