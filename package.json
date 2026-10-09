@@ -8,8 +8,7 @@
     "build": "vite build",
     "postinstall": "npm run build",
     "dev": "vite",
-    "preview": "vite preview",
-    "sync": "node sync.js"
+    "preview": "vite preview"
   },
   "engines": {
     "node": ">=20.0.0"

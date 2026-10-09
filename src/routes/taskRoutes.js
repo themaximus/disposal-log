@@ -1,20 +1,67 @@
 const express = require('express');
+const taskService = require('../services/taskService');
+const upload = require('../middleware/upload');
+const { requireUser } = require('../middleware/auth');
+const { json, badRequest } = require('../utils/errors');
+
 const router = express.Router();
-const TaskController = require('../controllers/TaskController');
 
-module.exports = function (sessionMiddleware, requireUser, upload) {
-    router.get('/', sessionMiddleware, TaskController.getTasks);
-    router.get('/trash', sessionMiddleware, requireUser, TaskController.getTrash);
-    router.post('/trash/empty', sessionMiddleware, requireUser, TaskController.emptyTrash);
-    router.put('/:id/restore', sessionMiddleware, requireUser, TaskController.restoreTask);
-    router.delete('/:id/permanent', sessionMiddleware, requireUser, TaskController.permanentDeleteTask);
-    router.post('/', sessionMiddleware, requireUser, upload.array('images', 5), TaskController.createTask);
-    router.put('/group/:groupId/unlink', sessionMiddleware, requireUser, TaskController.unlinkGroup);
-    router.put('/:id/group', sessionMiddleware, requireUser, TaskController.groupTask);
-    router.put('/:id/subtasks', sessionMiddleware, requireUser, TaskController.updateSubtasks);
-    router.put('/:id/status', sessionMiddleware, requireUser, TaskController.updateStatus);
-    router.put('/:id', sessionMiddleware, requireUser, upload.array('images', 5), TaskController.updateTask);
-    router.delete('/:id', sessionMiddleware, requireUser, TaskController.deleteTask);
+// Guests work with local (offline) boards only.
+router.get('/', json(req => (req.user ? taskService.listTasks(req.user.id, req.query.board_id) : [])));
 
-    return router;
-};
+router.use(requireUser);
+
+router.get('/trash', json(req => taskService.listTrash(req.user.id, req.query.board_id)));
+
+router.post('/trash/empty', json(async (req) => {
+    const count = await taskService.emptyTrash(req.user.id, (req.body || {}).board_id);
+    return { success: true, count };
+}));
+
+router.post('/', upload.array('images', 5), json(req => taskService.createTask(req.user.id, req.body || {}, req.files)));
+
+router.put('/group/:groupId/unlink', json(async (req) => {
+    await taskService.unlinkGroup(req.params.groupId, req.user.id);
+    return { success: true };
+}));
+
+router.put('/:id', json(async (req) => {
+    await taskService.updateTask(req.params.id, req.user.id, req.body || {});
+    return { success: true };
+}));
+
+router.put('/:id/group', json(async (req) => {
+    const { target_id: targetId } = req.body || {};
+    if (!targetId) throw badRequest('target_id is required');
+    const groupId = await taskService.groupWith(req.params.id, req.user.id, targetId);
+    return { success: true, group_id: groupId };
+}));
+
+router.put('/:id/subtasks', json(async (req) => {
+    await taskService.updateSubtasks(req.params.id, req.user.id, (req.body || {}).subtasks);
+    return { success: true };
+}));
+
+router.put('/:id/status', json(async (req) => {
+    const { status } = req.body || {};
+    if (!status) throw badRequest('status is required');
+    await taskService.updateStatus(req.params.id, req.user.id, status);
+    return { success: true };
+}));
+
+router.put('/:id/restore', json(async (req) => {
+    await taskService.restore(req.params.id, req.user.id);
+    return { success: true };
+}));
+
+router.delete('/:id', json(async (req) => {
+    await taskService.softDelete(req.params.id, req.user.id);
+    return { success: true };
+}));
+
+router.delete('/:id/permanent', json(async (req) => {
+    await taskService.permanentDelete(req.params.id, req.user.id);
+    return { success: true };
+}));
+
+module.exports = router;
