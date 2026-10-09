@@ -48,14 +48,26 @@ export const deleteOfflineBoard = (boardId) => {
   } catch (e) {}
 };
 
-export const addOfflineBoard = (board) => {
+export const isOfflineBoardId = (boardId) => String(boardId).startsWith('off_');
+
+export const createOfflineBoard = ({ name, description, icon }) => {
+  const board = {
+    id: `off_board_${Date.now()}`,
+    name: name || 'Локальная доска',
+    description: description || '',
+    icon: icon || '📋',
+    is_offline: true,
+    created_at: new Date().toISOString()
+  };
+  saveOfflineBoards([...getOfflineBoards(), board]);
+  return board;
+};
+
+export const upsertOfflineBoard = (board) => {
   const list = getOfflineBoards();
-  const exists = list.find(b => String(b.id) === String(board.id));
-  let updated;
-  if (exists) {
-    updated = list.map(b => String(b.id) === String(board.id) ? { ...b, ...board, is_offline: true } : b);
-  } else {
-    updated = [...list, { ...board, is_offline: true }];
-  }
+  const exists = list.some(b => String(b.id) === String(board.id));
+  const updated = exists
+    ? list.map(b => String(b.id) === String(board.id) ? { ...b, ...board, is_offline: true } : b)
+    : [...list, { ...board, is_offline: true }];
   saveOfflineBoards(updated);
 };

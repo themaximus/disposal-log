@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { boardsApi } from '../api';
 
 export default function ShareModal({ board, onClose }) {
   const [shareMode, setShareMode] = useState('link');
@@ -8,8 +9,7 @@ export default function ShareModal({ board, onClose }) {
 
   useEffect(() => {
     if (!board) return;
-    fetch(`/api/boards/${board.id}/share`)
-      .then(res => res.json())
+    boardsApi.share(board.id)
       .then(data => {
         setShareMode(data.shareMode || 'link');
         setShareUrl(data.shareUrl || window.location.href);
@@ -20,23 +20,17 @@ export default function ShareModal({ board, onClose }) {
 
   const handleSelectMode = (mode) => {
     setShareMode(mode);
-    fetch(`/api/boards/${board.id}/share/mode`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shareMode: mode })
-    });
+    boardsApi.setShareMode(board.id, mode).catch(console.error);
   };
 
   const handleAddEmail = () => {
     if (!newEmail || !newEmail.includes('@')) return;
-    fetch(`/api/boards/${board.id}/share/invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: newEmail })
-    }).then(() => {
-      setInvitedEmails([...invitedEmails, newEmail]);
-      setNewEmail('');
-    });
+    boardsApi.invite(board.id, newEmail)
+      .then(({ email }) => {
+        setInvitedEmails(prev => (prev.includes(email) ? prev : [...prev, email]));
+        setNewEmail('');
+      })
+      .catch(console.error);
   };
 
   const handleCopyLink = () => {

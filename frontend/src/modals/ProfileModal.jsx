@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { authApi } from '../api';
+import { GOOGLE_DRIVE_CONNECT_URL } from '../services/googleDrive';
 
 export default function ProfileModal({ user, onClose, onLogout, onRefreshUser }) {
   const [unlinkStatus, setUnlinkStatus] = useState('');
@@ -6,15 +8,8 @@ export default function ProfileModal({ user, onClose, onLogout, onRefreshUser })
   if (!user) return null;
 
   const handleUnlinkDrive = () => {
-    const token = localStorage.getItem('session_token');
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    };
-
     setUnlinkStatus('Отключение...');
-    fetch('/api/auth/google-drive/unlink', { method: 'POST', headers })
-      .then(res => res.json())
+    authApi.unlinkGoogleDrive()
       .then(data => {
         if (data.success) {
           setUnlinkStatus('✅ Диск отключён');
@@ -84,7 +79,7 @@ export default function ProfileModal({ user, onClose, onLogout, onRefreshUser })
             </button>
           ) : (
             <a
-              href="/api/auth/google-drive?origin=profile"
+              href={`${GOOGLE_DRIVE_CONNECT_URL}?origin=profile`}
               className="btn btn-secondary"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', width: '100%', fontSize: '0.82rem', textDecoration: 'none', background: 'rgba(56, 139, 253, 0.1)', color: '#58a6ff', borderColor: 'rgba(56, 139, 253, 0.4)', fontWeight: 600 }}
             >

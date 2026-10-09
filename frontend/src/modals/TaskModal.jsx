@@ -1,56 +1,7 @@
 import React, { useState, useEffect } from 'react';
-
-async function uploadFileDirectToGoogleDrive(fileObj, accessToken) {
-  const metadata = {
-    name: fileObj.name,
-    mimeType: fileObj.type || 'application/octet-stream'
-  };
-
-  const boundary = '-------314159265358979323846';
-  const delimiter = "\r\n--" + boundary + "\r\n";
-  const close_delim = "\r\n--" + boundary + "--";
-
-  const arrayBuffer = await fileObj.arrayBuffer();
-  const bytes = new Uint8Array(arrayBuffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  const base64Data = btoa(binary);
-
-  const multipartRequestBody =
-    delimiter +
-    'Content-Type: application/json\r\n\r\n' +
-    JSON.stringify(metadata) +
-    delimiter +
-    'Content-Type: ' + (fileObj.type || 'application/octet-stream') + '\r\n' +
-    'Content-Transfer-Encoding: base64\r\n\r\n' +
-    base64Data +
-    close_delim;
-
-  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': `multipart/related; boundary=${boundary}`
-    },
-    body: multipartRequestBody
-  });
-
-  const data = await res.json();
-  if (!data.id) throw new Error('Google Drive upload failed');
-
-  await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ role: 'reader', type: 'anyone' })
-  });
-
-  return `https://lh3.googleusercontent.com/d/${data.id}`;
-}
+import { uploadsApi } from '../api';
+import { uploadToGoogleDrive, GOOGLE_DRIVE_CONNECT_URL } from '../services/googleDrive';
+import { getTaskMedia, getTaskSubtasks, isVideoUrl } from '../utils/taskFields';
 
 export default function TaskModal({ taskToEdit, task, boardId, currentUser, onClose, onSave }) {
   const activeTask = taskToEdit || task;
@@ -62,8 +13,6 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
   const [newSubtaskText, setNewSubtaskText] = useState('');
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-
-  const isVideoUrl = (url) => typeof url === 'string' && /\.(mp4|webm|mov|ogg)$/i.test(url);
 
   const parseGoogleDriveUrl = (url) => {
     if (typeof url !== 'string') return url;
@@ -80,29 +29,8 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
       setDescription(activeTask.description || '');
       setDifficulty(activeTask.difficulty || 1);
       
-      let existingMedia = [];
-      if (Array.isArray(activeTask.images) && activeTask.images.length > 0) {
-        existingMedia = activeTask.images;
-      } else if (typeof activeTask.images_json === 'string') {
-        try {
-          const parsed = JSON.parse(activeTask.images_json);
-          if (Array.isArray(parsed)) existingMedia = parsed;
-        } catch (e) {}
-      } else if (activeTask.image_url) {
-        existingMedia = [activeTask.image_url];
-      }
-      setImages(existingMedia);
-
-      let existingSubtasks = [];
-      if (Array.isArray(activeTask.subtasks)) {
-        existingSubtasks = activeTask.subtasks;
-      } else if (typeof activeTask.subtasks_json === 'string') {
-        try {
-          const parsed = JSON.parse(activeTask.subtasks_json);
-          if (Array.isArray(parsed)) existingSubtasks = parsed;
-        } catch(e) {}
-      }
-      setSubtasks(existingSubtasks);
+      setImages(getTaskMedia(activeTask));
+      setSubtasks(getTaskSubtasks(activeTask));
     }
   }, [activeTask]);
 
@@ -113,7 +41,7 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
     const googleToken = currentUser && currentUser.google_access_token;
 
     if (!googleToken) {
-      window.location.href = '/api/auth/google-drive?origin=task';
+      window.location.href = `${GOOGLE_DRIVE_CONNECT_URL}?origin=task`;
       return;
     }
 
@@ -121,7 +49,7 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
     try {
       const uploadedUrls = [];
       for (let i = 0; i < files.length; i++) {
-        const driveUrl = await uploadFileDirectToGoogleDrive(files[i], googleToken);
+        const driveUrl = await uploadToGoogleDrive(files[i], googleToken);
         uploadedUrls.push(driveUrl);
       }
       setImages(prev => [...prev, ...uploadedUrls]);
@@ -136,18 +64,7 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
     const targetUrl = images[index];
     setImages(prev => prev.filter((_, i) => i !== index));
 
-    if (targetUrl) {
-      const token = localStorage.getItem('session_token');
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      };
-      fetch('/api/upload/google-drive/delete', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ url: targetUrl })
-      }).catch(console.error);
-    }
+    if (targetUrl) uploadsApi.deleteDriveFile(targetUrl).catch(console.error);
   };
 
   const handleAddSubtask = () => {
@@ -373,7 +290,7 @@ export default function TaskModal({ taskToEdit, task, boardId, currentUser, onCl
                   </div>
                 </div>
                 <a
-                  href="/api/auth/google-drive?origin=task"
+                  href={`${GOOGLE_DRIVE_CONNECT_URL}?origin=task`}
                   className="btn btn-secondary"
                   style={{
                     padding: '0.4rem 0.75rem',

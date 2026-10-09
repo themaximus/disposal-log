@@ -13,231 +13,144 @@ import TrashModal from '../modals/TrashModal';
 import BoardSettingsModal from '../modals/BoardSettingsModal';
 import TaskViewModal from '../modals/TaskViewModal';
 
+/** Renders whichever modals are currently open in `modals` (see useModals). */
 export default function ModalContainer({
-  isAuthModalOpen,
-  setIsAuthModalOpen,
-  initGuestMode,
-  isProfileModalOpen,
-  setIsProfileModalOpen,
+  modals,
+  workspace,
   currentUser,
-  handleLogout,
-  checkAuthStatus,
-  isSettingsModalOpen,
-  setIsSettingsModalOpen,
-  isTrashModalOpen,
-  setIsTrashModalOpen,
-  currentBoardId,
-  fetchBoardTasks,
-  boardSettingsModal,
-  setBoardSettingsModal,
-  columns,
-  setColumns,
-  boards,
-  setBoards,
-  saveOfflineBoards,
-  saveOfflineBoardData,
-  tasks,
-  handleAddColumn,
-  setColumnToEdit,
-  setIsColumnModalOpen,
-  handleDeleteColumn,
-  handleToggleBoardMode,
-  handleDeleteBoard,
-  isTaskModalOpen,
-  setIsTaskModalOpen,
-  taskToEdit,
-  setTaskToEdit,
-  taskToView,
-  setTaskToView,
-  onSubtasksChange,
-  handleSaveTask,
-  isBoardModalOpen,
-  setIsBoardModalOpen,
-  handleCreateBoard,
-  isColumnModalOpen,
-  columnToEdit,
-  fetchBoardColumns,
-  setSyncStatus,
-  setSyncMessage,
-  isManageColumnsModalOpen,
-  manageColumnsBoard,
-  setIsManageColumnsModalOpen,
-  setManageColumnsBoard,
-  handleSaveReorderedColumns,
-  shareBoardModal,
-  setShareBoardModal,
-  syncBoardModal,
-  setSyncBoardModal,
-  confirmModalState,
-  setConfirmModalState
+  onLogout,
+  onRefreshUser,
+  onStartGuestMode,
+  confirmDialog,
+  onCancelConfirm
 }) {
+  const { isOpen, payload, open, close } = modals;
+  const editColumn = (col) => open('column', col);
+
   return (
     <>
-      {isAuthModalOpen && (
+      {isOpen('auth') && (
         <AuthModal
-          onClose={() => setIsAuthModalOpen(false)}
+          onClose={() => close('auth')}
           onOpenGuestMode={() => {
-            setIsAuthModalOpen(false);
-            initGuestMode(true);
+            close('auth');
+            onStartGuestMode();
           }}
         />
       )}
 
-      {isProfileModalOpen && (
+      {isOpen('profile') && (
         <ProfileModal
           user={currentUser}
-          onClose={() => setIsProfileModalOpen(false)}
-          onLogout={handleLogout}
-          onRefreshUser={checkAuthStatus}
+          onClose={() => close('profile')}
+          onLogout={onLogout}
+          onRefreshUser={onRefreshUser}
         />
       )}
 
-      {isSettingsModalOpen && (
-        <SettingsModal onClose={() => setIsSettingsModalOpen(false)} />
-      )}
+      {isOpen('settings') && <SettingsModal onClose={() => close('settings')} />}
 
-      {isTrashModalOpen && (
+      {isOpen('trash') && (
         <TrashModal
-          boardId={currentBoardId}
+          boardId={workspace.currentBoardId}
           currentUser={currentUser}
-          onClose={() => setIsTrashModalOpen(false)}
-          onTaskRestored={() => fetchBoardTasks(currentBoardId)}
+          onClose={() => close('trash')}
+          onChanged={workspace.refreshActiveBoard}
         />
       )}
 
-      {boardSettingsModal && (
+      {isOpen('boardSettings') && (
         <BoardSettingsModal
-          board={boardSettingsModal}
-          columns={columns}
+          board={payload('boardSettings')}
+          columns={workspace.columns}
           currentUser={currentUser}
-          onClose={() => setBoardSettingsModal(null)}
-          onUpdateBoard={(updatedBoard) => {
-            setBoards(prev => prev.map(b => b.id === updatedBoard.id ? updatedBoard : b));
-            if (updatedBoard.is_offline) {
-              saveOfflineBoards(boards.map(b => b.id === updatedBoard.id ? updatedBoard : b));
-            } else {
-              fetch(`/api/boards/${updatedBoard.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedBoard)
-              }).catch(console.error);
-            }
+          onClose={() => close('boardSettings')}
+          onUpdateBoard={workspace.updateBoard}
+          onSaveColumns={workspace.saveColumnOrder}
+          onAddColumn={workspace.addColumn}
+          onEditColumn={editColumn}
+          onDeleteColumn={workspace.deleteColumn}
+          onToggleBoardMode={(board) => {
+            close('boardSettings');
+            workspace.toggleBoardMode(board);
           }}
-          onSaveColumns={(reordered) => {
-            setColumns(reordered);
-            const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-            if (activeBoard && activeBoard.is_offline) {
-              saveOfflineBoardData(currentBoardId, { columns: reordered, tasks });
-            } else {
-              fetch('/api/columns/positions', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ updates: reordered.map(c => ({ id: c.id, position: c.position })) })
-              }).catch(console.error);
-            }
+          onDeleteBoard={(board) => {
+            close('boardSettings');
+            workspace.deleteBoard(board);
           }}
-          onAddColumn={handleAddColumn}
-          onEditColumn={(col) => {
-            setColumnToEdit(col);
-            setIsColumnModalOpen(true);
-          }}
-          onDeleteColumn={handleDeleteColumn}
-          onToggleBoardMode={handleToggleBoardMode}
-          onDeleteBoard={handleDeleteBoard}
         />
       )}
 
-      {taskToView && (
+      {isOpen('taskView') && (
         <TaskViewModal
-          task={taskToView}
-          columns={columns}
-          onClose={() => setTaskToView(null)}
-          onEdit={(t) => {
-            setTaskToView(null);
-            setTaskToEdit(t);
-            setIsTaskModalOpen(true);
+          task={payload('taskView')}
+          columns={workspace.columns}
+          onClose={() => close('taskView')}
+          onEdit={(task) => {
+            close('taskView');
+            open('task', task);
           }}
-          onSubtasksChange={onSubtasksChange}
+          onSubtasksChange={workspace.changeSubtasks}
         />
       )}
 
-      {isTaskModalOpen && (
+      {isOpen('task') && (
         <TaskModal
-          task={taskToEdit}
+          task={payload('task')}
           currentUser={currentUser}
-          onClose={() => { setIsTaskModalOpen(false); setTaskToEdit(null); }}
-          onSave={handleSaveTask}
-        />
-      )}
-
-      {isBoardModalOpen && (
-        <BoardModal
-          onClose={() => setIsBoardModalOpen(false)}
-          onSave={handleCreateBoard}
-        />
-      )}
-
-      {isColumnModalOpen && (
-        <ColumnModal
-          column={columnToEdit}
-          onClose={() => { setIsColumnModalOpen(false); setColumnToEdit(null); }}
-          onSave={(colData) => {
-            const updatedCols = columns.map(c => c.id === colData.id ? { ...c, ...colData } : c);
-            setColumns(updatedCols);
-            setIsColumnModalOpen(false);
-
-            const activeBoard = boards.find(b => String(b.id) === String(currentBoardId));
-            if (activeBoard && activeBoard.is_offline) {
-              saveOfflineBoardData(currentBoardId, { columns: updatedCols, tasks });
-              setSyncStatus('synced');
-              setSyncMessage('💾 Колонка обновлена');
-              return;
-            }
-
-            fetch(`/api/columns/${colData.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(colData)
-            }).then(() => fetchBoardColumns(currentBoardId));
+          onClose={() => close('task')}
+          onSave={async (task) => {
+            if (await workspace.saveTask(task)) close('task');
           }}
         />
       )}
 
-      {isManageColumnsModalOpen && manageColumnsBoard && (
+      {isOpen('board') && (
+        <BoardModal
+          onClose={() => close('board')}
+          onSave={async (board) => {
+            close('board');
+            await workspace.createBoard(board);
+          }}
+        />
+      )}
+
+      {isOpen('column') && (
+        <ColumnModal
+          columnToEdit={payload('column')}
+          boardId={workspace.currentBoardId}
+          onClose={() => close('column')}
+          onSave={(column) => {
+            close('column');
+            if (column.id) workspace.updateColumn(column);
+            else workspace.addColumn(column);
+          }}
+        />
+      )}
+
+      {isOpen('manageColumns') && (
         <ManageColumnsModal
-          board={manageColumnsBoard}
-          columns={columns}
-          onClose={() => { setIsManageColumnsModalOpen(false); setManageColumnsBoard(null); }}
-          onSaveReorder={handleSaveReorderedColumns}
-          onAddColumn={handleAddColumn}
+          board={payload('manageColumns')}
+          columns={workspace.columns}
+          onClose={() => close('manageColumns')}
+          onSaveColumns={workspace.saveColumnOrder}
+          onAddColumn={workspace.addColumn}
+          onEditColumn={editColumn}
+          onDeleteColumn={workspace.deleteColumn}
         />
       )}
 
-      {shareBoardModal && (
-        <ShareModal
-          board={shareBoardModal}
-          onClose={() => setShareBoardModal(null)}
-        />
-      )}
+      {isOpen('share') && <ShareModal board={payload('share')} onClose={() => close('share')} />}
 
-      {syncBoardModal && (
+      {isOpen('boardSync') && (
         <BoardSyncModal
-          board={syncBoardModal}
-          onClose={() => setSyncBoardModal(null)}
-          onToggleBoardMode={handleToggleBoardMode}
+          board={payload('boardSync')}
+          onClose={() => close('boardSync')}
+          onToggleBoardMode={workspace.toggleBoardMode}
         />
       )}
 
-      <ConfirmModal
-        isOpen={confirmModalState.isOpen}
-        title={confirmModalState.title}
-        message={confirmModalState.message}
-        confirmText={confirmModalState.confirmText}
-        cancelText={confirmModalState.cancelText}
-        confirmStyle={confirmModalState.confirmStyle}
-        onConfirm={confirmModalState.onConfirm}
-        onCancel={() => setConfirmModalState(prev => ({ ...prev, isOpen: false }))}
-      />
+      <ConfirmModal {...confirmDialog} onCancel={onCancelConfirm} />
     </>
   );
 }

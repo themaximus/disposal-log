@@ -1,98 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { getOfflineBoards, getOfflineBoardData, saveOfflineBoardData } from '../utils/offlineStorage';
+import { tasksApi } from '../api';
+import { deleteDriveFiles } from '../services/googleDrive';
+import { getOfflineBoardData, saveOfflineBoardData, isOfflineBoardId } from '../utils/offlineStorage';
+import { getTaskMedia } from '../utils/taskFields';
 
-export default function TrashModal({ boardId, currentUser, onClose, onRestoreTask, onTaskRestored }) {
+export default function TrashModal({ boardId, currentUser, onClose, onChanged }) {
   const [trashedTasks, setTrashedTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isOfflineBoard = () => {
-    if (!boardId) return false;
-    const offlineBoards = getOfflineBoards();
-    return offlineBoards.some(b => String(b.id) === String(boardId));
-  };
+  const isOffline = isOfflineBoardId(boardId);
+  const googleToken = currentUser && currentUser.google_access_token;
 
-  const fetchTrash = () => {
-    setIsLoading(true);
-    if (isOfflineBoard()) {
-      const offlineData = getOfflineBoardData(boardId);
-      const trashed = (offlineData.tasks || []).filter(t => t.deleted_at);
-      setTrashedTasks(trashed);
-      setIsLoading(false);
-      return;
-    }
-
-    fetch(`/api/tasks/trash?board_id=${boardId || ''}`)
-      .then(res => res.json())
-      .then(data => {
-        setTrashedTasks(Array.isArray(data) ? data : []);
-      })
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+  // Offline boards keep trashed tasks in the board snapshot, flagged with deleted_at.
+  const updateOfflineTasks = (transform) => {
+    const data = getOfflineBoardData(boardId);
+    saveOfflineBoardData(boardId, { ...data, tasks: transform(data.tasks || []) });
   };
 
   useEffect(() => {
-    fetchTrash();
-  }, [boardId]);
-
-  const deleteGoogleDriveFiles = async (imagesList) => {
-    const googleToken = currentUser && currentUser.google_access_token;
-    if (!googleToken || !Array.isArray(imagesList) || imagesList.length === 0) return;
-
-    for (const url of imagesList) {
-      if (typeof url === 'string') {
-        const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        if (driveMatch && driveMatch[1]) {
-          const fileId = driveMatch[1];
-          try {
-            await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
-              method: 'DELETE',
-              headers: { 'Authorization': `Bearer ${googleToken}` }
-            });
-          } catch (e) {
-            console.error('Failed to delete Google Drive file:', fileId, e);
-          }
-        }
-      }
-    }
-  };
-
-  const handleRestore = (task) => {
-    if (isOfflineBoard()) {
-      const offlineData = getOfflineBoardData(boardId);
-      const updatedTasks = (offlineData.tasks || []).map(t => t.id === task.id ? { ...t, deleted_at: null } : t);
-      saveOfflineBoardData(boardId, { ...offlineData, tasks: updatedTasks });
-      setTrashedTasks(prev => prev.filter(t => t.id !== task.id));
-      if (onTaskRestored) onTaskRestored();
+    setIsLoading(true);
+    if (isOffline) {
+      setTrashedTasks((getOfflineBoardData(boardId).tasks || []).filter(t => t.deleted_at));
+      setIsLoading(false);
       return;
     }
+    tasksApi.trash(boardId)
+      .then(data => setTrashedTasks(Array.isArray(data) ? data : []))
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, [boardId]);
 
-    fetch(`/api/tasks/${task.id}/restore`, { method: 'PUT' })
-      .then(res => res.json())
-      .then(() => {
-        setTrashedTasks(prev => prev.filter(t => t.id !== task.id));
-        if (onTaskRestored) onTaskRestored();
-      })
-      .catch(console.error);
+  const removeFromList = (taskId) => setTrashedTasks(prev => prev.filter(t => t.id !== taskId));
+
+  const notifyChanged = () => {
+    if (typeof onChanged === 'function') onChanged();
+  };
+
+  const handleRestore = async (task) => {
+    try {
+      if (isOffline) updateOfflineTasks(list => list.map(t => (t.id === task.id ? { ...t, deleted_at: null } : t)));
+      else await tasksApi.restore(task.id);
+      removeFromList(task.id);
+      notifyChanged();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handlePermanentDelete = async (task) => {
     setIsDeleting(true);
     try {
-      if (task.images && task.images.length > 0) {
-        await deleteGoogleDriveFiles(task.images);
-      }
-
-      if (isOfflineBoard()) {
-        const offlineData = getOfflineBoardData(boardId);
-        const updatedTasks = (offlineData.tasks || []).filter(t => t.id !== task.id);
-        saveOfflineBoardData(boardId, { ...offlineData, tasks: updatedTasks });
-        setTrashedTasks(prev => prev.filter(t => t.id !== task.id));
-        return;
-      }
-
-      await fetch(`/api/tasks/${task.id}/permanent`, { method: 'DELETE' });
-      setTrashedTasks(prev => prev.filter(t => t.id !== task.id));
+      await deleteDriveFiles(getTaskMedia(task), googleToken);
+      if (isOffline) updateOfflineTasks(list => list.filter(t => t.id !== task.id));
+      else await tasksApi.removePermanently(task.id);
+      removeFromList(task.id);
+      notifyChanged();
     } catch (e) {
       console.error(e);
     } finally {
@@ -105,26 +68,12 @@ export default function TrashModal({ boardId, currentUser, onClose, onRestoreTas
     setIsDeleting(true);
     try {
       for (const task of trashedTasks) {
-        if (task.images && task.images.length > 0) {
-          await deleteGoogleDriveFiles(task.images);
-        }
+        await deleteDriveFiles(getTaskMedia(task), googleToken);
       }
-
-      if (isOfflineBoard()) {
-        const offlineData = getOfflineBoardData(boardId);
-        const activeTasksOnly = (offlineData.tasks || []).filter(t => !t.deleted_at);
-        saveOfflineBoardData(boardId, { ...offlineData, tasks: activeTasksOnly });
-        setTrashedTasks([]);
-        return;
-      }
-
-      await fetch('/api/tasks/trash/empty', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ board_id: boardId })
-      });
-
+      if (isOffline) updateOfflineTasks(list => list.filter(t => !t.deleted_at));
+      else await tasksApi.emptyTrash(boardId);
       setTrashedTasks([]);
+      notifyChanged();
     } catch (e) {
       console.error(e);
     } finally {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { settingsApi } from '../api';
 
 export default function SettingsModal({ onClose }) {
   const [activeTab, setActiveTab] = useState('tab-tg');
@@ -9,8 +10,7 @@ export default function SettingsModal({ onClose }) {
   const [saveStatus, setSaveStatus] = useState('');
 
   useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
+    settingsApi.get()
       .then(data => {
         setBotToken(data.botToken || '');
         setChannelId(data.channelId || '');
@@ -23,17 +23,7 @@ export default function SettingsModal({ onClose }) {
     e.preventDefault();
     setSaveStatus('Сохранение...');
 
-    fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        botToken,
-        channelId,
-        telegramTemplate: template,
-        adminPassword
-      })
-    })
-      .then(res => res.json())
+    settingsApi.save({ botToken, channelId, telegramTemplate: template })
       .then(res => {
         if (res.success) {
           setSaveStatus('✅ Настройки сохранены!');

@@ -1,53 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { getTaskMedia, getTaskSubtasks, isVideoUrl } from '../utils/taskFields';
 
 export default function TaskViewModal({ task, columns, onClose, onEdit, onSubtasksChange }) {
   const [subtasks, setSubtasks] = useState([]);
   const [activeMediaIndex, setActiveMediaIndex] = useState(null); // Lightbox state: null or index
 
   useEffect(() => {
-    if (task) {
-      if (Array.isArray(task.subtasks)) {
-        setSubtasks(task.subtasks);
-      } else if (typeof task.subtasks_json === 'string') {
-        try {
-          const parsed = JSON.parse(task.subtasks_json);
-          if (Array.isArray(parsed)) setSubtasks(parsed);
-        } catch (e) {}
-      }
-    }
+    if (task) setSubtasks(getTaskSubtasks(task));
   }, [task]);
 
   if (!task) return null;
 
-  const isVideoUrl = (url) => typeof url === 'string' && /\.(mp4|webm|mov|ogg)$/i.test(url);
-
-  const getMediaList = () => {
-    if (Array.isArray(task.images) && task.images.length > 0) return task.images;
-    if (typeof task.images_json === 'string') {
-      try {
-        const parsed = JSON.parse(task.images_json);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {}
-    }
-    if (task.image_url) return [task.image_url];
-    return [];
-  };
-
-  const mediaList = getMediaList();
+  const mediaList = getTaskMedia(task);
 
   const handleToggleSubtask = (index) => {
     const updated = subtasks.map((st, i) => i === index ? { ...st, completed: !st.completed } : st);
     setSubtasks(updated);
 
-    if (typeof onSubtasksChange === 'function') {
-      onSubtasksChange(task.id, updated);
-    } else {
-      fetch(`/api/tasks/${task.id}/subtasks`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subtasks: updated })
-      }).catch(console.error);
-    }
+    if (typeof onSubtasksChange === 'function') onSubtasksChange(task.id, updated);
   };
 
   const completedSubtasks = subtasks.filter(st => st.completed).length;

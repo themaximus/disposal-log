@@ -348,17 +348,15 @@ export default function Sidebar({
       {/* Bottom Fixed Footer: Trash & Settings & Profile */}
       <div className="sidebar-footer">
         {/* Trash Button */}
-        {currentUser && (
-          <button
-            className="btn-sidebar-settings-full"
-            onClick={onOpenTrash}
-            title="Корзина удаленных задач (30 дней)"
-            style={{ marginBottom: '0.35rem' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
-            {!isCollapsed && <span>Корзина задач</span>}
-          </button>
-        )}
+        <button
+          className="btn-sidebar-settings-full"
+          onClick={onOpenTrash}
+          title="Корзина удаленных задач (30 дней)"
+          style={{ marginBottom: '0.35rem' }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
+          {!isCollapsed && <span>Корзина задач</span>}
+        </button>
 
         {/* Settings Button on Top */}
         {currentUser && (
