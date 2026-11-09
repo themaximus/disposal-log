@@ -33,8 +33,8 @@
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com/themaximus/disposal-log.git
-cd disposal-log
+git clone https://github.com/themaximus/max-h.dev.git
+cd max-h.dev
 npm install
 ```
 
